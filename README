@@ -1,0 +1,44 @@
+
+## Development
+
+This project was built with the `reactR` package. See here for development instructions
+from `reactR` https://cran.r-project.org/web/packages/reactR/vignettes/intro_htmlwidgets.html
+
+### Dependencies
+
+- Nodejs (install with nvm)
+- Yarn (install with npm)
+
+
+### Workflow
+
+1. If you need to install a javascript dependency, install a javascript package with
+```bash
+yarn add PACKAGE_NAME
+```
+replacing `PACKAGE_NAME` with the package you are adding.
+
+2. If you need to edit any javascript files, edit them now.
+
+3. Download any other dependencies in package.json and then compile the packages to
+js that the R package can access at inst/htmlwidgets/...
+
+```bash
+yarn install
+yarn run webpack
+```
+
+4. Install the R package
+
+```R
+renv::activate()
+devtools::document()
+devtools::install(quick = TRUE)
+```
+
+5. Enjoy the package
+
+```R
+library(spacetimeview)
+spacetimeview()
+```
