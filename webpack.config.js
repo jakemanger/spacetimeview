@@ -1,10 +1,11 @@
 var path = require('path');
+const webpack = require('webpack');   
 
 module.exports = {
     entry: path.join(__dirname, 'srcjs', 'spacetimeview.jsx'),
     output: {
         path: path.join(__dirname, 'inst', 'htmlwidgets'),
-        filename: 'spacetimeview.js'
+        filename: 'spacetimeview.js',
     },
     module: {
         rules: [
@@ -31,4 +32,11 @@ module.exports = {
         colors: true
     },
     devtool: 'source-map',
+      plugins: [
+        new webpack.optimize.LimitChunkCountPlugin({
+          maxChunks: 1
+        })
+    ],
+		// set to development mode
+		mode: 'development'
 };
