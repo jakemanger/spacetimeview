@@ -5892,16 +5892,16 @@ const useIsomorphicLayoutEffect = typeof document !== 'undefined' ? react__WEBPA
 
 /***/ }),
 
-/***/ "./srcjs/SpaceTimeViewer.js":
-/*!**********************************!*\
-  !*** ./srcjs/SpaceTimeViewer.js ***!
-  \**********************************/
+/***/ "./srcjs/HexagonPlot.js":
+/*!******************************!*\
+  !*** ./srcjs/HexagonPlot.js ***!
+  \******************************/
 /***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": function() { return /* binding */ SpaceTimeViewer; }
+/* harmony export */   "default": function() { return /* binding */ HexagonPlot; }
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
@@ -5961,7 +5961,7 @@ function getTooltip(_ref) {
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
     ${count} Accidents`;
 }
-function SpaceTimeViewer(_ref2) {
+function HexagonPlot(_ref2) {
   let {
     data = [],
     mapStyle = MAP_STYLE,
@@ -6001,6 +6001,38 @@ function SpaceTimeViewer(_ref2) {
     reuseMaps: true,
     mapStyle: mapStyle
   }));
+}
+
+/***/ }),
+
+/***/ "./srcjs/SpaceTimeViewer.js":
+/*!**********************************!*\
+  !*** ./srcjs/SpaceTimeViewer.js ***!
+  \**********************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": function() { return /* binding */ SpaceTimeViewer; }
+/* harmony export */ });
+/* harmony import */ var _HexagonPlot__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./HexagonPlot */ "./srcjs/HexagonPlot.js");
+
+function SpaceTimeViewer(_ref) {
+  let {
+    data = [],
+    layerType = 'hexagon'
+  } = _ref;
+  console.log('Received data:', data);
+
+  // Default to unsupported layer type
+  let plot = /*#__PURE__*/React.createElement("div", null, "Unsupported layer type: ", layerType);
+  if (layerType === 'hexagon') {
+    plot = /*#__PURE__*/React.createElement(_HexagonPlot__WEBPACK_IMPORTED_MODULE_0__["default"], {
+      data: data
+    });
+  }
+  return /*#__PURE__*/React.createElement("div", null, plot);
 }
 
 /***/ }),

@@ -7,8 +7,10 @@
 #' @export
 spacetimeview <- function(data, ..., width = NULL, height = NULL, elementId = NULL) {
   # Assuming `data` is a dataframe with columns `lat` and `lng`
-  data_list <- apply(data, 1, as.list)
+  print('Reformatting data')
+  data_list <- purrr::transpose(data)
   
+  print('Starting ReactR plot')
   # describe a React component to send to the browser for rendering.
   component <- reactR::component("SpaceTimeViewer", list(data = data_list, ...))
   
