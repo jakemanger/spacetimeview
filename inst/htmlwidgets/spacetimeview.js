@@ -5892,6 +5892,119 @@ const useIsomorphicLayoutEffect = typeof document !== 'undefined' ? react__WEBPA
 
 /***/ }),
 
+/***/ "./srcjs/SpaceTimeViewer.js":
+/*!**********************************!*\
+  !*** ./srcjs/SpaceTimeViewer.js ***!
+  \**********************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": function() { return /* binding */ SpaceTimeViewer; }
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-map-gl/maplibre */ "./node_modules/react-map-gl/dist/esm/exports-maplibre.js");
+/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/ambient-light.js");
+/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/point-light.js");
+/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/lighting-effect.js");
+/* harmony import */ var _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @deck.gl/aggregation-layers */ "./node_modules/@deck.gl/aggregation-layers/dist/hexagon-layer/hexagon-layer.js");
+/* harmony import */ var _deck_gl_react__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @deck.gl/react */ "./node_modules/@deck.gl/react/dist/deckgl.js");
+
+
+
+
+
+const ambientLight = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_2__.AmbientLight({
+  color: [255, 255, 255],
+  intensity: 1.0
+});
+const pointLight1 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__.PointLight({
+  color: [255, 255, 255],
+  intensity: 0.8,
+  position: [-0.144528, 49.739968, 80000]
+});
+const pointLight2 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__.PointLight({
+  color: [255, 255, 255],
+  intensity: 0.8,
+  position: [-3.807751, 54.104682, 8000]
+});
+const lightingEffect = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__["default"]({
+  ambientLight,
+  pointLight1,
+  pointLight2
+});
+const INITIAL_VIEW_STATE = {
+  longitude: -1.415727,
+  latitude: 52.232395,
+  zoom: 6.6,
+  minZoom: 5,
+  maxZoom: 15,
+  pitch: 40.5,
+  bearing: -27
+};
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
+const colorRange = [[1, 152, 189], [73, 227, 206], [216, 254, 181], [254, 237, 177], [254, 173, 84], [209, 55, 78]];
+function getTooltip(_ref) {
+  let {
+    object
+  } = _ref;
+  if (!object) {
+    return null;
+  }
+  const lat = object.position[1];
+  const lng = object.position[0];
+  const count = object.points.length;
+  return `\
+    latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
+    longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
+    ${count} Accidents`;
+}
+function SpaceTimeViewer(_ref2) {
+  let {
+    data = [],
+    mapStyle = MAP_STYLE,
+    radius = 1000,
+    upperPercentile = 100,
+    coverage = 1
+  } = _ref2;
+  const layers = [new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_5__["default"]({
+    id: 'heatmap',
+    colorRange,
+    coverage,
+    data,
+    elevationRange: [0, 3000],
+    elevationScale: data && data.length ? 50 : 0,
+    extruded: true,
+    getPosition: d => [d.lng, d.lat],
+    pickable: true,
+    radius,
+    upperPercentile,
+    material: {
+      ambient: 0.64,
+      diffuse: 0.6,
+      shininess: 32,
+      specularColor: [51, 51, 51]
+    },
+    transitions: {
+      elevationScale: 3000
+    }
+  })];
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_deck_gl_react__WEBPACK_IMPORTED_MODULE_6__["default"], {
+    layers: layers,
+    effects: [lightingEffect],
+    initialViewState: INITIAL_VIEW_STATE,
+    controller: true,
+    getTooltip: getTooltip
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_1__.Map, {
+    reuseMaps: true,
+    mapStyle: mapStyle
+  }));
+}
+
+/***/ }),
+
 /***/ "react":
 /*!*******************************!*\
   !*** external "window.React" ***!
@@ -59368,106 +59481,9 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var reactR__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! reactR */ "reactR");
 /* harmony import */ var reactR__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(reactR__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react-map-gl/maplibre */ "./node_modules/react-map-gl/dist/esm/exports-maplibre.js");
-/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/ambient-light.js");
-/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/point-light.js");
-/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/lighting-effect.js");
-/* harmony import */ var _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @deck.gl/aggregation-layers */ "./node_modules/@deck.gl/aggregation-layers/dist/hexagon-layer/hexagon-layer.js");
-/* harmony import */ var _deck_gl_react__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @deck.gl/react */ "./node_modules/@deck.gl/react/dist/deckgl.js");
+/* harmony import */ var _SpaceTimeViewer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./SpaceTimeViewer */ "./srcjs/SpaceTimeViewer.js");
 
 
-
-
-
-
-const ambientLight = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__.AmbientLight({
-  color: [255, 255, 255],
-  intensity: 1.0
-});
-const pointLight1 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__.PointLight({
-  color: [255, 255, 255],
-  intensity: 0.8,
-  position: [-0.144528, 49.739968, 80000]
-});
-const pointLight2 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__.PointLight({
-  color: [255, 255, 255],
-  intensity: 0.8,
-  position: [-3.807751, 54.104682, 8000]
-});
-const lightingEffect = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_5__["default"]({
-  ambientLight,
-  pointLight1,
-  pointLight2
-});
-const INITIAL_VIEW_STATE = {
-  longitude: -1.415727,
-  latitude: 52.232395,
-  zoom: 6.6,
-  minZoom: 5,
-  maxZoom: 15,
-  pitch: 40.5,
-  bearing: -27
-};
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
-const colorRange = [[1, 152, 189], [73, 227, 206], [216, 254, 181], [254, 237, 177], [254, 173, 84], [209, 55, 78]];
-function getTooltip(_ref) {
-  let {
-    object
-  } = _ref;
-  if (!object) {
-    return null;
-  }
-  const lat = object.position[1];
-  const lng = object.position[0];
-  const count = object.points.length;
-  return `\
-    latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
-    longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-    ${count} Accidents`;
-}
-function SpaceTimeViewer(_ref2) {
-  let {
-    data = [],
-    mapStyle = MAP_STYLE,
-    radius = 1000,
-    upperPercentile = 100,
-    coverage = 1
-  } = _ref2;
-  const layers = [new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_6__["default"]({
-    id: 'heatmap',
-    colorRange,
-    coverage,
-    data,
-    elevationRange: [0, 3000],
-    elevationScale: data && data.length ? 50 : 0,
-    extruded: true,
-    getPosition: d => [d.lng, d.lat],
-    pickable: true,
-    radius,
-    upperPercentile,
-    material: {
-      ambient: 0.64,
-      diffuse: 0.6,
-      shininess: 32,
-      specularColor: [51, 51, 51]
-    },
-    transitions: {
-      elevationScale: 3000
-    }
-  })];
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(_deck_gl_react__WEBPACK_IMPORTED_MODULE_7__["default"], {
-    layers: layers,
-    effects: [lightingEffect],
-    initialViewState: INITIAL_VIEW_STATE,
-    controller: true,
-    getTooltip: getTooltip
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_2__.Map, {
-    reuseMaps: true,
-    mapStyle: mapStyle
-  }));
-}
 
 // function Spacetimeview({ data }) {
 //   return (
@@ -59479,7 +59495,7 @@ function SpaceTimeViewer(_ref2) {
 // }
 
 (0,reactR__WEBPACK_IMPORTED_MODULE_0__.reactWidget)('spacetimeview', 'output', {
-  SpaceTimeViewer
+  SpaceTimeViewer: _SpaceTimeViewer__WEBPACK_IMPORTED_MODULE_1__["default"]
 }, {});
 }();
 /******/ })()
