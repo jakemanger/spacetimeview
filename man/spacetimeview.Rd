@@ -4,7 +4,7 @@
 \alias{spacetimeview}
 \title{Spacetimeview}
 \usage{
-spacetimeview(message, width = NULL, height = NULL, elementId = NULL)
+spacetimeview(data, ..., width = NULL, height = NULL, elementId = NULL)
 }
 \description{
 Description

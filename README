@@ -1,3 +1,4 @@
+# spacetimeview
 
 ## Development
 
@@ -18,7 +19,7 @@ yarn add PACKAGE_NAME
 ```
 replacing `PACKAGE_NAME` with the package you are adding.
 
-2. If you need to edit any javascript files, edit them now.
+2. If you need to edit any javascript or R files, edit them now.
 
 3. Download any other dependencies in package.json and then compile the packages to
 js that the R package can access at inst/htmlwidgets/...
@@ -36,9 +37,16 @@ devtools::document()
 devtools::install(quick = TRUE)
 ```
 
+or load the package locally
+
+```R
+devtools::load_all()
+```
+
 5. Enjoy the package
 
 ```R
 library(spacetimeview)
-spacetimeview()
+data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
+spacetimeview(data = data[1:100,])
 ```

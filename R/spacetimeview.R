@@ -5,15 +5,17 @@
 #' @import htmlwidgets
 #'
 #' @export
-spacetimeview <- function(message, width = NULL, height = NULL, elementId = NULL) {
-
+spacetimeview <- function(data, ..., width = NULL, height = NULL, elementId = NULL) {
+  # Assuming `data` is a dataframe with columns `lat` and `lng`
+  data_list <- apply(data, 1, as.list)
+  
   # describe a React component to send to the browser for rendering.
-  component <- reactR::reactMarkup(reactR::component("Spacetimeview", list(message)))
-
+  component <- reactR::component("SpaceTimeViewer", list(data = data_list, ...))
+  
   # create widget
   htmlwidgets::createWidget(
     name = 'spacetimeview',
-    component,
+    reactR::reactMarkup(component),
     width = width,
     height = height,
     package = 'spacetimeview',

@@ -3,7 +3,7 @@ var path = require('path');
 module.exports = {
     entry: path.join(__dirname, 'srcjs', 'spacetimeview.jsx'),
     output: {
-        path: path.join(__dirname, 'inst/htmlwidgets'),
+        path: path.join(__dirname, 'inst', 'htmlwidgets'),
         filename: 'spacetimeview.js'
     },
     module: {
@@ -31,5 +31,4 @@ module.exports = {
         colors: true
     },
     devtool: 'source-map',
-    mode: 'development'
 };
