@@ -9,6 +9,10 @@ from `reactR` https://cran.r-project.org/web/packages/reactR/vignettes/intro_htm
 
 - Nodejs (install with nvm)
 - Yarn (install with npm)
+- Install dependencies with yarn
+```
+yarn install
+```
 
 
 ### Workflow
@@ -21,32 +25,36 @@ replacing `PACKAGE_NAME` with the package you are adding.
 
 2. If you need to edit any javascript or R files, edit them now.
 
-3. Download any other dependencies in package.json and then compile the packages to
-js that the R package can access at inst/htmlwidgets/...
+3. Pack the js files to inst/htmlwidgets/...
 
 ```bash
-yarn install
 yarn run webpack
 ```
 
-4. Install the R package
+4. Load the package for development
+```R
+devtools::load_all()
+```
+
+or install the R package
 
 ```R
 renv::activate()
 devtools::document()
 devtools::install(quick = TRUE)
-```
-
-or load the package locally
-
-```R
-devtools::load_all()
+library(spacetimeview)
 ```
 
 5. Enjoy the package
 
 ```R
-library(spacetimeview)
+# hexagon histogram
 data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
-spacetimeview(data = data[1:100,])
+spacetimeview(data = data)
+
+# scatter time plot
+data <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
+data <- data[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
+names(data) <- c('lat', 'lng', 'timestamp', 'value')
+spacetimeview(data = data)
 ```

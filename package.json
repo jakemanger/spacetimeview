@@ -1,6 +1,12 @@
 {
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/icons-material": "^5.15.18",
+    "@mui/material": "^5.15.18",
+    "d3-scale": "^4.0.2",
+    "d3-scale-chromatic": "^3.1.0",
     "deck.gl": "^9.0.16",
     "maplibre-gl": "^4.3.2",
     "react": "^18.3.1",
@@ -21,7 +27,7 @@
     "watch": "webpack --watch",
     "build": "webpack"
   },
-	"browserslist": {
+  "browserslist": {
     "production": [
       "defaults",
       "not ie 11"
