@@ -27,8 +27,6 @@ const INITIAL_VIEW_STATE = {
   longitude: -1.415727,
   latitude: 52.232395,
   zoom: 6.6,
-  minZoom: 5,
-  maxZoom: 15,
   pitch: 40.5,
   bearing: -27
 };
@@ -63,7 +61,9 @@ export default function HexagonPlot({
   mapStyle = MAP_STYLE,
   radius = 1000,
   upperPercentile = 100,
-  coverage = 1
+  coverage = 1,
+	elevationAggregation = 'SUM',
+	colorAggregation = 'SUM'
 }) {
   const layers = [
     new HexagonLayer({
@@ -77,6 +77,8 @@ export default function HexagonPlot({
       getPosition: d => [d.lng, d.lat],
       pickable: true,
       radius,
+			elevationAggregation: elevationAggregation,
+			colorAggregation: colorAggregation,
       upperPercentile,
       material: {
         ambient: 0.64,

@@ -20453,8 +20453,8 @@ function SpaceTimeViewer(_ref) {
   }
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
-      position: 'relative',
-      minHeight: '100vh'
+      width: '100%',
+      height: '100%'
     }
   }, plot);
 }
@@ -20748,11 +20748,10 @@ function RangeInput(_ref) {
       animation = requestAnimationFrame(() => {
         let nextStartValue = value[0] + animationSpeed;
         let nextEndValue = value[1] + animationSpeed;
-        if (value[1] - value[0] > (max - min) * 0.8) {
+        if (Math.abs(value[0] - value[1]) > (max - min) * 0.8) {
           nextStartValue = min;
           nextEndValue = min + (max - min) * 0.2;
-        }
-        if (nextStartValue > max || nextEndValue > max) {
+        } else if (nextStartValue > max || nextEndValue > max) {
           nextStartValue = min;
           nextEndValue = min + (value[1] - value[0]);
         }

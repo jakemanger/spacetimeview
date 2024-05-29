@@ -4,28 +4,37 @@ import ScatterTimePlot from './plots/ScatterTimePlot';
 
 export default function SpaceTimeViewer({
   data = [],
+	style = 'summary',
+	aggregate = 'MEAN',
 }) {
   console.log('Received data:', data);
 
   let plot = null;
 
-	if (data.some(d => d.timestamp && d.lng && d.lat)) {
+	if (style === 'independent') {
     plot = <ScatterTimePlot data={data} />;
-  } else if (data.some(d => d.lng && d.lat)) {
-    plot = <HexagonPlot data={data} />;
+  } else if (style === 'summary') {
+    plot = <HexagonPlot
+			data={data} 
+			colorAggregation={aggregate} 
+			elevationAggregation={aggregate}
+		/>;
   } else {
+		console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
+	}
+
+	if (!data || !data.some(d => d.lng && d.lat) {
 		let columnsInData = data.map(d => Object.keys(d));
-    plot = <div>Unsupported layer type: {layerType} or data type: {columnsInData}</div>;
+    plot = <div>Unsupported data type: {columnsInData}</div>;
     console.error(
-			'Unsupported layer type or data type. Layer type:', 
-			layerType, 
-			'Columns in data:', 
-			columnsInData
+			'Unsupported data type: ',
+			columnsInData,
+			'Supported data types are: lng, lat, timestamp, value'
 		);
   }
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh' }}>
+		<div style={{ width: '100%', height: '100%' }}>
       {plot}
     </div>
   );
