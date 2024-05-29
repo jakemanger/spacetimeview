@@ -20523,21 +20523,22 @@ const INITIAL_VIEW_STATE = {
 };
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const colorRange = [[1, 152, 189], [73, 227, 206], [216, 254, 181], [254, 237, 177], [254, 173, 84], [209, 55, 78]];
-function getTooltip(_ref) {
+function getTooltip(_ref, elevationAggregation) {
   let {
     object
   } = _ref;
   if (!object) {
     return null;
   }
+
+  // console.log(object)
+
   const lat = object.position[1];
   const lng = object.position[0];
-  const count = object.points.length;
-  const aggregateValue = object.points.reduce((sum, point) => sum + (point.value !== undefined ? point.value : 1), 0);
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-    ${aggregateValue !== undefined ? 'Value: ' + aggregateValue : 'Count: ' + count}`;
+		${elevationAggregation}: ${object.elevationValue}`;
 }
 function getTimeRange(data) {
   if (!data) {
@@ -20633,7 +20634,14 @@ function HexagonPlot(_ref2) {
     effects: [lightingEffect],
     initialViewState: INITIAL_VIEW_STATE,
     controller: true,
-    getTooltip: getTooltip
+    getTooltip: _ref5 => {
+      let {
+        object
+      } = _ref5;
+      return getTooltip({
+        object
+      }, elevationAggregation);
+    }
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_1__.Map, {
     reuseMaps: true,
     mapStyle: mapStyle

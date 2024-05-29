@@ -43,19 +43,20 @@ const colorRange = [
   [209, 55, 78]
 ];
 
-function getTooltip({ object }) {
+function getTooltip({ object }, elevationAggregation) {
   if (!object) {
     return null;
   }
+
+	// console.log(object)
+	
   const lat = object.position[1];
   const lng = object.position[0];
-  const count = object.points.length;
-  const aggregateValue = object.points.reduce((sum, point) => sum + (point.value !== undefined ? point.value : 1), 0);
 
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-    ${aggregateValue !== undefined ? 'Value: ' + aggregateValue : 'Count: ' + count}`;
+		${elevationAggregation}: ${object.elevationValue}`
 }
 
 function getTimeRange(data) {
@@ -157,7 +158,7 @@ export default function HexagonPlot({
         effects={[lightingEffect]}
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        getTooltip={getTooltip}
+        getTooltip={({ object }) => getTooltip({ object }, elevationAggregation)}
       >
         <Map reuseMaps mapStyle={mapStyle} />
       </DeckGL>
