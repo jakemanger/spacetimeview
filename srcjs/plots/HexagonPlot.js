@@ -50,11 +50,12 @@ function getTooltip({ object }) {
   const lat = object.position[1];
   const lng = object.position[0];
   const count = object.points.length;
+  const aggregateValue = object.points.reduce((sum, point) => sum + (point.value !== undefined ? point.value : 1), 0);
 
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-    ${count} Accidents`;
+    ${aggregateValue !== undefined ? 'Value: ' + aggregateValue : 'Count: ' + count}`;
 }
 
 function getTimeRange(data) {
@@ -94,14 +95,6 @@ export default function HexagonPlot({
     });
   }, [data, filter]);
 
-  const elevationRange = useMemo(() => {
-    if (!filteredData.length) {
-      return [0, 3000];
-    }
-    const elevations = filteredData.map(d => d.value || 0); // Adjust this if your data has different elevation property
-    return [Math.min(...elevations), Math.max(...elevations)];
-  }, [filteredData]);
-
   const getAggregationFunction = (aggregation, defaultValue) => {
     return points => {
       if (!points.length) return 0;
@@ -115,20 +108,23 @@ export default function HexagonPlot({
     };
   };
 
+  const elevationFunction = getAggregationFunction(elevationAggregation, 1);
+  const colorFunction = getAggregationFunction(colorAggregation, 1);
+
   const layers = [
     new HexagonLayer({
       id: 'heatmap',
       colorRange,
       coverage,
       data: filteredData,
-    	elevationRange: elevationRange,
+      elevationRange: [0, 3000], // Set an initial elevation range
       elevationScale: filteredData.length ? 50 : 0,
       extruded: true,
       getPosition: d => [d.lng, d.lat],
       pickable: true,
       radius,
-      getElevationValue: getAggregationFunction(elevationAggregation, 1), // Default value 1 for frequency
-      getColorValue: getAggregationFunction(colorAggregation, 1), // Default value 1 for frequency
+      getElevationValue: elevationFunction,
+      getColorValue: colorFunction,
       upperPercentile,
       material: {
         ambient: 0.64,
@@ -138,6 +134,18 @@ export default function HexagonPlot({
       },
       transitions: {
         elevationScale: 3000
+      },
+      onSetColorValue: ({ value }) => {
+        if (value !== undefined) {
+          return value;
+        }
+        return 1; // Default to 1 if no value is defined
+      },
+      onSetElevationValue: ({ value }) => {
+        if (value !== undefined) {
+          return value;
+        }
+        return 1; // Default to 1 if no value is defined
       }
     })
   ];

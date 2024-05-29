@@ -20533,10 +20533,11 @@ function getTooltip(_ref) {
   const lat = object.position[1];
   const lng = object.position[0];
   const count = object.points.length;
+  const aggregateValue = object.points.reduce((sum, point) => sum + (point.value !== undefined ? point.value : 1), 0);
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-    ${count} Accidents`;
+    ${aggregateValue !== undefined ? 'Value: ' + aggregateValue : 'Count: ' + count}`;
 }
 function getTimeRange(data) {
   if (!data) {
@@ -20570,13 +20571,6 @@ function HexagonPlot(_ref2) {
       return timestamp >= filter[0] && timestamp <= filter[1];
     });
   }, [data, filter]);
-  const elevationRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
-    if (!filteredData.length) {
-      return [0, 3000];
-    }
-    const elevations = filteredData.map(d => d.value || 0); // Adjust this if your data has different elevation property
-    return [Math.min(...elevations), Math.max(...elevations)];
-  }, [filteredData]);
   const getAggregationFunction = (aggregation, defaultValue) => {
     return points => {
       if (!points.length) return 0;
@@ -20589,21 +20583,22 @@ function HexagonPlot(_ref2) {
       return 0; // Default case, should not reach here
     };
   };
+  const elevationFunction = getAggregationFunction(elevationAggregation, 1);
+  const colorFunction = getAggregationFunction(colorAggregation, 1);
   const layers = [new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_6__["default"]({
     id: 'heatmap',
     colorRange,
     coverage,
     data: filteredData,
-    elevationRange: elevationRange,
+    elevationRange: [0, 3000],
+    // Set an initial elevation range
     elevationScale: filteredData.length ? 50 : 0,
     extruded: true,
     getPosition: d => [d.lng, d.lat],
     pickable: true,
     radius,
-    getElevationValue: getAggregationFunction(elevationAggregation, 1),
-    // Default value 1 for frequency
-    getColorValue: getAggregationFunction(colorAggregation, 1),
-    // Default value 1 for frequency
+    getElevationValue: elevationFunction,
+    getColorValue: colorFunction,
     upperPercentile,
     material: {
       ambient: 0.64,
@@ -20613,6 +20608,24 @@ function HexagonPlot(_ref2) {
     },
     transitions: {
       elevationScale: 3000
+    },
+    onSetColorValue: _ref3 => {
+      let {
+        value
+      } = _ref3;
+      if (value !== undefined) {
+        return value;
+      }
+      return 1; // Default to 1 if no value is defined
+    },
+    onSetElevationValue: _ref4 => {
+      let {
+        value
+      } = _ref4;
+      if (value !== undefined) {
+        return value;
+      }
+      return 1; // Default to 1 if no value is defined
     }
   })];
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_deck_gl_react__WEBPACK_IMPORTED_MODULE_7__["default"], {
