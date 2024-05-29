@@ -20434,22 +20434,29 @@ __webpack_require__.r(__webpack_exports__);
 
 function SpaceTimeViewer(_ref) {
   let {
-    data = []
+    data = [],
+    style = 'summary',
+    aggregate = 'SUM'
   } = _ref;
   console.log('Received data:', data);
   let plot = null;
-  if (data.some(d => d.timestamp && d.lng && d.lat)) {
+  if (style === 'independent') {
     plot = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_plots_ScatterTimePlot__WEBPACK_IMPORTED_MODULE_2__["default"], {
       data: data
     });
-  } else if (data.some(d => d.lng && d.lat)) {
+  } else if (style === 'summary') {
     plot = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_plots_HexagonPlot__WEBPACK_IMPORTED_MODULE_1__["default"], {
-      data: data
+      data: data,
+      colorAggregation: aggregate,
+      elevationAggregation: aggregate
     });
   } else {
+    console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
+  }
+  if (!data || !data.some(d => d.lng && d.lat)) {
     let columnsInData = data.map(d => Object.keys(d));
-    plot = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, "Unsupported layer type: ", layerType, " or data type: ", columnsInData);
-    console.error('Unsupported layer type or data type. Layer type:', layerType, 'Columns in data:', columnsInData);
+    plot = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, "Unsupported data type: ", columnsInData);
+    console.error('Unsupported data type: ', columnsInData, 'Supported data types are: lng, lat, timestamp, value');
   }
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
@@ -20475,31 +20482,34 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-map-gl/maplibre */ "./node_modules/react-map-gl/dist/esm/exports-maplibre.js");
-/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/ambient-light.js");
-/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/point-light.js");
-/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/lighting-effect.js");
-/* harmony import */ var _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @deck.gl/aggregation-layers */ "./node_modules/@deck.gl/aggregation-layers/dist/hexagon-layer/hexagon-layer.js");
-/* harmony import */ var _deck_gl_react__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @deck.gl/react */ "./node_modules/@deck.gl/react/dist/deckgl.js");
+/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/ambient-light.js");
+/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/point-light.js");
+/* harmony import */ var _deck_gl_core__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @deck.gl/core */ "./node_modules/@deck.gl/core/dist/effects/lighting/lighting-effect.js");
+/* harmony import */ var _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @deck.gl/aggregation-layers */ "./node_modules/@deck.gl/aggregation-layers/dist/hexagon-layer/hexagon-layer.js");
+/* harmony import */ var _deck_gl_react__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @deck.gl/react */ "./node_modules/@deck.gl/react/dist/deckgl.js");
+/* harmony import */ var _ui_RangeInput__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../ui/RangeInput */ "./srcjs/ui/RangeInput.js");
 
 
 
 
 
-const ambientLight = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_2__.AmbientLight({
+ // Make sure to import the RangeInput component
+
+const ambientLight = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__.AmbientLight({
   color: [255, 255, 255],
   intensity: 1.0
 });
-const pointLight1 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__.PointLight({
+const pointLight1 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__.PointLight({
   color: [255, 255, 255],
   intensity: 0.8,
   position: [-0.144528, 49.739968, 80000]
 });
-const pointLight2 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__.PointLight({
+const pointLight2 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__.PointLight({
   color: [255, 255, 255],
   intensity: 0.8,
   position: [-3.807751, 54.104682, 8000]
 });
-const lightingEffect = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_4__["default"]({
+const lightingEffect = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_5__["default"]({
   ambientLight,
   pointLight1,
   pointLight2
@@ -20508,8 +20518,6 @@ const INITIAL_VIEW_STATE = {
   longitude: -1.415727,
   latitude: 52.232395,
   zoom: 6.6,
-  minZoom: 5,
-  maxZoom: 15,
   pitch: 40.5,
   bearing: -27
 };
@@ -20530,25 +20538,72 @@ function getTooltip(_ref) {
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
     ${count} Accidents`;
 }
+function getTimeRange(data) {
+  if (!data) {
+    return null;
+  }
+  return data.reduce((range, d) => {
+    const t = new Date(d.timestamp).getTime();
+    range[0] = Math.min(range[0], t);
+    range[1] = Math.max(range[1], t);
+    return range;
+  }, [Infinity, -Infinity]);
+}
 function HexagonPlot(_ref2) {
   let {
     data = [],
     mapStyle = MAP_STYLE,
     radius = 1000,
     upperPercentile = 100,
-    coverage = 1
+    coverage = 1,
+    elevationAggregation = 'SUM',
+    colorAggregation = 'SUM'
   } = _ref2;
-  const layers = [new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_5__["default"]({
+  const timeRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => getTimeRange(data), [data]);
+  const [filter, setFilter] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(timeRange);
+  const filteredData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!filter || !data.length) {
+      return data;
+    }
+    return data.filter(d => {
+      const timestamp = new Date(d.timestamp).getTime();
+      return timestamp >= filter[0] && timestamp <= filter[1];
+    });
+  }, [data, filter]);
+  const elevationRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!filteredData.length) {
+      return [0, 3000];
+    }
+    const elevations = filteredData.map(d => d.value || 0); // Adjust this if your data has different elevation property
+    return [Math.min(...elevations), Math.max(...elevations)];
+  }, [filteredData]);
+  const getAggregationFunction = (aggregation, defaultValue) => {
+    return points => {
+      if (!points.length) return 0;
+      const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
+      if (aggregation === 'SUM') {
+        return values.reduce((sum, val) => sum + val, 0);
+      } else if (aggregation === 'MEAN') {
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      }
+      return 0; // Default case, should not reach here
+    };
+  };
+  const layers = [new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_6__["default"]({
     id: 'heatmap',
     colorRange,
     coverage,
-    data,
-    elevationRange: [0, 3000],
-    elevationScale: data && data.length ? 50 : 0,
+    data: filteredData,
+    elevationRange: elevationRange,
+    elevationScale: filteredData.length ? 50 : 0,
     extruded: true,
     getPosition: d => [d.lng, d.lat],
     pickable: true,
     radius,
+    getElevationValue: getAggregationFunction(elevationAggregation, 1),
+    // Default value 1 for frequency
+    getColorValue: getAggregationFunction(colorAggregation, 1),
+    // Default value 1 for frequency
     upperPercentile,
     material: {
       ambient: 0.64,
@@ -20560,7 +20615,7 @@ function HexagonPlot(_ref2) {
       elevationScale: 3000
     }
   })];
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_deck_gl_react__WEBPACK_IMPORTED_MODULE_6__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_deck_gl_react__WEBPACK_IMPORTED_MODULE_7__["default"], {
     layers: layers,
     effects: [lightingEffect],
     initialViewState: INITIAL_VIEW_STATE,
@@ -20569,6 +20624,17 @@ function HexagonPlot(_ref2) {
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_map_gl_maplibre__WEBPACK_IMPORTED_MODULE_1__.Map, {
     reuseMaps: true,
     mapStyle: mapStyle
+  })), timeRange && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ui_RangeInput__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    min: timeRange[0],
+    max: timeRange[1],
+    value: filter,
+    animationSpeed: 8.64e7 * 30 // 30 days in milliseconds
+    ,
+    formatLabel: timestamp => {
+      const date = new Date(timestamp);
+      return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
+    },
+    onChange: setFilter
   }));
 }
 

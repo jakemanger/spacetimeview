@@ -5,7 +5,7 @@ import ScatterTimePlot from './plots/ScatterTimePlot';
 export default function SpaceTimeViewer({
   data = [],
 	style = 'summary',
-	aggregate = 'MEAN',
+	aggregate = 'SUM',
 }) {
   console.log('Received data:', data);
 
@@ -23,7 +23,7 @@ export default function SpaceTimeViewer({
 		console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
 	}
 
-	if (!data || !data.some(d => d.lng && d.lat) {
+	if (!data || !data.some(d => d.lng && d.lat)) {
 		let columnsInData = data.map(d => Object.keys(d));
     plot = <div>Unsupported data type: {columnsInData}</div>;
     console.error(

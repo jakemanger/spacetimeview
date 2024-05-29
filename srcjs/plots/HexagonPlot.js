@@ -1,8 +1,9 @@
-import React from 'react';
-import {Map} from 'react-map-gl/maplibre';
-import {AmbientLight, PointLight, LightingEffect} from '@deck.gl/core';
-import {HexagonLayer} from '@deck.gl/aggregation-layers';
+import React, { useState, useMemo } from 'react';
+import { Map } from 'react-map-gl/maplibre';
+import { AmbientLight, PointLight, LightingEffect } from '@deck.gl/core';
+import { HexagonLayer } from '@deck.gl/aggregation-layers';
 import DeckGL from '@deck.gl/react';
+import RangeInput from '../ui/RangeInput'; // Make sure to import the RangeInput component
 
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
@@ -21,7 +22,7 @@ const pointLight2 = new PointLight({
   position: [-3.807751, 54.104682, 8000]
 });
 
-const lightingEffect = new LightingEffect({ambientLight, pointLight1, pointLight2});
+const lightingEffect = new LightingEffect({ ambientLight, pointLight1, pointLight2 });
 
 const INITIAL_VIEW_STATE = {
   longitude: -1.415727,
@@ -42,7 +43,7 @@ const colorRange = [
   [209, 55, 78]
 ];
 
-function getTooltip({object}) {
+function getTooltip({ object }) {
   if (!object) {
     return null;
   }
@@ -56,29 +57,78 @@ function getTooltip({object}) {
     ${count} Accidents`;
 }
 
+function getTimeRange(data) {
+  if (!data) {
+    return null;
+  }
+  return data.reduce(
+    (range, d) => {
+      const t = new Date(d.timestamp).getTime();
+      range[0] = Math.min(range[0], t);
+      range[1] = Math.max(range[1], t);
+      return range;
+    },
+    [Infinity, -Infinity]
+  );
+}
+
 export default function HexagonPlot({
   data = [],
   mapStyle = MAP_STYLE,
   radius = 1000,
   upperPercentile = 100,
   coverage = 1,
-	elevationAggregation = 'SUM',
-	colorAggregation = 'SUM'
+  elevationAggregation = 'SUM',
+  colorAggregation = 'SUM'
 }) {
+  const timeRange = useMemo(() => getTimeRange(data), [data]);
+  const [filter, setFilter] = useState(timeRange);
+
+  const filteredData = useMemo(() => {
+    if (!filter || !data.length) {
+      return data;
+    }
+    return data.filter(d => {
+      const timestamp = new Date(d.timestamp).getTime();
+      return timestamp >= filter[0] && timestamp <= filter[1];
+    });
+  }, [data, filter]);
+
+  const elevationRange = useMemo(() => {
+    if (!filteredData.length) {
+      return [0, 3000];
+    }
+    const elevations = filteredData.map(d => d.value || 0); // Adjust this if your data has different elevation property
+    return [Math.min(...elevations), Math.max(...elevations)];
+  }, [filteredData]);
+
+  const getAggregationFunction = (aggregation, defaultValue) => {
+    return points => {
+      if (!points.length) return 0;
+      const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
+      if (aggregation === 'SUM') {
+        return values.reduce((sum, val) => sum + val, 0);
+      } else if (aggregation === 'MEAN') {
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      }
+      return 0; // Default case, should not reach here
+    };
+  };
+
   const layers = [
     new HexagonLayer({
       id: 'heatmap',
       colorRange,
       coverage,
-      data,
-      elevationRange: [0, 3000],
-      elevationScale: data && data.length ? 50 : 0,
+      data: filteredData,
+    	elevationRange: elevationRange,
+      elevationScale: filteredData.length ? 50 : 0,
       extruded: true,
       getPosition: d => [d.lng, d.lat],
       pickable: true,
       radius,
-			elevationAggregation: elevationAggregation,
-			colorAggregation: colorAggregation,
+      getElevationValue: getAggregationFunction(elevationAggregation, 1), // Default value 1 for frequency
+      getColorValue: getAggregationFunction(colorAggregation, 1), // Default value 1 for frequency
       upperPercentile,
       material: {
         ambient: 0.64,
@@ -86,7 +136,6 @@ export default function HexagonPlot({
         shininess: 32,
         specularColor: [51, 51, 51]
       },
-
       transitions: {
         elevationScale: 3000
       }
@@ -94,14 +143,29 @@ export default function HexagonPlot({
   ];
 
   return (
-    <DeckGL
-      layers={layers}
-      effects={[lightingEffect]}
-      initialViewState={INITIAL_VIEW_STATE}
-      controller={true}
-      getTooltip={getTooltip}
-    >
-      <Map reuseMaps mapStyle={mapStyle} />
-    </DeckGL>
+    <>
+      <DeckGL
+        layers={layers}
+        effects={[lightingEffect]}
+        initialViewState={INITIAL_VIEW_STATE}
+        controller={true}
+        getTooltip={getTooltip}
+      >
+        <Map reuseMaps mapStyle={mapStyle} />
+      </DeckGL>
+      {timeRange && (
+        <RangeInput
+          min={timeRange[0]}
+          max={timeRange[1]}
+          value={filter}
+          animationSpeed={8.64e7 * 30} // 30 days in milliseconds
+          formatLabel={timestamp => {
+            const date = new Date(timestamp);
+            return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
+          }}
+          onChange={setFilter}
+        />
+      )}
+    </>
   );
 }
