@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import { AmbientLight, PointLight, LightingEffect } from '@deck.gl/core';
 import { HexagonLayer } from '@deck.gl/aggregation-layers';
@@ -24,7 +24,6 @@ const pointLight2 = new PointLight({
 
 const lightingEffect = new LightingEffect({ ambientLight, pointLight1, pointLight2 });
 
-
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 
 const colorRange = [
@@ -41,20 +40,18 @@ function getTooltip({ object }, elevationAggregation) {
     return null;
   }
 
-	// console.log(object)
-	
   const lat = object.position[1];
   const lng = object.position[0];
 
-	let metricName = (
-		elevationAggregation.charAt(0).toUpperCase()
-		+ elevationAggregation.toLowerCase().slice(1)
-	);
+  let metricName = (
+    elevationAggregation.charAt(0).toUpperCase()
+    + elevationAggregation.toLowerCase().slice(1)
+  );
 
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-		${metricName}: ${object.elevationValue}`
+    ${metricName}: ${object.elevationValue}`
 }
 
 function getTimeRange(data) {
@@ -79,24 +76,24 @@ export default function HexagonPlot({
   upperPercentile = 100,
   coverage = 1,
   elevationAggregation = 'SUM',
-  colorAggregation = 'SUM'
+  colorAggregation = 'SUM',
+  preserveDomains = false
 }) {
   const timeRange = useMemo(() => getTimeRange(data), [data]);
   const [filter, setFilter] = useState(timeRange);
 
-  const filteredData = useMemo(() => {
-    if (!filter || !data.length) {
-      return data;
-    }
-    return data.filter(d => {
-      const timestamp = new Date(d.timestamp).getTime();
-      return timestamp >= filter[0] && timestamp <= filter[1];
-    });
-  }, [data, filter]);
+  const initialColorDomain = useRef(null);
+  const initialElevationDomain = useRef(null);
 
   const getAggregationFunction = (aggregation, defaultValue) => {
     return points => {
       if (!points.length) return 0;
+
+      points = points.filter(d => {
+        const timestamp = new Date(d.timestamp).getTime();
+        return timestamp >= filter[0] && timestamp <= filter[1];
+      });
+
       const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
       if (aggregation === 'SUM') {
         return values.reduce((sum, val) => sum + val, 0);
@@ -110,23 +107,23 @@ export default function HexagonPlot({
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
   const colorFunction = getAggregationFunction(colorAggregation, 1);
 
-	// find average of longitude and latitude and use as initial view state
-	let INITIAL_VIEW_STATE = {
-		longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
-		latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
-		zoom: 6.6,
-		pitch: 40.5,
-		bearing: -27
-	};
+  // find average of longitude and latitude and use as initial view state
+  let INITIAL_VIEW_STATE = {
+    longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
+    latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+    zoom: 6.6,
+    pitch: 40.5,
+    bearing: -27
+  };
 
   const layers = [
     new HexagonLayer({
       id: 'heatmap',
       colorRange,
       coverage,
-      data: filteredData,
+      data: data,
       elevationRange: [0, 3000], // Set an initial elevation range
-      elevationScale: filteredData.length ? 50 : 0,
+      elevationScale: data.length ? 50 : 0,
       extruded: true,
       getPosition: d => [d.lng, d.lat],
       pickable: true,
@@ -140,20 +137,22 @@ export default function HexagonPlot({
         shininess: 32,
         specularColor: [51, 51, 51]
       },
-      transitions: {
-        elevationScale: 3000
-      },
-      onSetColorValue: ({ value }) => {
-        if (value !== undefined) {
-          return value;
+      onSetColorDomain: colorDomain => {
+        if (preserveDomains && !initialColorDomain.current) {
+          initialColorDomain.current = colorDomain;
         }
-        return 1; // Default to 1 if no value is defined
       },
-      onSetElevationValue: ({ value }) => {
-        if (value !== undefined) {
-          return value;
+      onSetElevationDomain: elevationDomain => {
+        if (preserveDomains && !initialElevationDomain.current) {
+          initialElevationDomain.current = elevationDomain;
         }
-        return 1; // Default to 1 if no value is defined
+      },
+      colorDomain: preserveDomains ? initialColorDomain.current : null,
+      elevationDomain: preserveDomains ? initialElevationDomain.current : null,
+      updateTriggers: {
+        getElevationValue: filter,
+        getColorValue: filter,
+        getPosition: filter,
       }
     })
   ];

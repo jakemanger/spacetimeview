@@ -6,6 +6,7 @@ export default function SpaceTimeViewer({
   data = [],
 	style = 'summary',
 	aggregate = 'SUM',
+	preserveDomains = true,
 }) {
   console.log('Received data:', data);
 
@@ -18,6 +19,7 @@ export default function SpaceTimeViewer({
 			data={data} 
 			colorAggregation={aggregate} 
 			elevationAggregation={aggregate}
+			preserveDomains={preserveDomains}
 		/>;
   } else {
 		console.error('Unsupported style:', style, 'Supported styles are: independent, summary');

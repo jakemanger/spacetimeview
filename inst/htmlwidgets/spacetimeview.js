@@ -20436,7 +20436,8 @@ function SpaceTimeViewer(_ref) {
   let {
     data = [],
     style = 'summary',
-    aggregate = 'SUM'
+    aggregate = 'SUM',
+    preserveDomains = true
   } = _ref;
   console.log('Received data:', data);
   let plot = null;
@@ -20448,7 +20449,8 @@ function SpaceTimeViewer(_ref) {
     plot = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_plots_HexagonPlot__WEBPACK_IMPORTED_MODULE_1__["default"], {
       data: data,
       colorAggregation: aggregate,
-      elevationAggregation: aggregate
+      elevationAggregation: aggregate,
+      preserveDomains: preserveDomains
     });
   } else {
     console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
@@ -20523,16 +20525,13 @@ function getTooltip(_ref, elevationAggregation) {
   if (!object) {
     return null;
   }
-
-  // console.log(object)
-
   const lat = object.position[1];
   const lng = object.position[0];
   let metricName = elevationAggregation.charAt(0).toUpperCase() + elevationAggregation.toLowerCase().slice(1);
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-		${metricName}: ${object.elevationValue}`;
+    ${metricName}: ${object.elevationValue}`;
 }
 function getTimeRange(data) {
   if (!data) {
@@ -20553,22 +20552,20 @@ function HexagonPlot(_ref2) {
     upperPercentile = 100,
     coverage = 1,
     elevationAggregation = 'SUM',
-    colorAggregation = 'SUM'
+    colorAggregation = 'SUM',
+    preserveDomains = false
   } = _ref2;
   const timeRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => getTimeRange(data), [data]);
   const [filter, setFilter] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(timeRange);
-  const filteredData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
-    if (!filter || !data.length) {
-      return data;
-    }
-    return data.filter(d => {
-      const timestamp = new Date(d.timestamp).getTime();
-      return timestamp >= filter[0] && timestamp <= filter[1];
-    });
-  }, [data, filter]);
+  const initialColorDomain = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  const initialElevationDomain = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const getAggregationFunction = (aggregation, defaultValue) => {
     return points => {
       if (!points.length) return 0;
+      points = points.filter(d => {
+        const timestamp = new Date(d.timestamp).getTime();
+        return timestamp >= filter[0] && timestamp <= filter[1];
+      });
       const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
       if (aggregation === 'SUM') {
         return values.reduce((sum, val) => sum + val, 0);
@@ -20593,10 +20590,10 @@ function HexagonPlot(_ref2) {
     id: 'heatmap',
     colorRange,
     coverage,
-    data: filteredData,
+    data: data,
     elevationRange: [0, 3000],
     // Set an initial elevation range
-    elevationScale: filteredData.length ? 50 : 0,
+    elevationScale: data.length ? 50 : 0,
     extruded: true,
     getPosition: d => [d.lng, d.lat],
     pickable: true,
@@ -20610,26 +20607,22 @@ function HexagonPlot(_ref2) {
       shininess: 32,
       specularColor: [51, 51, 51]
     },
-    transitions: {
-      elevationScale: 3000
-    },
-    onSetColorValue: _ref3 => {
-      let {
-        value
-      } = _ref3;
-      if (value !== undefined) {
-        return value;
+    onSetColorDomain: colorDomain => {
+      if (preserveDomains && !initialColorDomain.current) {
+        initialColorDomain.current = colorDomain;
       }
-      return 1; // Default to 1 if no value is defined
     },
-    onSetElevationValue: _ref4 => {
-      let {
-        value
-      } = _ref4;
-      if (value !== undefined) {
-        return value;
+    onSetElevationDomain: elevationDomain => {
+      if (preserveDomains && !initialElevationDomain.current) {
+        initialElevationDomain.current = elevationDomain;
       }
-      return 1; // Default to 1 if no value is defined
+    },
+    colorDomain: preserveDomains ? initialColorDomain.current : null,
+    elevationDomain: preserveDomains ? initialElevationDomain.current : null,
+    updateTriggers: {
+      getElevationValue: filter,
+      getColorValue: filter,
+      getPosition: filter
     }
   })];
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_deck_gl_react__WEBPACK_IMPORTED_MODULE_7__["default"], {
@@ -20637,10 +20630,10 @@ function HexagonPlot(_ref2) {
     effects: [lightingEffect],
     initialViewState: INITIAL_VIEW_STATE,
     controller: true,
-    getTooltip: _ref5 => {
+    getTooltip: _ref3 => {
       let {
         object
-      } = _ref5;
+      } = _ref3;
       return getTooltip({
         object
       }, elevationAggregation);
