@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import { AmbientLight, PointLight, LightingEffect } from '@deck.gl/core';
 import { HexagonLayer } from '@deck.gl/aggregation-layers';
@@ -85,6 +85,12 @@ export default function HexagonPlot({
   const initialColorDomain = useRef(null);
   const initialElevationDomain = useRef(null);
 
+	// Reset initial domains when data or aggregation function changes
+	useEffect(() => {
+		initialColorDomain.current = null;
+		initialElevationDomain.current = null;
+	}, [data, elevationAggregation, colorAggregation]);
+
   const getAggregationFunction = (aggregation, defaultValue) => {
     return points => {
       if (!points.length) return 0;
@@ -141,18 +147,20 @@ export default function HexagonPlot({
         if (preserveDomains && !initialColorDomain.current) {
           initialColorDomain.current = colorDomain;
         }
+				console.log('Color domain:', elevationDomain);
       },
       onSetElevationDomain: elevationDomain => {
         if (preserveDomains && !initialElevationDomain.current) {
           initialElevationDomain.current = elevationDomain;
         }
+				console.log('Elevation domain:', elevationDomain);
       },
       colorDomain: preserveDomains ? initialColorDomain.current : null,
       elevationDomain: preserveDomains ? initialElevationDomain.current : null,
       updateTriggers: {
-        getElevationValue: filter,
-        getColorValue: filter,
-        getPosition: filter,
+        getElevationValue: [filter, elevationAggregation],
+        getColorValue: [filter, colorAggregation],
+        getPosition: [filter, data]
       }
     })
   ];
