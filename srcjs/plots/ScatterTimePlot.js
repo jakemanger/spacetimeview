@@ -11,14 +11,6 @@ const MAP_VIEW = new MapView({
   farZMultiplier: 100
 });
 
-const INITIAL_VIEW_STATE = {
-  latitude: 36.5,
-  longitude: -120,
-  zoom: 5.5,
-  pitch: 0,
-  bearing: 0
-};
-
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
 const MS_PER_DAY = 8.64e7;
@@ -78,6 +70,14 @@ export default function ScatterTimePlot({ data = [], mapStyle = MAP_STYLE }) {
   const [filter, setFilter] = useState(timeRange);
 
 	const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);
+
+	let INITIAL_VIEW_STATE = {
+		longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
+		latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+		zoom: 6.6,
+		pitch: 40.5,
+		bearing: -27
+	};
 
   const layers = [
     filter &&

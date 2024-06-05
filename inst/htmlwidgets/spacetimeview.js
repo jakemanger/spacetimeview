@@ -20514,13 +20514,6 @@ const lightingEffect = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_5__["default"]
   pointLight1,
   pointLight2
 });
-const INITIAL_VIEW_STATE = {
-  longitude: -1.415727,
-  latitude: 52.232395,
-  zoom: 6.6,
-  pitch: 40.5,
-  bearing: -27
-};
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const colorRange = [[1, 152, 189], [73, 227, 206], [216, 254, 181], [254, 237, 177], [254, 173, 84], [209, 55, 78]];
 function getTooltip(_ref, elevationAggregation) {
@@ -20587,6 +20580,15 @@ function HexagonPlot(_ref2) {
   };
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
   const colorFunction = getAggregationFunction(colorAggregation, 1);
+
+  // find average of longitude and latitude and use as initial view state
+  let INITIAL_VIEW_STATE = {
+    longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
+    latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+    zoom: 6.6,
+    pitch: 40.5,
+    bearing: -27
+  };
   const layers = [new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_6__["default"]({
     id: 'heatmap',
     colorRange,
@@ -20692,13 +20694,6 @@ const MAP_VIEW = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_3__["default"]({
   repeat: true,
   farZMultiplier: 100
 });
-const INITIAL_VIEW_STATE = {
-  latitude: 36.5,
-  longitude: -120,
-  zoom: 5.5,
-  pitch: 0,
-  bearing: 0
-};
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 const MS_PER_DAY = 8.64e7;
 const dataFilter = new _deck_gl_extensions__WEBPACK_IMPORTED_MODULE_4__["default"]({
@@ -20754,6 +20749,13 @@ function ScatterTimePlot(_ref2) {
   const timeRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => getTimeRange(data), [data]);
   const [filter, setFilter] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(timeRange);
   const [minValue, maxValue] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => getMinMaxValues(data, 'value'), [data]);
+  let INITIAL_VIEW_STATE = {
+    longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
+    latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+    zoom: 6.6,
+    pitch: 40.5,
+    bearing: -27
+  };
   const layers = [filter && new _deck_gl_layers__WEBPACK_IMPORTED_MODULE_5__["default"]({
     id: 'scatterplot',
     data,

@@ -24,13 +24,6 @@ const pointLight2 = new PointLight({
 
 const lightingEffect = new LightingEffect({ ambientLight, pointLight1, pointLight2 });
 
-const INITIAL_VIEW_STATE = {
-  longitude: -1.415727,
-  latitude: 52.232395,
-  zoom: 6.6,
-  pitch: 40.5,
-  bearing: -27
-};
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 
@@ -116,6 +109,15 @@ export default function HexagonPlot({
 
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
   const colorFunction = getAggregationFunction(colorAggregation, 1);
+
+	// find average of longitude and latitude and use as initial view state
+	let INITIAL_VIEW_STATE = {
+		longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
+		latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+		zoom: 6.6,
+		pitch: 40.5,
+		bearing: -27
+	};
 
   const layers = [
     new HexagonLayer({
