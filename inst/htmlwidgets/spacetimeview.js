@@ -20535,10 +20535,11 @@ function getTooltip(_ref, elevationAggregation) {
 
   const lat = object.position[1];
   const lng = object.position[0];
+  let metricName = elevationAggregation.charAt(0).toUpperCase() + elevationAggregation.toLowerCase().slice(1);
   return `\
     latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
     longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-		${elevationAggregation}: ${object.elevationValue}`;
+		${metricName}: ${object.elevationValue}`;
 }
 function getTimeRange(data) {
   if (!data) {
