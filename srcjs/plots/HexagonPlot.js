@@ -66,7 +66,8 @@ export default function HexagonPlot({
   colorAggregation = 'SUM',
   preserveDomains = false,
   timeRange = [Infinity, -Infinity],
-	animationSpeed = 1
+	animationSpeed = 1,
+	theme = 'dark'
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -150,8 +151,8 @@ export default function HexagonPlot({
       getColorValue: colorFunction,
       upperPercentile,
       material: {
-        ambient: 0.64,
-        diffuse: 0.6,
+        ambient: 0.84,
+        diffuse: 0.8,
         shininess: 32,
         specularColor: [51, 51, 51]
       },

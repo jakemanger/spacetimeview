@@ -36,7 +36,8 @@ export default function SpaceTimeViewer({
 		preserveDomains,
 		hexagonRadius,
 		hexagonCoverage,
-		animationSpeed
+		animationSpeed,
+		theme
 	} = useControls({
     style: { value: initialStyle, options: ['independent', 'summary'] },
     aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'] },
@@ -44,6 +45,7 @@ export default function SpaceTimeViewer({
 		hexagonRadius: { value: initialHexagonRadius, label: 'Hexagon Radius' },
 		hexagonCoverage: { value: initialHexagonCoverage, label: 'Hexagon Coverage' },
 		animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
+		theme: { value: 'dark', options: ['dark', 'light'] }
   });
 
   const timeRange = useMemo(() => getTimeRange(data), [data]);
@@ -60,11 +62,18 @@ export default function SpaceTimeViewer({
       return <div>Unsupported data type: {columnsInData}</div>;
     }
 
+		let MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+		if (theme === 'light') {
+			MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+		}
+
     if (style === 'independent') {
       return (
         <ScatterTimePlot
           data={data}
           timeRange={timeRange}
+					theme={theme}
+					mapStyle={MAP_STYLE}
         />
       );
     } else if (style === 'summary') {
@@ -78,13 +87,25 @@ export default function SpaceTimeViewer({
 					radius={hexagonRadius}
 					coverage={hexagonCoverage}
 					animationSpeed={animationSpeed}
+					theme={theme}
+					mapStyle={MAP_STYLE}
         />
       );
     } else {
       console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
       return null;
     }
-  }, [style, aggregate, preserveDomains, data, timeRange, hexagonRadius, hexagonCoverage, animationSpeed]);
+  }, [
+			style, 
+			aggregate, 
+			preserveDomains, 
+			data, 
+			timeRange, 
+			hexagonRadius, 
+			hexagonCoverage, 
+			animationSpeed, 
+			theme
+	]);
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
