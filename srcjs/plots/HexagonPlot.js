@@ -91,24 +91,33 @@ export default function HexagonPlot({
 		initialElevationDomain.current = null;
 	}, [data, elevationAggregation, colorAggregation]);
 
-  const getAggregationFunction = (aggregation, defaultValue) => {
-    return points => {
-      if (!points.length) return 0;
+	const getAggregationFunction = (aggregation, defaultValue) => {
+		return points => {
+			if (!points.length) return defaultValue;
 
-      points = points.filter(d => {
-        const timestamp = new Date(d.timestamp).getTime();
-        return timestamp >= filter[0] && timestamp <= filter[1];
-      });
+			points = points.filter(d => {
+				const timestamp = new Date(d.timestamp).getTime();
+				return timestamp >= filter[0] && timestamp <= filter[1];
+			});
 
-      const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
-      if (aggregation === 'SUM') {
-        return values.reduce((sum, val) => sum + val, 0);
-      } else if (aggregation === 'MEAN') {
-        return values.reduce((sum, val) => sum + val, 0) / values.length;
-      }
-      return 0; // Default case, should not reach here
-    };
-  };
+			if (!points.length) return defaultValue;
+
+			const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
+
+			if (aggregation === 'SUM') {
+				return values.reduce((sum, val) => sum + val, 0);
+			} else if (aggregation === 'MEAN') {
+				return values.reduce((sum, val) => sum + val, 0) / values.length;
+			} else if (aggregation === 'COUNT') {
+				return values.length;
+			} else if (aggregation === 'MIN') {
+				return Math.min(...values);
+			} else if (aggregation === 'MAX') {
+				return Math.max(...values);
+			}
+			return defaultValue; // Default case, should not reach here
+		};
+	};
 
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
   const colorFunction = getAggregationFunction(colorAggregation, 1);
@@ -147,13 +156,17 @@ export default function HexagonPlot({
         if (preserveDomains && !initialColorDomain.current) {
           initialColorDomain.current = colorDomain;
         }
-				console.log('Color domain:', elevationDomain);
+				if (!preserveDomains) {
+					initialColorDomain.current = colorDomain;
+				}
       },
       onSetElevationDomain: elevationDomain => {
         if (preserveDomains && !initialElevationDomain.current) {
           initialElevationDomain.current = elevationDomain;
         }
-				console.log('Elevation domain:', elevationDomain);
+				if (!preserveDomains) {
+					initialElevationDomain.current = elevationDomain;
+				}
       },
       colorDomain: preserveDomains ? initialColorDomain.current : null,
       elevationDomain: preserveDomains ? initialElevationDomain.current : null,

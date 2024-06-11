@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import HexagonPlot from './plots/HexagonPlot';
 import ScatterTimePlot from './plots/ScatterTimePlot';
 import { useControls } from 'leva';
@@ -18,13 +18,20 @@ export default function SpaceTimeViewer({
     preserveDomains: { value: initialPreserveDomains, label: 'Preserve Domains' },
   });
 
+  const [key, setKey] = useState(0);
+
+  useEffect(() => {
+    setKey(prevKey => prevKey + 1);
+  }, [style, aggregate, preserveDomains, data]);
+
   let plot = null;
 
   if (style === 'independent') {
-    plot = <ScatterTimePlot data={data} />;
+    plot = <ScatterTimePlot key={key} data={data} />;
   } else if (style === 'summary') {
     plot = (
       <HexagonPlot
+        key={key}
         data={data}
         colorAggregation={aggregate}
         elevationAggregation={aggregate}
