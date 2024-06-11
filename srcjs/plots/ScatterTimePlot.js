@@ -65,8 +65,13 @@ function getTooltip({ object }) {
   }
 }
 
-export default function ScatterTimePlot({ data = [], mapStyle = MAP_STYLE }) {
-  const timeRange = useMemo(() => getTimeRange(data), [data]);
+export default function ScatterTimePlot(
+	{ 
+		data = [], 
+		mapStyle = MAP_STYLE, 
+		timeRange=[Infinity, -Infinity]
+	}
+) {
   const [filter, setFilter] = useState(timeRange);
 
 	const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);

@@ -54,21 +54,6 @@ function getTooltip({ object }, elevationAggregation) {
     ${metricName}: ${object.elevationValue}`
 }
 
-function getTimeRange(data) {
-  if (!data) {
-    return null;
-  }
-  return data.reduce(
-    (range, d) => {
-      const t = new Date(d.timestamp).getTime();
-      range[0] = Math.min(range[0], t);
-      range[1] = Math.max(range[1], t);
-      return range;
-    },
-    [Infinity, -Infinity]
-  );
-}
-
 export default function HexagonPlot({
   data = [],
   mapStyle = MAP_STYLE,
@@ -77,47 +62,62 @@ export default function HexagonPlot({
   coverage = 1,
   elevationAggregation = 'SUM',
   colorAggregation = 'SUM',
-  preserveDomains = false
+  preserveDomains = false,
+  timeRange = [Infinity, -Infinity]
 }) {
-  const timeRange = useMemo(() => getTimeRange(data), [data]);
   const [filter, setFilter] = useState(timeRange);
+  const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
 
   const initialColorDomain = useRef(null);
   const initialElevationDomain = useRef(null);
 
-	// Reset initial domains when data or aggregation function changes
-	useEffect(() => {
-		initialColorDomain.current = null;
-		initialElevationDomain.current = null;
-	}, [data, elevationAggregation, colorAggregation]);
+  // Reset initial domains when data or aggregation function changes
+  useEffect(() => {
+    if (preserveDomains) {
+      initialColorDomain.current = null;
+      initialElevationDomain.current = null;
 
-	const getAggregationFunction = (aggregation, defaultValue) => {
-		return points => {
-			if (!points.length) return defaultValue;
+      // Temporarily set the filter to include the entire dataset
+      setTriggerDomainUpdate(true);
+      setFilter([0, Infinity]);
+    }
+  }, [data, elevationAggregation, colorAggregation, preserveDomains]);
 
-			points = points.filter(d => {
-				const timestamp = new Date(d.timestamp).getTime();
-				return timestamp >= filter[0] && timestamp <= filter[1];
-			});
+  useEffect(() => {
+    if (triggerDomainUpdate) {
+      setTriggerDomainUpdate(false);
+      // Reapply the original filter after domains are recalculated
+      setFilter(timeRange);
+    }
+  }, [triggerDomainUpdate, timeRange]);
 
-			if (!points.length) return defaultValue;
+  const getAggregationFunction = (aggregation, defaultValue, currentFilter = filter) => {
+    return points => {
+      if (!points.length) return defaultValue;
 
-			const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
+      points = points.filter(d => {
+        const timestamp = new Date(d.timestamp).getTime();
+        return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
+      });
 
-			if (aggregation === 'SUM') {
-				return values.reduce((sum, val) => sum + val, 0);
-			} else if (aggregation === 'MEAN') {
-				return values.reduce((sum, val) => sum + val, 0) / values.length;
-			} else if (aggregation === 'COUNT') {
-				return values.length;
-			} else if (aggregation === 'MIN') {
-				return Math.min(...values);
-			} else if (aggregation === 'MAX') {
-				return Math.max(...values);
-			}
-			return defaultValue; // Default case, should not reach here
-		};
-	};
+      if (!points.length) return defaultValue;
+
+      const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
+
+      if (aggregation === 'SUM') {
+        return values.reduce((sum, val) => sum + val, 0);
+      } else if (aggregation === 'MEAN') {
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      } else if (aggregation === 'COUNT') {
+        return values.length;
+      } else if (aggregation === 'MIN') {
+        return Math.min(...values);
+      } else if (aggregation === 'MAX') {
+        return Math.max(...values);
+      }
+      return defaultValue; // Default case, should not reach here
+    };
+  };
 
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
   const colorFunction = getAggregationFunction(colorAggregation, 1);
@@ -156,17 +156,17 @@ export default function HexagonPlot({
         if (preserveDomains && !initialColorDomain.current) {
           initialColorDomain.current = colorDomain;
         }
-				if (!preserveDomains) {
-					initialColorDomain.current = colorDomain;
-				}
+        if (!preserveDomains) {
+          initialColorDomain.current = colorDomain;
+        }
       },
       onSetElevationDomain: elevationDomain => {
         if (preserveDomains && !initialElevationDomain.current) {
           initialElevationDomain.current = elevationDomain;
         }
-				if (!preserveDomains) {
-					initialElevationDomain.current = elevationDomain;
-				}
+        if (!preserveDomains) {
+          initialElevationDomain.current = elevationDomain;
+        }
       },
       colorDomain: preserveDomains ? initialColorDomain.current : null,
       elevationDomain: preserveDomains ? initialElevationDomain.current : null,
@@ -199,7 +199,7 @@ export default function HexagonPlot({
             const date = new Date(timestamp);
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
           }}
-          onChange={setFilter}
+          onChange={v => setFilter(v)}
         />
       )}
     </>

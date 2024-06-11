@@ -1,7 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import HexagonPlot from './plots/HexagonPlot';
 import ScatterTimePlot from './plots/ScatterTimePlot';
 import { useControls } from 'leva';
+
+function getTimeRange(data) {
+  if (!data || data.length === 0) {
+    return null;
+  }
+  return data.reduce(
+    (range, d) => {
+      const t = new Date(d.timestamp).getTime();
+      range[0] = Math.min(range[0], t);
+      range[1] = Math.max(range[1], t);
+      return range;
+    },
+    [Infinity, -Infinity]
+  );
+}
 
 export default function SpaceTimeViewer({
   data = [],
@@ -18,39 +33,42 @@ export default function SpaceTimeViewer({
     preserveDomains: { value: initialPreserveDomains, label: 'Preserve Domains' },
   });
 
-  const [key, setKey] = useState(0);
+  const timeRange = useMemo(() => getTimeRange(data), [data]);
 
-  useEffect(() => {
-    setKey(prevKey => prevKey + 1);
-  }, [style, aggregate, preserveDomains, data]);
+  // Determine the plot component based on the selected style
+  const plot = useMemo(() => {
+    if (!data || !data.some(d => d.lng && d.lat)) {
+      let columnsInData = data.map(d => Object.keys(d));
+      console.error(
+        'Unsupported data type: ',
+        columnsInData,
+        'Supported data types are: lng, lat, timestamp, value'
+      );
+      return <div>Unsupported data type: {columnsInData}</div>;
+    }
 
-  let plot = null;
-
-  if (style === 'independent') {
-    plot = <ScatterTimePlot key={key} data={data} />;
-  } else if (style === 'summary') {
-    plot = (
-      <HexagonPlot
-        key={key}
-        data={data}
-        colorAggregation={aggregate}
-        elevationAggregation={aggregate}
-        preserveDomains={preserveDomains}
-      />
-    );
-  } else {
-    console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
-  }
-
-  if (!data || !data.some(d => d.lng && d.lat)) {
-    let columnsInData = data.map(d => Object.keys(d));
-    plot = <div>Unsupported data type: {columnsInData}</div>;
-    console.error(
-      'Unsupported data type: ',
-      columnsInData,
-      'Supported data types are: lng, lat, timestamp, value'
-    );
-  }
+    if (style === 'independent') {
+      return (
+        <ScatterTimePlot
+          data={data}
+          timeRange={timeRange}
+        />
+      );
+    } else if (style === 'summary') {
+      return (
+        <HexagonPlot
+          data={data}
+          colorAggregation={aggregate}
+          elevationAggregation={aggregate}
+          preserveDomains={preserveDomains}
+          timeRange={timeRange}
+        />
+      );
+    } else {
+      console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
+      return null;
+    }
+  }, [style, aggregate, preserveDomains, data, timeRange]);
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
