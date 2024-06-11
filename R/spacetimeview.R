@@ -5,8 +5,37 @@
 #' @import htmlwidgets
 #'
 #' @export
-spacetimeview <- function(data, ..., width = NULL, height = NULL, elementId = NULL) {
+spacetimeview <- function(
+    data, 
+    required_cols=c(
+      'lat',
+      'lng',
+      'timestamp',
+      'value'
+    ), 
+    ..., 
+    width = NULL, 
+    height = NULL, 
+    elementId = NULL
+) {
   # Assuming `data` is a dataframe with columns `lat` and `lng`
+  if (is(data, 'sf')) {
+    print('Constructing input from sf object...')
+    coordinates <- sf::st_coordinates(data)
+    rest_of_data <- sf::st_drop_geometry(data)
+    
+    data <- data.frame(
+      lng=coordinates[,1],
+      lat=coordinates[,2]
+    )
+    data <- cbind(data, rest_of_data)
+  }
+  
+  # convert to timestamp format needed by js
+  data$timestamp <- format(data$timestamp, "%Y/%m/%d %H:%M:%OS2")
+
+  data <- data[,required_cols]
+  
   print('Reformatting data')
   data_list <- purrr::transpose(data)
   

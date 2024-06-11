@@ -23,14 +23,27 @@ export default function SpaceTimeViewer({
   initialStyle = 'summary',
   initialAggregate = 'SUM',
   initialPreserveDomains = true,
+	initialHexagonRadius = 5000,
+	initialHexagonCoverage = 1,
+	initialAnimationSpeed = 1,
 }) {
   console.log('Received data:', data);
 
   // Initialize Leva controls with props as default values
-  const { style, aggregate, preserveDomains } = useControls({
+  const { 
+		style, 
+		aggregate, 
+		preserveDomains,
+		hexagonRadius,
+		hexagonCoverage,
+		animationSpeed
+	} = useControls({
     style: { value: initialStyle, options: ['independent', 'summary'] },
     aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'] },
     preserveDomains: { value: initialPreserveDomains, label: 'Preserve Domains' },
+		hexagonRadius: { value: initialHexagonRadius, label: 'Hexagon Radius' },
+		hexagonCoverage: { value: initialHexagonCoverage, label: 'Hexagon Coverage' },
+		animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
   });
 
   const timeRange = useMemo(() => getTimeRange(data), [data]);
@@ -62,13 +75,16 @@ export default function SpaceTimeViewer({
           elevationAggregation={aggregate}
           preserveDomains={preserveDomains}
           timeRange={timeRange}
+					radius={hexagonRadius}
+					coverage={hexagonCoverage}
+					animationSpeed={animationSpeed}
         />
       );
     } else {
       console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
       return null;
     }
-  }, [style, aggregate, preserveDomains, data, timeRange]);
+  }, [style, aggregate, preserveDomains, data, timeRange, hexagonRadius, hexagonCoverage, animationSpeed]);
 
   return (
     <div style={{ width: '100%', height: '100%' }}>

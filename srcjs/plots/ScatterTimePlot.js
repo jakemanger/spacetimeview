@@ -56,7 +56,7 @@ function getTooltip({ object }) {
   if (object.value) {
     return `\
       Time: ${new Date(object.timestamp).toUTCString()}
-      Value: ${object.value}
+      Value: ${object.value.toFixed(2)}
     `;
   } else {
     return `\
@@ -69,7 +69,8 @@ export default function ScatterTimePlot(
 	{ 
 		data = [], 
 		mapStyle = MAP_STYLE, 
-		timeRange=[Infinity, -Infinity]
+		timeRange=[Infinity, -Infinity],
+		animationSpeed = 1
 	}
 ) {
   const [filter, setFilter] = useState(timeRange);
@@ -128,7 +129,7 @@ export default function ScatterTimePlot(
           min={timeRange[0]}
           max={timeRange[1]}
           value={filter}
-          animationSpeed={MS_PER_DAY * 30}
+          animationSpeed={MS_PER_DAY * animationSpeed}
           formatLabel={formatLabel}
           onChange={setFilter}
         />

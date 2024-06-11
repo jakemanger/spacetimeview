@@ -5,6 +5,8 @@ import { HexagonLayer } from '@deck.gl/aggregation-layers';
 import DeckGL from '@deck.gl/react';
 import RangeInput from '../ui/RangeInput'; // Make sure to import the RangeInput component
 
+const MS_PER_DAY = 8.64e7;
+
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
   intensity: 1.0
@@ -49,21 +51,22 @@ function getTooltip({ object }, elevationAggregation) {
   );
 
   return `\
-    latitude: ${Number.isFinite(lat) ? lat.toFixed(6) : ''}
-    longitude: ${Number.isFinite(lng) ? lng.toFixed(6) : ''}
-    ${metricName}: ${object.elevationValue}`
+    latitude: ${Number.isFinite(lat) ? lat.toFixed(2) : ''}
+    longitude: ${Number.isFinite(lng) ? lng.toFixed(2) : ''}
+    ${metricName}: ${object.elevationValue.toFixed(2)}`
 }
 
 export default function HexagonPlot({
   data = [],
   mapStyle = MAP_STYLE,
-  radius = 1000,
+  radius = 5000,
   upperPercentile = 100,
   coverage = 1,
   elevationAggregation = 'SUM',
   colorAggregation = 'SUM',
   preserveDomains = false,
-  timeRange = [Infinity, -Infinity]
+  timeRange = [Infinity, -Infinity],
+	animationSpeed = 1
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -81,7 +84,7 @@ export default function HexagonPlot({
       setTriggerDomainUpdate(true);
       setFilter([0, Infinity]);
     }
-  }, [data, elevationAggregation, colorAggregation, preserveDomains]);
+  }, [data, elevationAggregation, colorAggregation, preserveDomains, radius, coverage]);
 
   useEffect(() => {
     if (triggerDomainUpdate) {
@@ -171,9 +174,9 @@ export default function HexagonPlot({
       colorDomain: preserveDomains ? initialColorDomain.current : null,
       elevationDomain: preserveDomains ? initialElevationDomain.current : null,
       updateTriggers: {
-        getElevationValue: [filter, elevationAggregation],
-        getColorValue: [filter, colorAggregation],
-        getPosition: [filter, data]
+        getElevationValue: [filter, elevationAggregation, radius, coverage],
+        getColorValue: [filter, colorAggregation, radius, coverage],
+        getPosition: [filter, data, radius, coverage]
       }
     })
   ];
@@ -194,7 +197,7 @@ export default function HexagonPlot({
           min={timeRange[0]}
           max={timeRange[1]}
           value={filter}
-          animationSpeed={8.64e7 * 30} // 30 days in milliseconds
+          animationSpeed={MS_PER_DAY * animationSpeed}
           formatLabel={timestamp => {
             const date = new Date(timestamp);
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
