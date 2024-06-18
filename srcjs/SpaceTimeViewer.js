@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import HexagonPlot from './plots/HexagonPlot';
 import ScatterTimePlot from './plots/ScatterTimePlot';
-import { useControls } from 'leva';
+import { useControls, Leva } from 'leva';
 
 function getTimeRange(data) {
   if (!data || data.length === 0) {
@@ -26,8 +26,24 @@ export default function SpaceTimeViewer({
 	initialHexagonRadius = 5000,
 	initialHexagonCoverage = 1,
 	initialAnimationSpeed = 1,
+	initialTheme = 'light'
 }) {
   console.log('Received data:', data);
+
+	let [levaTheme, setLevaTheme] = useState({
+		colors: {
+			elevation1: '#F1F3F5',
+			elevation2: '#FFFFFF',
+			elevation3: '#E0E3E6',
+			accent1: '#4D88FF',
+			accent2: '#2680EB',
+			accent3: '#1473E6',
+			highlight1: '#1F2933',
+			highlight2: '#323F4B',
+			highlight3: '#3E4C59',
+			vivid1: '#FFC107',
+		}
+	});
 
   // Initialize Leva controls with props as default values
   const { 
@@ -45,8 +61,39 @@ export default function SpaceTimeViewer({
 		hexagonRadius: { value: initialHexagonRadius, label: 'Hexagon Radius' },
 		hexagonCoverage: { value: initialHexagonCoverage, label: 'Hexagon Coverage' },
 		animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
-		theme: { value: 'dark', options: ['dark', 'light'] }
+		theme: { value: initialTheme, options: ['dark', 'light'] }
   });
+
+	useEffect(() => {
+		// Depending on the current theme from useControls, set the corresponding theme colors.
+		const newLevaThemeColors = theme === 'dark' ? {
+			elevation1: '#292d39',
+			elevation2: '#181C20',
+			elevation3: '#373C4B',
+			accent1: '#0066DC',
+			accent2: '#007BFF',
+			accent3: '#3C93FF',
+			highlight1: '#535760',
+			highlight2: '#8C92A4',
+			highlight3: '#FEFEFE',
+			vivid1: '#ffcc00',
+		} : {
+			elevation1: '#F1F3F5',
+			elevation2: '#FFFFFF',
+			elevation3: '#E0E3E6',
+			accent1: '#4D88FF',
+			accent2: '#2680EB',
+			accent3: '#1473E6',
+			highlight1: '#1F2933',
+			highlight2: '#323F4B',
+			highlight3: '#3E4C59',
+			vivid1: '#FFC107',
+		};
+
+		// Set the state of levaTheme to the new theme colors.
+		setLevaTheme({ colors: newLevaThemeColors });
+	}, [theme]);
+
 
   const timeRange = useMemo(() => getTimeRange(data), [data]);
 
@@ -110,6 +157,7 @@ export default function SpaceTimeViewer({
   return (
     <div style={{ width: '100%', height: '100%' }}>
       {plot}
+			<Leva theme={levaTheme} />
     </div>
   );
 }
