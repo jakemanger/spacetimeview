@@ -70,20 +70,19 @@ export default function ScatterTimePlot(
 		data = [], 
 		mapStyle = MAP_STYLE, 
 		timeRange=[Infinity, -Infinity],
-		animationSpeed = 1
+		animationSpeed = 1,
+		initialViewState = {
+			longitude: 0,
+			latitude: 0,
+			zoom: 3,
+			pitch: 0,
+			bearing: 0
+		}
 	}
 ) {
   const [filter, setFilter] = useState(timeRange);
 
 	const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);
-
-	let INITIAL_VIEW_STATE = {
-		longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
-		latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
-		zoom: 6.6,
-		pitch: 40.5,
-		bearing: -27
-	};
 
   const layers = [
     filter &&
@@ -118,7 +117,7 @@ export default function ScatterTimePlot(
       <DeckGL
         views={MAP_VIEW}
         layers={layers}
-        initialViewState={INITIAL_VIEW_STATE}
+        initialViewState={initialViewState}
         controller={true}
         getTooltip={getTooltip}
       >
@@ -132,6 +131,7 @@ export default function ScatterTimePlot(
           animationSpeed={MS_PER_DAY * animationSpeed}
           formatLabel={formatLabel}
           onChange={setFilter}
+					data={data}
         />
       )}
     </>

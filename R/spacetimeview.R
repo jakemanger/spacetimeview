@@ -14,8 +14,8 @@ spacetimeview <- function(
       'value'
     ), 
     ..., 
-    width = NULL, 
-    height = NULL, 
+    width = '100vw', 
+    height = '100vh', 
     elementId = NULL
 ) {
   # Assuming `data` is a dataframe with columns `lat` and `lng`
@@ -57,12 +57,12 @@ spacetimeview <- function(
 #' Called by HTMLWidgets to produce the widget's root element.
 #' @noRd
 widget_html.spacetimeview <- function(id, style, class, ...) {
-  htmltools::tagList(
-    # Necessary for RStudio viewer version < 1.2
+  # Return a single div tag directly
+  htmltools::tags$div(
+    id = id, class = class, style = style,
     reactR::html_dependency_corejs(),
     reactR::html_dependency_react(),
-    reactR::html_dependency_reacttools(),
-    htmltools::tags$div(id = id, class = class, style = style)
+    reactR::html_dependency_reacttools()
   )
 }
 
@@ -83,7 +83,7 @@ widget_html.spacetimeview <- function(id, style, class, ...) {
 #' @name spacetimeview-shiny
 #'
 #' @export
-spacetimeviewOutput <- function(outputId, width = '100%', height = '400px'){
+spacetimeviewOutput <- function(outputId, width = '100vw', height = '100vh') {
   htmlwidgets::shinyWidgetOutput(outputId, 'spacetimeview', width, height, package = 'spacetimeview')
 }
 

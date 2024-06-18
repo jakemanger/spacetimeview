@@ -2,6 +2,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import HexagonPlot from './plots/HexagonPlot';
 import ScatterTimePlot from './plots/ScatterTimePlot';
 import { useControls, Leva } from 'leva';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import PinchIcon from '@mui/icons-material/Pinch';
+import './SpaceTimeViewer.css'; // Add this import for CSS file
 
 function getTimeRange(data) {
   if (!data || data.length === 0) {
@@ -23,77 +29,87 @@ export default function SpaceTimeViewer({
   initialStyle = 'summary',
   initialAggregate = 'SUM',
   initialPreserveDomains = true,
-	initialHexagonRadius = 5000,
-	initialHexagonCoverage = 1,
-	initialAnimationSpeed = 1,
-	initialTheme = 'light'
+  initialHexagonRadius = 5000,
+  initialHexagonCoverage = 1,
+  initialAnimationSpeed = 1,
+  initialTheme = 'light'
 }) {
   console.log('Received data:', data);
 
-	let [levaTheme, setLevaTheme] = useState({
-		colors: {
-			elevation1: '#F1F3F5',
-			elevation2: '#FFFFFF',
-			elevation3: '#E0E3E6',
-			accent1: '#4D88FF',
-			accent2: '#2680EB',
-			accent3: '#1473E6',
-			highlight1: '#1F2933',
-			highlight2: '#323F4B',
-			highlight3: '#3E4C59',
-			vivid1: '#FFC107',
-		}
-	});
+  let [levaTheme, setLevaTheme] = useState({
+    colors: {
+      elevation1: '#F1F3F5',
+      elevation2: '#FFFFFF',
+      elevation3: '#E0E3E6',
+      accent1: '#4D88FF',
+      accent2: '#2680EB',
+      accent3: '#1473E6',
+      highlight1: '#1F2933',
+      highlight2: '#323F4B',
+      highlight3: '#3E4C59',
+      vivid1: '#FFC107',
+    }
+  });
+
+  const [snackbarOpen, setSnackbarOpen] = useState(true);
 
   // Initialize Leva controls with props as default values
   const { 
-		style, 
-		aggregate, 
-		preserveDomains,
-		hexagonRadius,
-		hexagonCoverage,
-		animationSpeed,
-		theme
-	} = useControls({
+    style, 
+    aggregate, 
+    preserveDomains,
+    hexagonRadius,
+    hexagonCoverage,
+    animationSpeed,
+    theme
+  } = useControls({
     style: { value: initialStyle, options: ['independent', 'summary'] },
     aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'] },
     preserveDomains: { value: initialPreserveDomains, label: 'Preserve Domains' },
-		hexagonRadius: { value: initialHexagonRadius, label: 'Hexagon Radius' },
-		hexagonCoverage: { value: initialHexagonCoverage, label: 'Hexagon Coverage' },
-		animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
-		theme: { value: initialTheme, options: ['dark', 'light'] }
+    hexagonRadius: { value: initialHexagonRadius, label: 'Hexagon Radius' },
+    hexagonCoverage: { value: initialHexagonCoverage, label: 'Hexagon Coverage' },
+    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
+    theme: { value: initialTheme, options: ['dark', 'light'] }
   });
 
-	useEffect(() => {
-		// Depending on the current theme from useControls, set the corresponding theme colors.
-		const newLevaThemeColors = theme === 'dark' ? {
-			elevation1: '#292d39',
-			elevation2: '#181C20',
-			elevation3: '#373C4B',
-			accent1: '#0066DC',
-			accent2: '#007BFF',
-			accent3: '#3C93FF',
-			highlight1: '#535760',
-			highlight2: '#8C92A4',
-			highlight3: '#FEFEFE',
-			vivid1: '#ffcc00',
-		} : {
-			elevation1: '#F1F3F5',
-			elevation2: '#FFFFFF',
-			elevation3: '#E0E3E6',
-			accent1: '#4D88FF',
-			accent2: '#2680EB',
-			accent3: '#1473E6',
-			highlight1: '#1F2933',
-			highlight2: '#323F4B',
-			highlight3: '#3E4C59',
-			vivid1: '#FFC107',
-		};
+  useEffect(() => {
+    // Depending on the current theme from useControls, set the corresponding theme colors.
+    const newLevaThemeColors = theme === 'dark' ? {
+      elevation1: '#292d39',
+      elevation2: '#181C20',
+      elevation3: '#373C4B',
+      accent1: '#0066DC',
+      accent2: '#007BFF',
+      accent3: '#3C93FF',
+      highlight1: '#535760',
+      highlight2: '#8C92A4',
+      highlight3: '#FEFEFE',
+      vivid1: '#ffcc00',
+    } : {
+      elevation1: '#F1F3F5',
+      elevation2: '#FFFFFF',
+      elevation3: '#E0E3E6',
+      accent1: '#4D88FF',
+      accent2: '#2680EB',
+      accent3: '#1473E6',
+      highlight1: '#1F2933',
+      highlight2: '#323F4B',
+      highlight3: '#3E4C59',
+      vivid1: '#FFC107',
+    };
 
-		// Set the state of levaTheme to the new theme colors.
-		setLevaTheme({ colors: newLevaThemeColors });
-	}, [theme]);
+    // Set the state of levaTheme to the new theme colors.
+    setLevaTheme({ colors: newLevaThemeColors });
+  }, [theme]);
 
+  // find average of longitude and latitude and use as initial view state
+  let INITIAL_VIEW_STATE = {
+    longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
+    latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+    zoom: 3,
+    pitch: 0,
+    bearing: 0
+  };
 
   const timeRange = useMemo(() => getTimeRange(data), [data]);
 
@@ -109,18 +125,19 @@ export default function SpaceTimeViewer({
       return <div>Unsupported data type: {columnsInData}</div>;
     }
 
-		let MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-		if (theme === 'light') {
-			MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-		}
+    let MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+    if (theme === 'light') {
+      MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+    }
 
     if (style === 'independent') {
       return (
         <ScatterTimePlot
           data={data}
           timeRange={timeRange}
-					theme={theme}
-					mapStyle={MAP_STYLE}
+          theme={theme}
+          mapStyle={MAP_STYLE}
+          initialViewState={INITIAL_VIEW_STATE}
         />
       );
     } else if (style === 'summary') {
@@ -131,11 +148,12 @@ export default function SpaceTimeViewer({
           elevationAggregation={aggregate}
           preserveDomains={preserveDomains}
           timeRange={timeRange}
-					radius={hexagonRadius}
-					coverage={hexagonCoverage}
-					animationSpeed={animationSpeed}
-					theme={theme}
-					mapStyle={MAP_STYLE}
+          radius={hexagonRadius}
+          coverage={hexagonCoverage}
+          animationSpeed={animationSpeed}
+          theme={theme}
+          mapStyle={MAP_STYLE}
+          initialViewState={INITIAL_VIEW_STATE}
         />
       );
     } else {
@@ -143,21 +161,44 @@ export default function SpaceTimeViewer({
       return null;
     }
   }, [
-			style, 
-			aggregate, 
-			preserveDomains, 
-			data, 
-			timeRange, 
-			hexagonRadius, 
-			hexagonCoverage, 
-			animationSpeed, 
-			theme
-	]);
+    style, 
+    aggregate, 
+    preserveDomains, 
+    data, 
+    timeRange, 
+    hexagonRadius, 
+    hexagonCoverage, 
+    animationSpeed, 
+    theme
+  ]);
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div className="space-time-viewer">
       {plot}
-			<Leva theme={levaTheme} />
+      <Leva theme={levaTheme} />
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={8000}
+        onClose={handleSnackbarClose}
+      >
+        <Alert onClose={handleSnackbarClose} severity="info" sx={{ width: '100%' }}>
+          {isMobile ? (
+            <>
+              <PinchIcon fontSize="small" /> to zoom and adjust time with the slider.
+            </>
+          ) : (
+            <>
+              Scroll to zoom, <Tooltip title="Shift"><Typography component="span">⇧</Typography></Tooltip> + Click to rotate and adjust time with the slider.
+            </>
+          )}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

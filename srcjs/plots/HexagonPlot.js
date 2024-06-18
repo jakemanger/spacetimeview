@@ -67,7 +67,14 @@ export default function HexagonPlot({
   preserveDomains = false,
   timeRange = [Infinity, -Infinity],
 	animationSpeed = 1,
-	theme = 'dark'
+	theme = 'dark',
+	initialViewState = {
+		longitude: -122.45,
+		latitude: 37.78,
+		zoom: 11,
+		pitch: 30,
+		bearing: 0
+	}
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -126,15 +133,6 @@ export default function HexagonPlot({
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
   const colorFunction = getAggregationFunction(colorAggregation, 1);
 
-  // find average of longitude and latitude and use as initial view state
-  let INITIAL_VIEW_STATE = {
-    longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
-    latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
-    zoom: 6.6,
-    pitch: 40.5,
-    bearing: -27
-  };
-
   const layers = [
     new HexagonLayer({
       id: 'heatmap',
@@ -187,11 +185,11 @@ export default function HexagonPlot({
       <DeckGL
         layers={layers}
         effects={[lightingEffect]}
-        initialViewState={INITIAL_VIEW_STATE}
+        initialViewState={initialViewState}
         controller={true}
         getTooltip={({ object }) => getTooltip({ object }, elevationAggregation)}
       >
-        <Map reuseMaps mapStyle={mapStyle} />
+				<Map reuseMaps mapStyle={mapStyle} />
       </DeckGL>
       {timeRange && (
         <RangeInput
@@ -204,6 +202,7 @@ export default function HexagonPlot({
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
           }}
           onChange={v => setFilter(v)}
+					data={data}
         />
       )}
     </>

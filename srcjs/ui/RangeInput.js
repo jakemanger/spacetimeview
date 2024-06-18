@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Slider from '@mui/material/Slider';
 import Button from '@mui/material/IconButton';
 import PlayIcon from '@mui/icons-material/PlayArrow';
@@ -8,18 +8,38 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 const durations = {
   All: [0, Infinity],
+  Minute: [0, 60 * 1000],
+  Hour: [0, 60 * 60 * 1000],
   Day: [0, 1 * 8.64e7],
   Week: [0, 7 * 8.64e7],
   Month: [0, 30 * 8.64e7],
   Year: [0, 365 * 8.64e7],
 };
 
-export default function RangeInput({ min, max, value, animationSpeed, onChange, formatLabel }) {
+export default function RangeInput({ min, max, value, animationSpeed, onChange, formatLabel, data }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState('All');
+  const [showHint, setShowHint] = useState(false);
+
+  const minInterval = useMemo(() => {
+    if (!data || data.length < 2) return Infinity;
+    const sortedTimestamps = data.map(d => new Date(d.timestamp).getTime()).sort((a, b) => a - b);
+    let minDiff = Infinity;
+    for (let i = 1; i < sortedTimestamps.length; i++) {
+      const diff = sortedTimestamps[i] - sortedTimestamps[i - 1];
+      if (diff < minDiff && diff > 0) minDiff = diff;
+    }
+    return minDiff;
+  }, [data]);
+
+  const availableDurations = useMemo(() => {
+    return Object.entries(durations).filter(([key, [_, duration]]) => duration >= minInterval);
+  }, [minInterval]);
 
   useEffect(() => {
     let animation;
@@ -46,9 +66,27 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
   const handleDurationChange = (event) => {
     const newDuration = event.target.value;
     setDuration(newDuration);
-    if (newDuration === 'Custom') return;
+    if (newDuration === 'Custom') {
+      setShowHint(true);
+      return;
+    }
     const [newMin, newMax] = durations[newDuration];
+    if ((newMax - newMin) < minInterval) {
+      alert(`The selected duration is too short for the data. Minimum interval between data points is ${(minInterval / 1000).toFixed(2)} seconds.`);
+      return;
+    }
     onChange([min, min + (newMax - newMin)]);
+  };
+
+  const handleSliderChange = (event, newValue) => {
+    const range = newValue[1] - newValue[0];
+    if (range < minInterval) {
+      onChange([newValue[0], newValue[0] + minInterval]);
+    } else {
+      onChange(newValue);
+    }
+    setDuration('Custom');
+    setShowHint(false);
   };
 
   return (
@@ -71,7 +109,7 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
           value={duration}
           onChange={handleDurationChange}
           label="Duration"
-					sx={{
+          sx={{
             color: '#f5f1d8',
             '.MuiOutlinedInput-notchedOutline': {
               borderColor: '#f5f1d8',
@@ -84,12 +122,10 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
             },
           }}
         >
-          <MenuItem value="All">All</MenuItem>
+          {availableDurations.map(([key, _]) => (
+            <MenuItem key={key} value={key}>{key}</MenuItem>
+          ))}
           <MenuItem value="Custom">Custom</MenuItem>
-          <MenuItem value="Day">Day</MenuItem>
-          <MenuItem value="Week">Week</MenuItem>
-          <MenuItem value="Month">Month</MenuItem>
-          <MenuItem value="Year">Year</MenuItem>
         </Select>
       </FormControl>
       <Button
@@ -113,13 +149,15 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
         min={min}
         max={max}
         value={value}
-        onChange={(event, newValue) => {
-          setDuration('Custom');
-          onChange(newValue);
-        }}
+        onChange={handleSliderChange}
         valueLabelDisplay="on"
         valueLabelFormat={formatLabel}
       />
+      <Snackbar open={showHint} autoHideDuration={6000} onClose={() => setShowHint(false)}>
+        <Alert onClose={() => setShowHint(false)} severity="info" sx={{ width: '100%' }}>
+          Click and drag the sliders to adjust the range.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

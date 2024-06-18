@@ -19,9 +19,9 @@ aggregated_data <- data %>%
   rename(timestamp = week)
 
 spacetimeview(
-  data = aggregated_data, 
-  initialHexagonRadius=6000, 
-  initialAnimationSpeed=2.5, 
+  data = aggregated_data,
+  initialHexagonRadius=6000,
+  initialAnimationSpeed=4,
   initialHexagonCoverage=5.5,
   initialAggregate='MEAN'
 )

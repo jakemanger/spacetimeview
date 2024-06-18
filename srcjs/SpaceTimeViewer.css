@@ -1,0 +1,18 @@
+body {
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+.maplibregl-control-container {
+	position: fixed;
+}
+
+div[mapboxgl-children] {
+  display: none;
+}
+
+.spacetimeview {
+	width: 100vw;
+	height: 100vh;
+}
