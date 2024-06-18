@@ -4,15 +4,26 @@ body {
 	overflow: hidden;
 }
 
+.spacetimeview {
+	width: 100vw;
+	height: 100vh;
+}
+
+/* Fix up the maplibre attribution, as it seems it is broken when used with deckgl */
 .maplibregl-control-container {
 	position: fixed;
+	bottom: 2px;
+	right: 2px;
+	z-index: 9999;
+	font-family: 'Helvetica Neue', sans-serif;
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.maplibregl-ctrl-attrib-button {
+	display: none;
 }
 
 div[mapboxgl-children] {
   display: none;
-}
-
-.spacetimeview {
-	width: 100vw;
-	height: 100vh;
 }
