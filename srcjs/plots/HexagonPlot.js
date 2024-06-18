@@ -50,10 +50,24 @@ function getTooltip({ object }, elevationAggregation) {
     + elevationAggregation.toLowerCase().slice(1)
   );
 
-  return `\
-    latitude: ${Number.isFinite(lat) ? lat.toFixed(2) : ''}
-    longitude: ${Number.isFinite(lng) ? lng.toFixed(2) : ''}
-    ${metricName}: ${object.elevationValue.toFixed(2)}`
+  return {
+		html: `
+			<div>
+				<p>Latitude: ${Number.isFinite(lat) ? lat.toFixed(2) : ''}</p>
+				<p>Longitude: ${Number.isFinite(lng) ? lng.toFixed(2) : ''}</p>
+				<p>${metricName}: ${object.elevationValue.toFixed(2)}</p>
+			</div>
+		`,
+		style: {
+			color: '#333',
+			backgroundColor: '#fff',
+			// rounded corners
+			borderRadius: '5px',
+			// reduce spacing between each row of text
+			lineHeight: '0.5',
+			padding: '5px',
+		},
+	}
 }
 
 export default function HexagonPlot({
