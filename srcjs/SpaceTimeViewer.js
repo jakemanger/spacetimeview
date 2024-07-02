@@ -27,15 +27,16 @@ function getTimeRange(data) {
 export default function SpaceTimeViewer({
   data = [],
   initialStyle = 'Summary',
+  initialColumnToPlot = 'value',
   initialAggregate = 'SUM',
-  initialPreserveDomains = true,
-  initialSummaryRadius = 5000,
-  initialSummaryCoverage = 0.9,
+  initialPreserveDomains = false,
+  initialSummaryRadius = 55000,
+  initialSummaryCoverage = 1.0,
   initialAnimationSpeed = 10,
   initialTheme = 'light',
   initialRadiusScale = 1,
   initialRadiusMinPixels = 1,
-	initialSummaryStyle = 'Grid'
+  initialSummaryStyle = 'Grid'
 }) {
   //console.log('Received data:', data);
 
@@ -56,36 +57,45 @@ export default function SpaceTimeViewer({
 
   const [snackbarOpen, setSnackbarOpen] = useState(true);
 
+  // Extract column names from data
+  const columnNames = useMemo(() => {
+    if (data.length === 0) return [];
+		// exclude lng, lat, timestamp
+		return Object.keys(data[0]).filter(
+			key => key !== 'lng' && key !== 'lat' && key !== 'timestamp'
+		);
+  }, [data]);
+
   // Initialize Leva controls with props as default values
   const {
     style,
+    columnToPlot,
     animationSpeed,
     theme,
     aggregate,
     preserveDomains,
     summaryRadius,
     summaryCoverage,
-		summaryStyle,
+    summaryStyle,
     radiusScale,
     radiusMinPixels
   } = useControls({
-    Plot: folder({
-      style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
-      animationSpeed: { value: initialAnimationSpeed, label: 'Speed' },
-      theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
-    }),
+    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
+    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
+    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
+    theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
     'Summary settings': folder({
-			// switch between grid or hexagon
-			summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
+      // switch between grid or hexagon
+      summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
       aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'], label: 'Aggregation function' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
       summaryRadius: { value: initialSummaryRadius, label: 'Radius' },
       summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell' },
-    }, { collapsed: true, render: (get) => get('Plot.style') === 'Summary' }),
+    }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
     'Scatter settings': folder({
       radiusScale: { value: initialRadiusScale, label: 'Radius' },
       radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius' },
-    }, { collapsed: true, render: (get) => get('Plot.style') === 'Scatter' }),
+    }, { collapsed: true, render: (get) => get('style') === 'Scatter' }),
   });
 
   useEffect(() => {
@@ -129,10 +139,18 @@ export default function SpaceTimeViewer({
 
   const timeRange = useMemo(() => getTimeRange(data), [data]);
 
+  // Transform data based on selected columnToPlot
+  const transformedData = useMemo(() => {
+    return data.map(d => ({
+      ...d,
+      value: d[columnToPlot]
+    }));
+  }, [data, columnToPlot]);
+
   // Determine the plot component based on the selected style
   const plot = useMemo(() => {
-    if (!data || !data.some(d => d.lng && d.lat)) {
-      let columnsInData = data.map(d => Object.keys(d));
+    if (!transformedData || !transformedData.some(d => d.lng && d.lat)) {
+      let columnsInData = transformedData.map(d => Object.keys(d));
       console.error(
         'Unsupported data type: ',
         columnsInData,
@@ -150,7 +168,7 @@ export default function SpaceTimeViewer({
       return (
         <ScatterTimePlot
           // Sort data by value in ascending order, so that higher value points are rendered on top
-          data={data.sort((a, b) => a.value - b.value)}
+          data={transformedData.sort((a, b) => a.value - b.value)}
           timeRange={timeRange}
           theme={theme}
           mapStyle={MAP_STYLE}
@@ -163,7 +181,7 @@ export default function SpaceTimeViewer({
       return (
         <SummaryPlot
           // sort by time
-          data={data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
+          data={transformedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
           colorAggregation={aggregate}
           elevationAggregation={aggregate}
           preserveDomains={preserveDomains}
@@ -173,7 +191,7 @@ export default function SpaceTimeViewer({
           animationSpeed={animationSpeed}
           theme={theme}
           mapStyle={MAP_STYLE}
-					isGridView={summaryStyle === 'Grid'}
+          isGridView={summaryStyle === 'Grid'}
           initialViewState={INITIAL_VIEW_STATE}
         />
       );
@@ -185,15 +203,15 @@ export default function SpaceTimeViewer({
     style,
     aggregate,
     preserveDomains,
-    data,
+    transformedData,
     timeRange,
     summaryRadius,
     summaryCoverage,
     animationSpeed,
     theme,
-		radiusScale,
-		radiusMinPixels,
-		summaryStyle
+    radiusScale,
+    radiusMinPixels,
+    summaryStyle
   ]);
 
   const handleSnackbarClose = () => {

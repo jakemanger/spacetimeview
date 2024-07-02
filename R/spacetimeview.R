@@ -10,9 +10,9 @@ spacetimeview <- function(
     required_cols=c(
       'lat',
       'lng',
-      'timestamp',
-      'value'
+      'timestamp'
     ), 
+    initialColumnToPlot = NULL,
     ..., 
     width = '100vw', 
     height = '100vh', 
@@ -33,15 +33,40 @@ spacetimeview <- function(
   
   # convert to timestamp format needed by js
   data$timestamp <- format(data$timestamp, "%Y/%m/%d %H:%M:%OS2")
-
-  data <- data[,required_cols]
   
+  plottable_columns <- names(data)[!(names(data) %in% required_cols)]
+  
+  if (length(plottable_columns) == 0) {
+    stop(
+      paste(
+        'There were no columns to plot in the dataset.',
+        'Found columns were:', paste(names(data), collapse=', ')
+      )
+    )
+  }
+  if (!('initialColumnToPlot' %in% list(...))) {
+    initialColumnToPlot = plottable_columns[1]
+    warning(
+      paste(
+        'initialColumnToPlot was not specified.',
+        'Defaulting to ', initialColumnToPlot
+      )
+    )
+  }
+
   print('Reformatting data')
   data_list <- purrr::transpose(data)
   
   print('Starting ReactR plot')
   # describe a React component to send to the browser for rendering.
-  component <- reactR::component("SpaceTimeViewer", list(data = data_list, ...))
+  component <- reactR::component(
+    "SpaceTimeViewer",
+    list(
+      data = data_list,
+      initialColumnToPlot = initialColumnToPlot,
+      ...
+    )
+  )
   
   # create widget
   htmlwidgets::createWidget(

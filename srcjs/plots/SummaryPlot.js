@@ -91,7 +91,7 @@ function getTooltip({ object }, elevationAggregation, filter) {
           y: {
             title: {
               display: true,
-              text: metricName
+              text: 'Values'
             }
           }
         }
