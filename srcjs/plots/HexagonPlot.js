@@ -3,7 +3,9 @@ import { Map } from 'react-map-gl/maplibre';
 import { AmbientLight, PointLight, LightingEffect } from '@deck.gl/core';
 import { HexagonLayer } from '@deck.gl/aggregation-layers';
 import DeckGL from '@deck.gl/react';
-import RangeInput from '../ui/RangeInput'; // Make sure to import the RangeInput component
+import RangeInput from '../ui/RangeInput';
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
 
 const MS_PER_DAY = 8.64e7;
 
@@ -37,7 +39,7 @@ const colorRange = [
   [209, 55, 78]
 ];
 
-function getTooltip({ object }, elevationAggregation) {
+function getTooltip({ object }, elevationAggregation, filter) {
   if (!object) {
     return null;
   }
@@ -50,24 +52,70 @@ function getTooltip({ object }, elevationAggregation) {
     + elevationAggregation.toLowerCase().slice(1)
   );
 
+  let seriesData = object.points.map(d => ({
+    x: new Date(d.source.timestamp).getTime(),
+    y: d.source.value,
+  }));
+
+  // filter by timestamp
+  seriesData = seriesData.filter(d => {
+    let timestamp = d.x;
+    return timestamp >= filter[0] && timestamp <= filter[1];
+  });
+
+  const chartId = `chart-${lat}-${lng}`;
+
+  setTimeout(() => {
+    const ctx = document.getElementById(chartId).getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: seriesData.map(d => new Date(d.x).toISOString().slice(0, 10)),
+        datasets: [
+          {
+            label: 'Data Over Time',
+            data: seriesData,
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            fill: false,
+            cubicInterpolationMode: 'monotone',
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'time',
+          },
+          y: {
+            title: {
+              display: true,
+              text: metricName
+            }
+          }
+        }
+      }
+    });
+  }, 0);
+
   return {
-		html: `
-			<div>
-				<p>Latitude: ${Number.isFinite(lat) ? lat.toFixed(2) : ''}</p>
-				<p>Longitude: ${Number.isFinite(lng) ? lng.toFixed(2) : ''}</p>
-				<p>${metricName}: ${object.elevationValue.toFixed(2)}</p>
-			</div>
-		`,
-		style: {
-			color: '#333',
-			backgroundColor: '#fff',
-			// rounded corners
-			borderRadius: '5px',
-			// reduce spacing between each row of text
-			lineHeight: '0.5',
-			padding: '5px',
-		},
-	}
+    html: `
+      <div>
+        <p>Latitude: ${Number.isFinite(lat) ? lat.toFixed(2) : ''}</p>
+        <p>Longitude: ${Number.isFinite(lng) ? lng.toFixed(2) : ''}</p>
+        <p>${metricName}: ${object.elevationValue.toFixed(2)}</p>
+        <canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>
+      </div>
+    `,
+    style: {
+      color: '#333',
+      backgroundColor: '#fff',
+      borderRadius: '5px',
+      lineHeight: '0.5',
+      padding: '5px',
+    },
+  };
 }
 
 export default function HexagonPlot({
@@ -80,15 +128,15 @@ export default function HexagonPlot({
   colorAggregation = 'SUM',
   preserveDomains = false,
   timeRange = [Infinity, -Infinity],
-	animationSpeed = 1,
-	theme = 'dark',
-	initialViewState = {
-		longitude: -122.45,
-		latitude: 37.78,
-		zoom: 11,
-		pitch: 30,
-		bearing: 0
-	}
+  animationSpeed = 1,
+  theme = 'dark',
+  initialViewState = {
+    longitude: -122.45,
+    latitude: 37.78,
+    zoom: 11,
+    pitch: 30,
+    bearing: 0
+  }
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -122,7 +170,7 @@ export default function HexagonPlot({
 
       points = points.filter(d => {
         const timestamp = new Date(d.timestamp).getTime();
-        return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
+        return timestamp >= currentFilter[0] && currentFilter[1] !== -Infinity ? timestamp <= currentFilter[1] : true;
       });
 
       if (!points.length) return defaultValue;
@@ -201,9 +249,9 @@ export default function HexagonPlot({
         effects={[lightingEffect]}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) => getTooltip({ object }, elevationAggregation)}
+        getTooltip={({ object }) => getTooltip({ object }, elevationAggregation, filter)}
       >
-				<Map reuseMaps mapStyle={mapStyle} />
+        <Map reuseMaps mapStyle={mapStyle} />
       </DeckGL>
       {timeRange && (
         <RangeInput
@@ -216,7 +264,7 @@ export default function HexagonPlot({
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
           }}
           onChange={v => setFilter(v)}
-					data={data}
+          data={data}
         />
       )}
     </>

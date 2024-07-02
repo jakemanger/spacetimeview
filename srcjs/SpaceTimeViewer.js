@@ -133,7 +133,8 @@ export default function SpaceTimeViewer({
     if (style === 'independent') {
       return (
         <ScatterTimePlot
-          data={data}
+					// Sort data by value in ascending order, so that higher value points are rendered on top
+          data={data.sort((a, b) => a.value - b.value)}
           timeRange={timeRange}
           theme={theme}
           mapStyle={MAP_STYLE}
@@ -143,7 +144,8 @@ export default function SpaceTimeViewer({
     } else if (style === 'summary') {
       return (
         <HexagonPlot
-          data={data}
+					// sort by time
+          data={data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
           colorAggregation={aggregate}
           elevationAggregation={aggregate}
           preserveDomains={preserveDomains}
