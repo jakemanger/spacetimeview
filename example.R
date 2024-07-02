@@ -21,7 +21,7 @@ aggregated_data <- data %>%
 spacetimeview(
   data = aggregated_data,
   initialHexagonRadius=6000,
-  initialAnimationSpeed=4,
-  initialHexagonCoverage=5.5,
+  initialAnimationSpeed=10,
+  initialHexagonCoverage=5,
   initialAggregate='MEAN'
 )

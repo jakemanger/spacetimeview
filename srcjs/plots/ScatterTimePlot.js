@@ -63,7 +63,9 @@ export default function ScatterTimePlot(
       zoom: 3,
       pitch: 0,
       bearing: 0
-    }
+    },
+		radiusScale = 150,
+		radiusMinPixels = 5,
   }
 ) {
   const [filter, setFilter] = useState(timeRange);
@@ -83,8 +85,8 @@ export default function ScatterTimePlot(
 				id: 'scatterplot',
 				data: data, 
 				opacity: 0.8,
-				radiusScale: 150,  // Adjust this value to make points bigger
-				radiusMinPixels: 5,  // Adjust this value to set a minimum point size
+				radiusScale: radiusScale,  // Adjust this value to make points bigger
+				radiusMinPixels: radiusMinPixels,  // Adjust this value to set a minimum point size
 				wrapLongitude: true,
 				getPosition: d => [d.lng, d.lat],
 				getFillColor: d => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import HexagonPlot from './plots/HexagonPlot';
+import SummaryPlot from './plots/SummaryPlot';
 import ScatterTimePlot from './plots/ScatterTimePlot';
-import { useControls, Leva } from 'leva';
+import { useControls, Leva, folder } from 'leva';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
@@ -26,15 +26,18 @@ function getTimeRange(data) {
 
 export default function SpaceTimeViewer({
   data = [],
-  initialStyle = 'summary',
+  initialStyle = 'Summary',
   initialAggregate = 'SUM',
   initialPreserveDomains = true,
-  initialHexagonRadius = 5000,
-  initialHexagonCoverage = 1,
-  initialAnimationSpeed = 1,
-  initialTheme = 'light'
+  initialSummaryRadius = 5000,
+  initialSummaryCoverage = 0.9,
+  initialAnimationSpeed = 10,
+  initialTheme = 'light',
+  initialRadiusScale = 1,
+  initialRadiusMinPixels = 1,
+	initialSummaryStyle = 'Grid'
 }) {
-  console.log('Received data:', data);
+  //console.log('Received data:', data);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -54,22 +57,35 @@ export default function SpaceTimeViewer({
   const [snackbarOpen, setSnackbarOpen] = useState(true);
 
   // Initialize Leva controls with props as default values
-  const { 
-    style, 
-    aggregate, 
-    preserveDomains,
-    hexagonRadius,
-    hexagonCoverage,
+  const {
+    style,
     animationSpeed,
-    theme
+    theme,
+    aggregate,
+    preserveDomains,
+    summaryRadius,
+    summaryCoverage,
+		summaryStyle,
+    radiusScale,
+    radiusMinPixels
   } = useControls({
-    style: { value: initialStyle, options: ['independent', 'summary'] },
-    aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'] },
-    preserveDomains: { value: initialPreserveDomains, label: 'Preserve Domains' },
-    hexagonRadius: { value: initialHexagonRadius, label: 'Hexagon Radius' },
-    hexagonCoverage: { value: initialHexagonCoverage, label: 'Hexagon Coverage' },
-    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
-    theme: { value: initialTheme, options: ['dark', 'light'] }
+    Plot: folder({
+      style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
+      animationSpeed: { value: initialAnimationSpeed, label: 'Speed' },
+      theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
+    }),
+    'Summary settings': folder({
+			// switch between grid or hexagon
+			summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
+      aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'], label: 'Aggregation function' },
+      preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
+      summaryRadius: { value: initialSummaryRadius, label: 'Radius' },
+      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell' },
+    }, { collapsed: true, render: (get) => get('Plot.style') === 'Summary' }),
+    'Scatter settings': folder({
+      radiusScale: { value: initialRadiusScale, label: 'Radius' },
+      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius' },
+    }, { collapsed: true, render: (get) => get('Plot.style') === 'Scatter' }),
   });
 
   useEffect(() => {
@@ -130,48 +146,54 @@ export default function SpaceTimeViewer({
       MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
     }
 
-    if (style === 'independent') {
+    if (style === 'Scatter') {
       return (
         <ScatterTimePlot
-					// Sort data by value in ascending order, so that higher value points are rendered on top
+          // Sort data by value in ascending order, so that higher value points are rendered on top
           data={data.sort((a, b) => a.value - b.value)}
           timeRange={timeRange}
           theme={theme}
           mapStyle={MAP_STYLE}
           initialViewState={INITIAL_VIEW_STATE}
+          radiusScale={radiusScale}
+          radiusMinPixels={radiusMinPixels}
         />
       );
-    } else if (style === 'summary') {
+    } else if (style === 'Summary') {
       return (
-        <HexagonPlot
-					// sort by time
+        <SummaryPlot
+          // sort by time
           data={data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
           colorAggregation={aggregate}
           elevationAggregation={aggregate}
           preserveDomains={preserveDomains}
           timeRange={timeRange}
-          radius={hexagonRadius}
-          coverage={hexagonCoverage}
+          radius={summaryRadius}
+          coverage={Math.min(Math.max(summaryCoverage, 0), 1)}
           animationSpeed={animationSpeed}
           theme={theme}
           mapStyle={MAP_STYLE}
+					isGridView={summaryStyle === 'Grid'}
           initialViewState={INITIAL_VIEW_STATE}
         />
       );
     } else {
-      console.error('Unsupported style:', style, 'Supported styles are: independent, summary');
+      console.error('Unsupported style:', style, 'Supported styles are: Scatter, Summary');
       return null;
     }
   }, [
-    style, 
-    aggregate, 
-    preserveDomains, 
-    data, 
-    timeRange, 
-    hexagonRadius, 
-    hexagonCoverage, 
-    animationSpeed, 
-    theme
+    style,
+    aggregate,
+    preserveDomains,
+    data,
+    timeRange,
+    summaryRadius,
+    summaryCoverage,
+    animationSpeed,
+    theme,
+		radiusScale,
+		radiusMinPixels,
+		summaryStyle
   ]);
 
   const handleSnackbarClose = () => {
