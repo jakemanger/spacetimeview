@@ -136,7 +136,6 @@ export default function ScatterTimePlot(
 
   return (
     <>
-      <p>{projection}</p>
       <DeckGL
         views={projection === 'Globe' ? new GlobeView() : MAP_VIEW}
         layers={layers}

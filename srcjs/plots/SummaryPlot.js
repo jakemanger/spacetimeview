@@ -288,7 +288,6 @@ export default function SummaryPlot({
 
   return (
     <>
-      <p>{projection}</p>
       <DeckGL
         views={projection === 'Globe' ? new GlobeView() : new MapView()}
         layers={layers}
