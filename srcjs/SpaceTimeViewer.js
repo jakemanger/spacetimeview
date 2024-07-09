@@ -36,10 +36,9 @@ export default function SpaceTimeViewer({
   initialTheme = 'light',
   initialRadiusScale = 1,
   initialRadiusMinPixels = 1,
-  initialSummaryStyle = 'Grid'
+  initialSummaryStyle = 'Grid',
+  initialProjection = 'Mercator'
 }) {
-  //console.log('Received data:', data);
-
   let [levaTheme, setLevaTheme] = useState({
     colors: {
       elevation1: '#F1F3F5',
@@ -60,10 +59,10 @@ export default function SpaceTimeViewer({
   // Extract column names from data
   const columnNames = useMemo(() => {
     if (data.length === 0) return [];
-		// exclude lng, lat, timestamp
-		return Object.keys(data[0]).filter(
-			key => key !== 'lng' && key !== 'lat' && key !== 'timestamp'
-		);
+    // exclude lng, lat, timestamp
+    return Object.keys(data[0]).filter(
+      key => key !== 'lng' && key !== 'lat' && key !== 'timestamp'
+    );
   }, [data]);
 
   // Initialize Leva controls with props as default values
@@ -72,20 +71,21 @@ export default function SpaceTimeViewer({
     columnToPlot,
     animationSpeed,
     theme,
+    projection,
     aggregate,
     preserveDomains,
     summaryRadius,
     summaryCoverage,
     summaryStyle,
     radiusScale,
-    radiusMinPixels
+    radiusMinPixels,
   } = useControls({
     style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
     columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
     animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
     theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
+    projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
     'Summary settings': folder({
-      // switch between grid or hexagon
       summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
       aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'], label: 'Aggregation function' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
@@ -175,6 +175,7 @@ export default function SpaceTimeViewer({
           initialViewState={INITIAL_VIEW_STATE}
           radiusScale={radiusScale}
           radiusMinPixels={radiusMinPixels}
+          projection={projection}
         />
       );
     } else if (style === 'Summary') {
@@ -193,6 +194,7 @@ export default function SpaceTimeViewer({
           mapStyle={MAP_STYLE}
           isGridView={summaryStyle === 'Grid'}
           initialViewState={INITIAL_VIEW_STATE}
+          projection={projection}
         />
       );
     } else {
@@ -211,7 +213,8 @@ export default function SpaceTimeViewer({
     theme,
     radiusScale,
     radiusMinPixels,
-    summaryStyle
+    summaryStyle,
+    projection
   ]);
 
   const handleSnackbarClose = () => {

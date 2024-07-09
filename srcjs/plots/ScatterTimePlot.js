@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
-import { MapView } from '@deck.gl/core';
+import { MapView, _GlobeView as GlobeView, COORDINATE_SYSTEM } from '@deck.gl/core';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { DataFilterExtension } from '@deck.gl/extensions';
 import RangeInput from '../ui/RangeInput';
 import * as d3 from 'd3';
+import { TileLayer } from '@deck.gl/geo-layers';
+import { BitmapLayer } from '@deck.gl/layers';
 
 const MAP_VIEW = new MapView({
   repeat: true,
@@ -64,8 +66,9 @@ export default function ScatterTimePlot(
       pitch: 0,
       bearing: 0
     },
-		radiusScale = 150,
-		radiusMinPixels = 5,
+    radiusScale = 150,
+    radiusMinPixels = 5,
+    projection = 'Mercator'
   }
 ) {
   const [filter, setFilter] = useState(timeRange);
@@ -79,44 +82,74 @@ export default function ScatterTimePlot(
     [minValue, maxValue]
   );
 
-	const layers = [
-		filter &&
-			new ScatterplotLayer({
-				id: 'scatterplot',
-				data: data, 
-				opacity: 0.8,
-				radiusScale: radiusScale,  // Adjust this value to make points bigger
-				radiusMinPixels: radiusMinPixels,  // Adjust this value to set a minimum point size
-				wrapLongitude: true,
-				getPosition: d => [d.lng, d.lat],
-				getFillColor: d => {
-					if (d.value != null) {
-						const color = d3.color(colorScale(d.value));
-						return [color.r, color.g, color.b, 255];
-					}
-					return [0, 0, 0, 255];
-				},
-				getFilterValue: d => new Date(d.timestamp).getTime(),
-				filterRange: [filter[0], filter[1]],
-				filterSoftRange: [
-					filter[0] * 0.9 + filter[1] * 0.1,
-					filter[0] * 0.1 + filter[1] * 0.9
-				],
-				extensions: [dataFilter],
-				pickable: true
-			})
-	];
+  const layers = [
+    filter &&
+    new ScatterplotLayer({
+      id: 'scatterplot',
+      data: data, 
+      opacity: 0.8,
+      radiusScale: radiusScale,  // Adjust this value to make points bigger
+      radiusMinPixels: radiusMinPixels,  // Adjust this value to set a minimum point size
+      wrapLongitude: true,
+      getPosition: d => [d.lng, d.lat],
+      getFillColor: d => {
+        if (d.value != null) {
+          const color = d3.color(colorScale(d.value));
+          return [color.r, color.g, color.b, 255];
+        }
+        return [0, 0, 0, 255];
+      },
+      getFilterValue: d => new Date(d.timestamp).getTime(),
+      filterRange: [filter[0], filter[1]],
+      filterSoftRange: [
+        filter[0] * 0.9 + filter[1] * 0.1,
+        filter[0] * 0.1 + filter[1] * 0.9
+      ],
+      extensions: [dataFilter],
+      pickable: true
+    })
+  ];
+
+  if (projection === 'Globe') {
+    let tileLayer = new TileLayer({
+      data: 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      minZoom: 0,
+      maxZoom: 19,
+      tileSize: 64,
+
+      renderSubLayers: props => {
+        const {
+          bbox: { west, south, east, north }
+        } = props.tile;
+
+        return new BitmapLayer(props, {
+          data: null,
+          image: props.data,
+          _imageCoordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+          bounds: [west, south, east, north]
+        });
+      }
+    });
+    // add to layers
+    layers.push(tileLayer);
+  }
 
   return (
     <>
+      <p>{projection}</p>
       <DeckGL
-        views={MAP_VIEW}
+        views={projection === 'Globe' ? new GlobeView() : MAP_VIEW}
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
         getTooltip={getTooltip}
       >
-        <Map reuseMaps mapStyle={mapStyle} />
+        {projection === 'Mercator' && (
+          <Map 
+            reuseMaps 
+            mapStyle={mapStyle} 
+          />
+        )}
       </DeckGL>
       {timeRange && (
         <RangeInput

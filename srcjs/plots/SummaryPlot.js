@@ -1,6 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Map } from 'react-map-gl/maplibre';
-import { AmbientLight, PointLight, LightingEffect } from '@deck.gl/core';
+import {
+	AmbientLight, 
+	PointLight, 
+	LightingEffect, 
+	_GlobeView as GlobeView, 
+	MapView,
+	COORDINATE_SYSTEM
+} from '@deck.gl/core';
+import { TileLayer } from '@deck.gl/geo-layers';
+import { BitmapLayer } from '@deck.gl/layers';
 import { HexagonLayer, GridLayer } from '@deck.gl/aggregation-layers';
 import DeckGL from '@deck.gl/react';
 import RangeInput from '../ui/RangeInput';
@@ -8,6 +17,7 @@ import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
 const MS_PER_DAY = 8.64e7;
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
@@ -28,83 +38,73 @@ const pointLight2 = new PointLight({
 
 const lightingEffect = new LightingEffect({ ambientLight, pointLight1, pointLight2 });
 
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
-
 const colorRange = [
-  [1, 152, 189],
-  [73, 227, 206],
-  [216, 254, 181],
-  [254, 237, 177],
-  [254, 173, 84],
-  [209, 55, 78]
+  [1, 152, 189], [73, 227, 206], [216, 254, 181],
+  [254, 237, 177], [254, 173, 84], [209, 55, 78]
 ];
 
 function getTooltip({ object }, elevationAggregation, filter) {
-  if (!object) {
-    return null;
-  }
+  if (!object) return null;
 
-  const lat = object.position[1];
-  const lng = object.position[0];
-
-  let metricName = (
-    elevationAggregation.charAt(0).toUpperCase()
-    + elevationAggregation.toLowerCase().slice(1)
-  );
-
-  let seriesData = object.points.map(d => ({
-    x: new Date(d.source.timestamp).getTime(),
-    y: d.source.value,
-  }));
-
-  // filter by timestamp
-  seriesData = seriesData.filter(d => {
-    let timestamp = d.x;
-    return timestamp >= filter[0] && timestamp <= filter[1];
-  });
-
+  const { position, points, elevationValue } = object;
+  const lat = position[1];
+  const lng = position[0];
+  const metricName =
+    elevationAggregation.charAt(0).toUpperCase() +
+    elevationAggregation.slice(1).toLowerCase();
   const chartId = `chart-${lat}-${lng}`;
 
+  let seriesData = points
+    .map(d => ({
+      x: new Date(d.source.timestamp).getTime(),
+      y: d.source.value
+    }))
+    .filter(d => d.x >= filter[0] && d.x <= filter[1]);
+
   setTimeout(() => {
-    const ctx = document.getElementById(chartId).getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: seriesData.map(d => new Date(d.x).toISOString().slice(0, 10)),
-        datasets: [
-          {
-            label: 'Data Over Time',
-            data: seriesData,
-            borderColor: 'rgba(255, 99, 132, 1)',
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            fill: false,
-            cubicInterpolationMode: 'monotone',
-            tension: 0.4
-          }
-        ]
-      },
-      options: {
-        scales: {
-          x: {
-            type: 'time',
-          },
-          y: {
-            title: {
-              display: true,
-              text: 'Values'
+    const ctx = document.getElementById(chartId)?.getContext('2d');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: seriesData.map(d =>
+            new Date(d.x).toISOString().slice(0, 10)
+          ),
+          datasets: [
+            {
+              label: 'Data Over Time',
+              data: seriesData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              fill: false,
+              cubicInterpolationMode: 'monotone',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'time'
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Values'
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
   }, 0);
 
   return {
     html: `
       <div>
-        <p>Latitude: ${Number.isFinite(lat) ? lat.toFixed(2) : ''}</p>
-        <p>Longitude: ${Number.isFinite(lng) ? lng.toFixed(2) : ''}</p>
-        <p>${metricName}: ${object.elevationValue.toFixed(2)}</p>
+        <p>Latitude: ${lat.toFixed(2)}</p>
+        <p>Longitude: ${lng.toFixed(2)}</p>
+        <p>${metricName}: ${elevationValue.toFixed(2)}</p>
         <canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>
       </div>
     `,
@@ -113,8 +113,8 @@ function getTooltip({ object }, elevationAggregation, filter) {
       backgroundColor: '#fff',
       borderRadius: '5px',
       lineHeight: '0.5',
-      padding: '5px',
-    },
+      padding: '5px'
+    }
   };
 }
 
@@ -137,7 +137,8 @@ export default function SummaryPlot({
     zoom: 11,
     pitch: 30,
     bearing: 0
-  }
+  },
+  projection = 'Mercator'
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -145,13 +146,10 @@ export default function SummaryPlot({
   const initialColorDomain = useRef(null);
   const initialElevationDomain = useRef(null);
 
-  // Reset initial domains when data or aggregation function changes
   useEffect(() => {
     if (preserveDomains) {
       initialColorDomain.current = null;
       initialElevationDomain.current = null;
-
-      // Temporarily set the filter to include the entire dataset
       setTriggerDomainUpdate(true);
       setFilter([0, Infinity]);
     }
@@ -160,37 +158,25 @@ export default function SummaryPlot({
   useEffect(() => {
     if (triggerDomainUpdate) {
       setTriggerDomainUpdate(false);
-      // Reapply the original filter after domains are recalculated
       setFilter(timeRange);
     }
   }, [triggerDomainUpdate, timeRange]);
 
-  const getAggregationFunction = (aggregation, defaultValue, currentFilter = filter) => {
-    return points => {
-      if (!points.length) return defaultValue;
+  const getAggregationFunction = (aggregation, defaultValue, currentFilter = filter) => points => {
+    if (!points.length) return defaultValue;
+    points = points.filter(d => {
+      const timestamp = new Date(d.timestamp).getTime();
+      return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
+    });
+    if (!points.length) return defaultValue;
 
-      points = points.filter(d => {
-        const timestamp = new Date(d.timestamp).getTime();
-        return timestamp >= currentFilter[0] && currentFilter[1] !== -Infinity ? timestamp <= currentFilter[1] : true;
-      });
-
-      if (!points.length) return defaultValue;
-
-      const values = points.map(point => point.value !== undefined ? point.value : defaultValue);
-
-      if (aggregation === 'SUM') {
-        return values.reduce((sum, val) => sum + val, 0);
-      } else if (aggregation === 'MEAN') {
-        return values.reduce((sum, val) => sum + val, 0) / values.length;
-      } else if (aggregation === 'COUNT') {
-        return values.length;
-      } else if (aggregation === 'MIN') {
-        return Math.min(...values);
-      } else if (aggregation === 'MAX') {
-        return Math.max(...values);
-      }
-      return defaultValue; // Default case, should not reach here
-    };
+    const values = points.map(point => (point.value !== undefined ? point.value : defaultValue));
+    if (aggregation === 'SUM') return values.reduce((sum, val) => sum + val, 0);
+    if (aggregation === 'MEAN') return values.reduce((sum, val) => sum + val, 0) / values.length;
+    if (aggregation === 'COUNT') return values.length;
+    if (aggregation === 'MIN') return Math.min(...values);
+    if (aggregation === 'MAX') return Math.max(...values);
+    return defaultValue;
   };
 
   const elevationFunction = getAggregationFunction(elevationAggregation, 1);
@@ -202,8 +188,8 @@ export default function SummaryPlot({
           id: 'grid-heatmap',
           colorRange,
           coverage,
-          data: data,
-          elevationRange: [0, 3000], // Set an initial elevation range
+          data,
+          elevationRange: [0, 3000],
           elevationScale: data.length ? 50 : 0,
           extruded: true,
           getPosition: d => [d.lng, d.lat],
@@ -219,20 +205,14 @@ export default function SummaryPlot({
             specularColor: [51, 51, 51]
           },
           onSetColorDomain: colorDomain => {
-            if (preserveDomains && !initialColorDomain.current) {
+            if (preserveDomains && !initialColorDomain.current)
               initialColorDomain.current = colorDomain;
-            }
-            if (!preserveDomains) {
-              initialColorDomain.current = colorDomain;
-            }
+            if (!preserveDomains) initialColorDomain.current = colorDomain;
           },
           onSetElevationDomain: elevationDomain => {
-            if (preserveDomains && !initialElevationDomain.current) {
+            if (preserveDomains && !initialElevationDomain.current)
               initialElevationDomain.current = elevationDomain;
-            }
-            if (!preserveDomains) {
-              initialElevationDomain.current = elevationDomain;
-            }
+            if (!preserveDomains) initialElevationDomain.current = elevationDomain;
           },
           colorDomain: preserveDomains ? initialColorDomain.current : null,
           elevationDomain: preserveDomains ? initialElevationDomain.current : null,
@@ -246,8 +226,8 @@ export default function SummaryPlot({
           id: 'hex-heatmap',
           colorRange,
           coverage,
-          data: data,
-          elevationRange: [0, 3000], // Set an initial elevation range
+          data,
+          elevationRange: [0, 3000],
           elevationScale: data.length ? 50 : 0,
           extruded: true,
           getPosition: d => [d.lng, d.lat],
@@ -263,20 +243,14 @@ export default function SummaryPlot({
             specularColor: [51, 51, 51]
           },
           onSetColorDomain: colorDomain => {
-            if (preserveDomains && !initialColorDomain.current) {
+            if (preserveDomains && !initialColorDomain.current)
               initialColorDomain.current = colorDomain;
-            }
-            if (!preserveDomains) {
-              initialColorDomain.current = colorDomain;
-            }
+            if (!preserveDomains) initialColorDomain.current = colorDomain;
           },
           onSetElevationDomain: elevationDomain => {
-            if (preserveDomains && !initialElevationDomain.current) {
+            if (preserveDomains && !initialElevationDomain.current)
               initialElevationDomain.current = elevationDomain;
-            }
-            if (!preserveDomains) {
-              initialElevationDomain.current = elevationDomain;
-            }
+            if (!preserveDomains) initialElevationDomain.current = elevationDomain;
           },
           colorDomain: preserveDomains ? initialColorDomain.current : null,
           elevationDomain: preserveDomains ? initialElevationDomain.current : null,
@@ -288,16 +262,47 @@ export default function SummaryPlot({
         })
   ];
 
+	if (projection === 'Globe') {
+		let tileLayer =  new TileLayer({
+      data: 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      minZoom: 0,
+      maxZoom: 19,
+      tileSize: 64,
+
+      renderSubLayers: props => {
+        const {
+          bbox: {west, south, east, north}
+        } = props.tile;
+
+        return new BitmapLayer(props, {
+          data: null,
+          image: props.data,
+          _imageCoordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+          bounds: [west, south, east, north]
+        });
+      }
+    });
+		// add to layers
+		layers.push(tileLayer);
+	}
+
   return (
     <>
+      <p>{projection}</p>
       <DeckGL
+        views={projection === 'Globe' ? new GlobeView() : new MapView()}
         layers={layers}
         effects={[lightingEffect]}
         initialViewState={initialViewState}
         controller={true}
         getTooltip={({ object }) => getTooltip({ object }, elevationAggregation, filter)}
       >
-        <Map reuseMaps mapStyle={mapStyle} />
+				{ projection === 'Mercator' && (
+					<Map 
+						reuseMaps 
+						mapStyle={mapStyle} 
+					/>
+				)}
       </DeckGL>
       {timeRange && (
         <RangeInput
@@ -309,7 +314,7 @@ export default function SummaryPlot({
             const date = new Date(timestamp);
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
           }}
-          onChange={v => setFilter(v)}
+          onChange={setFilter}
           data={data}
         />
       )}

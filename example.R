@@ -29,5 +29,6 @@ spacetimeview(
   initialSummaryRadius=55000,
   initialAnimationSpeed=10,
   initialSummaryCoverage=1,
-  initialAggregate='MEAN'
+  initialAggregate='MEAN',
+  initialProjection='Mercator'
 )
