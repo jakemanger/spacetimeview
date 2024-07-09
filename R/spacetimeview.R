@@ -13,6 +13,7 @@ spacetimeview <- function(
       'timestamp'
     ), 
     initialColumnToPlot = NULL,
+    plottable_columns = NULL,
     ..., 
     width = '100vw', 
     height = '100vh', 
@@ -34,7 +35,9 @@ spacetimeview <- function(
   # convert to timestamp format needed by js
   data$timestamp <- format(data$timestamp, "%Y/%m/%d %H:%M:%OS2")
   
-  plottable_columns <- names(data)[!(names(data) %in% required_cols)]
+  if (is.null(plottable_columns)) {
+    plottable_columns <- names(data)[!(names(data) %in% required_cols)]
+  }
   
   if (length(plottable_columns) == 0) {
     stop(
