@@ -58,3 +58,5 @@ data <- data[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
 names(data) <- c('lat', 'lng', 'timestamp', 'value')
 spacetimeview(data = data)
 ```
+
+6. See a more complicated example at `example.R`
