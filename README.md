@@ -1,5 +1,39 @@
 # spacetimeview
 
+## Usage
+1. Clone this repo
+   
+2. Load the package for development
+```R
+devtools::load_all()
+```
+
+or install the R package
+
+```R
+renv::activate()
+devtools::document()
+devtools::install(quick = TRUE)
+library(spacetimeview)
+```
+
+3. Enjoy the package
+
+```R
+# histogram
+data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
+spacetimeview(data = data)
+
+# histogram over time plot
+data <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
+data <- data[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
+names(data) <- c('lat', 'lng', 'timestamp', 'magnitude')
+spacetimeview(data = data)
+```
+
+4. See a more complicated example at `example.R`
+
+
 ## Development
 
 This project was built with the `reactR` package. See here for development instructions
@@ -48,14 +82,14 @@ library(spacetimeview)
 5. Enjoy the package
 
 ```R
-# hexagon histogram
+# histogram
 data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
 spacetimeview(data = data)
 
-# scatter time plot
+# histogram over time plot
 data <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
 data <- data[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
-names(data) <- c('lat', 'lng', 'timestamp', 'value')
+names(data) <- c('lat', 'lng', 'timestamp', 'magnitude')
 spacetimeview(data = data)
 ```
 
