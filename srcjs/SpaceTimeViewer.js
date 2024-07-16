@@ -37,7 +37,8 @@ export default function SpaceTimeViewer({
   initialRadiusScale = 1,
   initialRadiusMinPixels = 1,
   initialSummaryStyle = 'Grid',
-  initialProjection = 'Mercator'
+  initialProjection = 'Mercator',
+	initialSummaryHeight = 20,
 }) {
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -86,6 +87,7 @@ export default function SpaceTimeViewer({
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
       summaryRadius: { value: initialSummaryRadius, label: 'Radius' },
       summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell' },
+			summaryHeight: { value: initialSummaryHeight, label: 'Height' },
     }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
     'Scatter settings': folder({
       radiusScale: { value: initialRadiusScale, label: 'Radius' },
@@ -108,6 +110,7 @@ export default function SpaceTimeViewer({
     preserveDomains,
     summaryRadius,
     summaryCoverage,
+		summaryHeight,
     summaryStyle,
     radiusScale,
     radiusMinPixels,
@@ -210,6 +213,7 @@ export default function SpaceTimeViewer({
           isGridView={summaryStyle === 'Grid'}
           initialViewState={INITIAL_VIEW_STATE}
           projection={projection}
+					summaryHeight={summaryHeight}
         />
       );
     } else {
@@ -225,6 +229,7 @@ export default function SpaceTimeViewer({
     summaryRadius,
     summaryCoverage,
     animationSpeed,
+		summaryHeight,
     theme,
     radiusScale,
     radiusMinPixels,

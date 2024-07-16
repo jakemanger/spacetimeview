@@ -140,7 +140,8 @@ export default function SummaryPlot({
     pitch: 30,
     bearing: 0
   },
-  projection = 'Mercator'
+  projection = 'Mercator',
+	summaryHeight = 25
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -194,7 +195,7 @@ export default function SummaryPlot({
           coverage,
           data,
           elevationRange: [0, 3000],
-          elevationScale: data.length ? 50 : 0,
+          elevationScale: data.length ? summaryHeight : 0,
           extruded: true,
           getPosition: d => [d.lng, d.lat],
           pickable: true,
@@ -232,7 +233,7 @@ export default function SummaryPlot({
           coverage,
           data,
           elevationRange: [0, 3000],
-          elevationScale: data.length ? 50 : 0,
+          elevationScale: data.length ? summaryHeight : 0,
           extruded: true,
           getPosition: d => [d.lng, d.lat],
           pickable: true,
