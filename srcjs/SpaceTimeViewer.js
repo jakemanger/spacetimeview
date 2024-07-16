@@ -152,9 +152,9 @@ export default function SpaceTimeViewer({
     if (!transformedData || !transformedData.some(d => d.lng && d.lat)) {
       let columnsInData = transformedData.map(d => Object.keys(d));
       console.error(
-        'Unsupported data type: ',
+        'Unsupported columns: ',
         columnsInData,
-        'Supported data types are: lng, lat, timestamp, value'
+        'Columns should include: "lng", "lat", an optional timestamp and columns to plot.'
       );
       return <div>Unsupported data type: {columnsInData}</div>;
     }

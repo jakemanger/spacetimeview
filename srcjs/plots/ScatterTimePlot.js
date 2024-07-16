@@ -37,20 +37,37 @@ function getMinMaxValues(data, key) {
   );
 }
 
-function getTooltip({ object }) {
+function getTooltip({ object }, hasTime) {
+	let html = '';
   if (!object) {
     return;
   }
   if (object.value) {
-    return `\
-      Time: ${new Date(object.timestamp).toUTCString()}
+		html = `\
+			${hasTime ? `
+				Time: ${new Date(object.timestamp).toUTCString()}
+			`: ''}
       Value: ${object.value.toFixed(2)}
     `;
   } else {
-    return `\
-    Time: ${new Date(object.timestamp).toUTCString()}
+    html = `\
+			${hasTime ? `
+				Time: ${new Date(object.timestamp).toUTCString()}
+			` : ''}
     `;
   }
+
+  return {
+    html: html,
+    style: {
+      color: '#333',
+      backgroundColor: '#fff',
+      borderRadius: '5px',
+      lineHeight: '0.5',
+      padding: '5px'
+    }
+  };
+
 }
 
 export default function ScatterTimePlot(
@@ -130,8 +147,8 @@ export default function ScatterTimePlot(
         });
       }
     });
-    // add to layers
-    layers.push(tileLayer);
+    // add to layers at front so rendered behind data
+    layers.unshift(tileLayer);
   }
 
   return (
@@ -141,7 +158,7 @@ export default function ScatterTimePlot(
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={getTooltip}
+        getTooltip={({ object }) => getTooltip({ object }, !isNaN(timeRange[0]))}
       >
         {projection === 'Mercator' && (
           <Map 
@@ -150,7 +167,7 @@ export default function ScatterTimePlot(
           />
         )}
       </DeckGL>
-      {timeRange && (
+      {!isNaN(timeRange[0]) && (
         <RangeInput
           min={timeRange[0]}
           max={timeRange[1]}

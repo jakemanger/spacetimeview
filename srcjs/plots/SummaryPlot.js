@@ -43,7 +43,7 @@ const colorRange = [
   [254, 237, 177], [254, 173, 84], [209, 55, 78]
 ];
 
-function getTooltip({ object }, elevationAggregation, filter) {
+function getTooltip({ object }, elevationAggregation, filter, hasTime) {
   if (!object) return null;
 
   const { position, points, elevationValue } = object;
@@ -104,8 +104,10 @@ function getTooltip({ object }, elevationAggregation, filter) {
       <div>
         <p>Latitude: ${lat.toFixed(2)}</p>
         <p>Longitude: ${lng.toFixed(2)}</p>
-        <p>${metricName}: ${elevationValue.toFixed(2)}</p>
-        <canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>
+				<p>${metricName}: ${elevationValue.toFixed(2)}</p>
+        ${hasTime ? `
+					<canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>
+				` : ''}
       </div>
     `,
     style: {
@@ -282,8 +284,8 @@ export default function SummaryPlot({
         });
       }
     });
-		// add to layers
-		layers.push(tileLayer);
+    // add to layers at front so rendered behind data
+    layers.unshift(tileLayer);
 	}
 
   return (
@@ -294,7 +296,7 @@ export default function SummaryPlot({
         effects={[lightingEffect]}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) => getTooltip({ object }, elevationAggregation, filter)}
+        getTooltip={({ object }) => getTooltip({ object }, elevationAggregation, filter, !isNaN(timeRange[0]))}
       >
 				{ projection === 'Mercator' && (
 					<Map 
@@ -303,7 +305,7 @@ export default function SummaryPlot({
 					/>
 				)}
       </DeckGL>
-      {timeRange && (
+      {!isNaN(timeRange[0]) && (
         <RangeInput
           min={timeRange[0]}
           max={timeRange[1]}

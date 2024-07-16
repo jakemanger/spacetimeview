@@ -36,18 +36,18 @@ spacetimeview <- function(
   if (time_column_name %in% colnames(data)) {
     # if supplied,
     # make sure timestamp is in the correct format
-    is_datetime <- lubridate::is.timepoint(data$timestamp)
+    is_datetime <- lubridate::is.timepoint(data[,time_column_name])
     
     if (!is_datetime) {
       stop(paste0('The `', time_column_name, '` time column was not a POSIXct, POSIXlt, or Date object.'))
     }
     
     # then convert to timestamp format needed by js
-    data$timestamp <- format(data$timestamp, "%Y/%m/%d %H:%M:%OS2")
+    data$timestamp <- format(data[,time_column_name], "%Y/%m/%d %H:%M:%OS2")
   }
   
   if (is.null(plottable_columns)) {
-    plottable_columns <- names(data)[!(names(data) %in% required_cols)]
+    plottable_columns <- names(data)[!(names(data) %in% c(required_cols, time_column_name))]
   }
   
   if (length(plottable_columns) == 0) {
