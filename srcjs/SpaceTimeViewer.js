@@ -30,7 +30,7 @@ export default function SpaceTimeViewer({
   initialColumnToPlot = 'value',
   initialAggregate = 'SUM',
   initialPreserveDomains = false,
-  initialSummaryRadius = 55000,
+  initialSummaryRadius = 5000,
   initialSummaryCoverage = 1.0,
   initialAnimationSpeed = 10,
   initialTheme = 'light',
@@ -65,7 +65,39 @@ export default function SpaceTimeViewer({
     );
   }, [data]);
 
+  // define aggregateOptions for the summary plot
+  let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
+  // if there is no data[0].values then we can't use SUM, MEAN, MIN, MAX
+  if (!data.length || !data[0].values) {
+    aggregateOptions = ['COUNT'];
+    initialAggregate = 'COUNT';
+  }
+
   // Initialize Leva controls with props as default values
+  const controlsConfig = {
+    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
+    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
+    theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
+    projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
+    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot', order: 1 },
+    'Summary settings': folder({
+      summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
+      aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function' },
+      preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
+      summaryRadius: { value: initialSummaryRadius, label: 'Radius' },
+      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell' },
+    }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
+    'Scatter settings': folder({
+      radiusScale: { value: initialRadiusScale, label: 'Radius' },
+      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius' },
+    }, { collapsed: true, render: (get) => get('style') === 'Scatter' }),
+  };
+
+  // Remove columnToPlot from controlsConfig if initialColumnToPlot is not valid
+  if (!columnNames.includes(initialColumnToPlot)) {
+    delete controlsConfig.columnToPlot;
+  }
+
   const {
     style,
     columnToPlot,
@@ -79,24 +111,7 @@ export default function SpaceTimeViewer({
     summaryStyle,
     radiusScale,
     radiusMinPixels,
-  } = useControls({
-    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
-    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
-    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
-    theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
-    projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
-    'Summary settings': folder({
-      summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
-      aggregate: { value: initialAggregate, options: ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'], label: 'Aggregation function' },
-      preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
-      summaryRadius: { value: initialSummaryRadius, label: 'Radius' },
-      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell' },
-    }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
-    'Scatter settings': folder({
-      radiusScale: { value: initialRadiusScale, label: 'Radius' },
-      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius' },
-    }, { collapsed: true, render: (get) => get('style') === 'Scatter' }),
-  });
+  } = useControls(controlsConfig);
 
   useEffect(() => {
     // Depending on the current theme from useControls, set the corresponding theme colors.

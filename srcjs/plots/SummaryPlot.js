@@ -166,10 +166,12 @@ export default function SummaryPlot({
 
   const getAggregationFunction = (aggregation, defaultValue, currentFilter = filter) => points => {
     if (!points.length) return defaultValue;
-    points = points.filter(d => {
-      const timestamp = new Date(d.timestamp).getTime();
-      return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
-    });
+		if (points[0].timestamp !== undefined) {
+			points = points.filter(d => {
+				const timestamp = new Date(d.timestamp).getTime();
+				return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
+			});
+		}
     if (!points.length) return defaultValue;
 
     const values = points.map(point => (point.value !== undefined ? point.value : defaultValue));

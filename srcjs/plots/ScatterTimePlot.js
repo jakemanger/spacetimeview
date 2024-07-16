@@ -42,20 +42,15 @@ function getTooltip({ object }, hasTime) {
   if (!object) {
     return;
   }
-  if (object.value) {
-		html = `\
-			${hasTime ? `
-				Time: ${new Date(object.timestamp).toUTCString()}
-			`: ''}
-      Value: ${object.value.toFixed(2)}
-    `;
-  } else {
-    html = `\
-			${hasTime ? `
-				Time: ${new Date(object.timestamp).toUTCString()}
-			` : ''}
-    `;
-  }
+	html = `\
+		Latitude, Longitude: ${object.lng.toFixed(2)}, ${object.lat.toFixed(2)}
+		${hasTime ? `
+			Time: ${new Date(object.timestamp).toUTCString()}
+		` : ''}
+		${object.value ? `
+			Value: ${object.value.toFixed(2)}
+		` : ''}
+	`;
 
   return {
     html: html,

@@ -51,14 +51,14 @@ spacetimeview <- function(
   }
   
   if (length(plottable_columns) == 0) {
-    stop(
+    warning(
       paste(
         'There were no columns to plot in the dataset.',
         'Found columns were:', paste(names(data), collapse=', ')
       )
     )
-  }
-  if (!('initialColumnToPlot' %in% list(...))) {
+    initialColumnToPlot = NaN
+  } else if (!('initialColumnToPlot' %in% list(...))) {
     initialColumnToPlot = plottable_columns[1]
     warning(
       paste0(
