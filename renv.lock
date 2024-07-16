@@ -19,7 +19,7 @@
     },
     "Rcpp": {
       "Package": "Rcpp",
-      "Version": "1.0.8.3",
+      "Version": "1.0.10",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "32e79b908fda56ee57fe518a8d37b864",
@@ -66,7 +66,7 @@
     },
     "cli": {
       "Package": "cli",
-      "Version": "3.6.0",
+      "Version": "3.6.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "3177a5a16c243adc199ba33117bd9657",
@@ -74,7 +74,7 @@
     },
     "commonmark": {
       "Package": "commonmark",
-      "Version": "1.8.0",
+      "Version": "1.9.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "2ba81b120c1655ab696c935ef33ea716",
@@ -294,7 +294,7 @@
     },
     "reactR": {
       "Package": "reactR",
-      "Version": "0.5.0",
+      "Version": "0.6.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "c9014fd1a435b2d790dd506589cb24e5",

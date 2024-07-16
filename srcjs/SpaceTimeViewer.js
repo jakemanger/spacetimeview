@@ -7,7 +7,7 @@ import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import PinchIcon from '@mui/icons-material/Pinch';
-import './SpaceTimeViewer.css'; // Add this import for CSS file
+import './SpaceTimeViewer.css';
 
 function getTimeRange(data) {
   if (!data || data.length === 0) {
@@ -67,8 +67,8 @@ export default function SpaceTimeViewer({
 
   // define aggregateOptions for the summary plot
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
-  // if there is no data[0].values then we can't use SUM, MEAN, MIN, MAX
-  if (!data.length || !data[0].values) {
+  // if there is no data[0].initialColumnToPLot then we can't use SUM, MEAN, MIN, MAX
+  if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
   }
@@ -79,7 +79,7 @@ export default function SpaceTimeViewer({
     animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
     theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
     projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
-    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot', order: 1 },
+    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
     'Summary settings': folder({
       summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function' },

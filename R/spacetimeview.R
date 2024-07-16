@@ -8,7 +8,7 @@
 spacetimeview <- function(
     data, 
     time_column_name = 'timestamp',
-    required_cols=c(
+    required_cols = c(
       'lat',
       'lng',
       'timestamp'
@@ -20,15 +20,75 @@ spacetimeview <- function(
     height = '100vh', 
     elementId = NULL
 ) {
-  # Assuming `data` is a dataframe with columns `lat` and `lng`
-  if (is(data, 'sf')) {
+  
+  if (inherits(data, 'SpatRaster')) {
+    print('Constructing input from terra object...')
+    
+    coords <- terra::xyFromCell(data, 1:terra::ncell(data))
+    values <- terra::values(data)
+    
+    data_sf <- sf::st_as_sf(data.frame(
+      lng = coords[,1],
+      lat = coords[,2],
+      values
+    ), coords = c("lng", "lat"), crs = terra::crs(data))
+    
+    # Ensure it is in a lat/lng CRS
+    if (!sf::st_is_longlat(data_sf)) {
+      data_sf <- sf::st_transform(data_sf, "+proj=longlat +datum=WGS84")
+    }
+    
+    coordinates <- sf::st_coordinates(data_sf)
+    rest_of_data <- sf::st_drop_geometry(data_sf)
+    
+    data <- data.frame(
+      lng = coordinates[,1],
+      lat = coordinates[,2]
+    )
+    data <- cbind(data, rest_of_data)
+  }
+  
+  if (inherits(data, 'stars')) {
+    print('Constructing input from stars object...')
+    
+    coords <- sf::st_coordinates(data)
+    values <- as.data.frame(stars::st_as_stars(data))
+    
+    data_sf <- sf::st_as_sf(data.frame(
+      lng = coords[,1],
+      lat = coords[,2],
+      values
+    ), coords = c("lng", "lat"), crs = sf::st_crs(data))
+    
+    # Ensure it is in a lat/lng CRS
+    if (!sf::st_is_longlat(data_sf)) {
+      data_sf <- sf::st_transform(data_sf, "+proj=longlat +datum=WGS84")
+    }
+    
+    coordinates <- sf::st_coordinates(data_sf)
+    rest_of_data <- sf::st_drop_geometry(data_sf)
+    
+    data <- data.frame(
+      lng = coordinates[,1],
+      lat = coordinates[,2]
+    )
+    data <- cbind(data, rest_of_data)
+  }
+  
+  if (inherits(data, 'sf')) {
     print('Constructing input from sf object...')
+    
+    # Ensure it is in a lat/lng CRS
+    if (!sf::st_is_longlat(data)) {
+      data <- sf::st_transform(data, "+proj=longlat +datum=WGS84")
+    }
+    
     coordinates <- sf::st_coordinates(data)
     rest_of_data <- sf::st_drop_geometry(data)
     
     data <- data.frame(
-      lng=coordinates[,1],
-      lat=coordinates[,2]
+      lng = coordinates[,1],
+      lat = coordinates[,2]
     )
     data <- cbind(data, rest_of_data)
   }
@@ -67,8 +127,8 @@ spacetimeview <- function(
       )
     )
   }
-
-  print('Reformatting data')
+  
+  print('Reformatting data as list to be put in JS')
   data_list <- purrr::transpose(data)
   
   print('Starting ReactR plot')
@@ -92,6 +152,7 @@ spacetimeview <- function(
     elementId = elementId
   )
 }
+
 
 #' Called by HTMLWidgets to produce the widget's root element.
 #' @noRd
