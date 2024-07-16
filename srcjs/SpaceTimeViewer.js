@@ -31,7 +31,7 @@ export default function SpaceTimeViewer({
   initialAggregate = 'SUM',
   initialPreserveDomains = false,
   initialSummaryRadius = 5000,
-  initialSummaryCoverage = 1.0,
+  initialSummaryCoverage = 1,
   initialAnimationSpeed = 10,
   initialTheme = 'light',
   initialRadiusScale = 1,
@@ -77,7 +77,7 @@ export default function SpaceTimeViewer({
   // Initialize Leva controls with props as default values
   const controlsConfig = {
     style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
-    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed' },
+    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed', step: 0.001 },
     theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
     projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
     columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
@@ -85,13 +85,13 @@ export default function SpaceTimeViewer({
       summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
-      summaryRadius: { value: initialSummaryRadius, label: 'Radius' },
-      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell' },
-			summaryHeight: { value: initialSummaryHeight, label: 'Height' },
+      summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 0.001 },
+      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.001 },
+      summaryHeight: { value: initialSummaryHeight, label: 'Height', step: 0.001 },
     }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
     'Scatter settings': folder({
-      radiusScale: { value: initialRadiusScale, label: 'Radius' },
-      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius' },
+      radiusScale: { value: initialRadiusScale, label: 'Radius', step: 0.001 },
+      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius', step: 0.001 },
     }, { collapsed: true, render: (get) => get('style') === 'Scatter' }),
   };
 
