@@ -7,6 +7,7 @@
 #' @export
 spacetimeview <- function(
     data, 
+    time_column_name = 'timestamp',
     required_cols=c(
       'lat',
       'lng',
@@ -32,17 +33,18 @@ spacetimeview <- function(
     data <- cbind(data, rest_of_data)
   }
   
-  # convert to timestamp format needed by js
-  convert_to_format <- function(ts) {
-    # Parse the timestamp to make sure it's in a consistent format
-    parsed_ts <- ymd_hms(ts)
+  if (time_column_name %in% colnames(data)) {
+    # if supplied,
+    # make sure timestamp is in the correct format
+    is_datetime <- lubridate::is.timepoint(data$timestamp)
     
-    # Format the parsed timestamp to "%Y/%m/%d %H:%M:%OS2"
-    formatted_ts <- format(parsed_ts, "%Y/%m/%d %H:%M:%OS2")
+    if (!is_datetime) {
+      stop(paste0('The `', time_column_name, '` time column was not a POSIXct, POSIXlt, or Date object.'))
+    }
     
-    return(formatted_ts)
+    # then convert to timestamp format needed by js
+    data$timestamp <- format(data$timestamp, "%Y/%m/%d %H:%M:%OS2")
   }
-  data$timestamp <- sapply(data$timestamp, convert_to_format)
   
   if (is.null(plottable_columns)) {
     plottable_columns <- names(data)[!(names(data) %in% required_cols)]
@@ -59,9 +61,9 @@ spacetimeview <- function(
   if (!('initialColumnToPlot' %in% list(...))) {
     initialColumnToPlot = plottable_columns[1]
     warning(
-      paste(
-        'initialColumnToPlot was not specified.',
-        'Defaulting to ', initialColumnToPlot
+      paste0(
+        'initialColumnToPlot was not specified. ',
+        'Defaulting to `', initialColumnToPlot, '`'
       )
     )
   }
