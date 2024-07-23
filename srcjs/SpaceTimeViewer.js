@@ -40,6 +40,10 @@ export default function SpaceTimeViewer({
   initialProjection = 'Mercator',
 	initialSummaryHeight = 20,
 }) {
+	// convert from R's wide format to long format
+	data = HTMLWidgets.dataframeToD3(data);
+
+
   let [levaTheme, setLevaTheme] = useState({
     colors: {
       elevation1: '#F1F3F5',

@@ -128,15 +128,14 @@ spacetimeview <- function(
     )
   }
   
-  print('Reformatting data as list to be put in JS')
+  # print('Reformatting data as list to be put in JS')
   data_list <- purrr::transpose(data)
-  
   print('Starting ReactR plot')
   # describe a React component to send to the browser for rendering.
   component <- reactR::component(
     "SpaceTimeViewer",
     list(
-      data = data_list,
+      data = data,
       initialColumnToPlot = initialColumnToPlot,
       ...
     )
