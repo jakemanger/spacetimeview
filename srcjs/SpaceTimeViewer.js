@@ -8,6 +8,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import PinchIcon from '@mui/icons-material/Pinch';
 import './SpaceTimeViewer.css';
+import { Provider } from "@radix-ui/react-tooltip";
+
 
 function getTimeRange(data) {
   if (!data || data.length === 0) {
@@ -57,7 +59,7 @@ export default function SpaceTimeViewer({
       highlight2: '#323F4B',
       highlight3: '#3E4C59',
       vivid1: '#FFC107',
-    }
+    },
   });
 
   const [snackbarOpen, setSnackbarOpen] = useState(true);
@@ -82,23 +84,23 @@ export default function SpaceTimeViewer({
 
   // Initialize Leva controls with props as default values
   const controlsConfig = {
-    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style' },
-    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed', step: 0.001 },
-    theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
-    projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
-    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
+    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style', hint: 'The style of the plot. Either a summary plot or a scatter plot.'},
+    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed', step: 0.001, hint: 'The speed of the time animation in seconds.' },
+    theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme', hint: 'The theme of the map.' },
+    projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection', hint: 'The projection of the map.' },
+    columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot', hint: 'The column to plot on the map.' },
     'Additional summary settings': folder({
-      summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
-      aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function' },
-      repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function' },
-      preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
-      summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 0.001 },
-      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.001 },
-      summaryHeight: { value: initialSummaryHeight, label: 'Height', step: 0.001 },
+      summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style', hint: 'The style of the summary plot.' },
+      aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function', hint: 'The aggregation function to use for the color scale and height (if height > 0).' },
+      repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function', hint: 'An additional aggregation function to use for data points within a grid cell that have the same time.' },
+      preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data', hint: 'If true, the colour scale will be based on all data points. If false, the colour scale will be based on the current time window.' },
+      summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 0.001, hint: 'The radius of the grid cell or hexagon.' },
+      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.001, hint: 'The cell size factor. The size of a cell is calculated as `Size of cell * Radius`.' },
+      summaryHeight: { value: initialSummaryHeight, label: 'Height', step: 0.001, hint: 'The height of the grid cell or hexagon.', hint: 'The height of the grid cell or hexagon.' },
     }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
     'Scatter settings': folder({
-      radiusScale: { value: initialRadiusScale, label: 'Radius', step: 0.001 },
-      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius', step: 0.001 },
+      radiusScale: { value: initialRadiusScale, label: 'Radius', step: 0.001, hint: 'The radius scale factor.' },
+      radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius', step: 0.001, hint: 'The minimum radius in pixels.' },
     }, { collapsed: true, render: (get) => get('style') === 'Scatter' }),
   };
 
@@ -256,7 +258,9 @@ export default function SpaceTimeViewer({
   return (
     <div className="space-time-viewer">
       {plot}
-      <Leva theme={levaTheme} />
+      <Provider delayDuration={0}>
+        <Leva theme={levaTheme}/>
+      </Provider>
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
