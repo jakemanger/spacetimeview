@@ -29,6 +29,7 @@ export default function SpaceTimeViewer({
   initialStyle = 'Summary',
   initialColumnToPlot = 'value',
   initialAggregate = 'SUM',
+  initialRepeatedPointsAggregate = 'MEAN',
   initialPreserveDomains = false,
   initialSummaryRadius = 5000,
   initialSummaryCoverage = 1,
@@ -72,6 +73,7 @@ export default function SpaceTimeViewer({
 
   // define aggregateOptions for the summary plot
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
+  let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
   // if there is no data[0].initialColumnToPLot then we can't use SUM, MEAN, MIN, MAX
   if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
@@ -85,9 +87,10 @@ export default function SpaceTimeViewer({
     theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme' },
     projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection' },
     columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot' },
-    'Summary settings': folder({
+    'Additional summary settings': folder({
       summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style' },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function' },
+      repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data' },
       summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 0.001 },
       summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.001 },
@@ -111,6 +114,7 @@ export default function SpaceTimeViewer({
     theme,
     projection,
     aggregate,
+    repeatedPointsAggregate,
     preserveDomains,
     summaryRadius,
     summaryCoverage,
@@ -207,6 +211,7 @@ export default function SpaceTimeViewer({
           data={transformedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
           colorAggregation={aggregate}
           elevationAggregation={aggregate}
+          repeatedPointsAggregation={repeatedPointsAggregate}
           preserveDomains={preserveDomains}
           timeRange={timeRange}
           radius={summaryRadius}
@@ -227,6 +232,7 @@ export default function SpaceTimeViewer({
   }, [
     style,
     aggregate,
+    repeatedPointsAggregate,
     preserveDomains,
     transformedData,
     timeRange,
