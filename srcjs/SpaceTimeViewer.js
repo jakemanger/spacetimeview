@@ -109,7 +109,7 @@ export default function SpaceTimeViewer({
   // Initialize Leva controls with props as default values
   const controlsConfig = {
     style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style', hint: 'The style of the plot. Either a summary plot or a scatter plot.' },
-    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed', step: 0.001, hint: 'The speed of the time animation in seconds.' },
+    animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed', step: 1, hint: 'The speed of the time animation in seconds.' },
     theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme', hint: 'The theme of the map.' },
     projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection', hint: 'The projection of the map.' },
     columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot', hint: 'The column to plot on the map.' },
@@ -123,12 +123,12 @@ export default function SpaceTimeViewer({
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function', hint: 'The aggregation function to use for the color scale and height (if height > 0).' },
       repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function', hint: 'An additional aggregation function to use for data points within a grid cell that have the same time.' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data', hint: 'If true, the colour scale will be based on all data points. If false, the colour scale will be based on the current time window.' },
-      summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 0.001, hint: 'The radius of the grid cell or hexagon.' },
-      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.001, hint: 'The cell size factor. The size of a cell is calculated as `Size of cell * Radius`.' },
-      summaryHeight: { value: initialSummaryHeight, label: 'Height', step: 0.001, hint: 'The height of the grid cell or hexagon.', hint: 'The height of the grid cell or hexagon.' },
+      summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 1, hint: 'The radius of the grid cell or hexagon.' },
+      summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.1, hint: 'The cell size factor. The size of a cell is calculated as `Size of cell * Radius`.' },
+      summaryHeight: { value: initialSummaryHeight, label: 'Height', step: 1, hint: 'The height of the grid cell or hexagon.', hint: 'The height of the grid cell or hexagon.' },
     }, { collapsed: true, render: (get) => get('style') === 'Summary' }),
     'Scatter settings': folder({
-      radiusScale: { value: initialRadiusScale, label: 'Radius', step: 0.001, hint: 'The radius scale factor.' },
+      radiusScale: { value: initialRadiusScale, label: 'Radius', step: 100, hint: 'The radius scale factor.' },
       radiusMinPixels: { value: initialRadiusMinPixels, label: 'Minimum radius', step: 0.001, hint: 'The minimum radius in pixels.' },
     }, { collapsed: true, render: (get) => get('style') === 'Scatter' }),
   };

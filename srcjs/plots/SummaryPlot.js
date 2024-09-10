@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import {
   AmbientLight,
-  PointLight,
+  DirectionalLight,
   LightingEffect,
   _GlobeView as GlobeView,
   MapView,
@@ -23,20 +23,6 @@ const ambientLight = new AmbientLight({
   color: [255, 255, 255],
   intensity: 1.0,
 });
-
-const pointLight1 = new PointLight({
-  color: [255, 255, 255],
-  intensity: 0.8,
-  position: [-0.144528, 49.739968, 80000],
-});
-
-const pointLight2 = new PointLight({
-  color: [255, 255, 255],
-  intensity: 0.8,
-  position: [-3.807751, 54.104682, 8000],
-});
-
-const lightingEffect = new LightingEffect({ ambientLight, pointLight1, pointLight2 });
 
 
 function getTooltip({ object }, elevationAggregation, filter, hasTime) {
@@ -149,6 +135,21 @@ export default function SummaryPlot({
 
   const initialColorDomain = useRef(null);
   const initialElevationDomain = useRef(null);
+
+  const directionalLight1 = new DirectionalLight({
+    color: [255, 255, 255],
+    intensity: 0.4,
+    direction: [-1, -1, -1],
+  });
+
+  const directionalLight2 = new DirectionalLight({
+    color: [255, 255, 255],
+    intensity: 0.4,
+    direction: [1, 1, 1],
+  });
+
+  const lightingEffect = new LightingEffect({ ambientLight, directionalLight1, directionalLight2 })
+
 
   useEffect(() => {
     if (preserveDomains) {
