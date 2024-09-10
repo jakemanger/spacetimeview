@@ -226,7 +226,7 @@ spacetimeview <- function(
   if (initialSummaryRadius == 'auto') {
     print('Estimating an optimal radius for summary grid cells...')
     distances <- c()
-    for (i in 1:(nrow(data) - 1)) {
+    for (i in 1:min(10000, (nrow(data) - 1))) {
       dist <- haversine_dist(
         data$lat[i], data$lng[i],
         data$lat[i + 1], data$lng[i + 1]
