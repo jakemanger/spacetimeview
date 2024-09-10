@@ -13,6 +13,7 @@ import { BitmapLayer } from '@deck.gl/layers';
 import { HexagonLayer, GridLayer } from '@deck.gl/aggregation-layers';
 import DeckGL from '@deck.gl/react';
 import RangeInput from '../ui/RangeInput';
+import Colorbar from '../ui/Colorbar';
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
@@ -128,13 +129,14 @@ export default function SummaryPlot({
     [254, 237, 177],
     [254, 173, 84],
     [209, 55, 78],
-  ]
+  ],
+  legendTitle = 'Legend',
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
 
-  const initialColorDomain = useRef(null);
-  const initialElevationDomain = useRef(null);
+  const [initialColorDomain, setInitialColorDomain] = useState(null);
+  const [initialElevationDomain, setInitialElevationDomain] = useState(null);
 
   const directionalLight1 = new DirectionalLight({
     color: [255, 255, 255],
@@ -153,8 +155,8 @@ export default function SummaryPlot({
 
   useEffect(() => {
     if (preserveDomains) {
-      initialColorDomain.current = null;
-      initialElevationDomain.current = null;
+      setInitialColorDomain(null);
+      setInitialElevationDomain(null);
       setTriggerDomainUpdate(true);
       setFilter([0, Infinity]);
     }
@@ -235,17 +237,17 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain: (colorDomain) => {
-          if (preserveDomains && !initialColorDomain.current)
-            initialColorDomain.current = colorDomain;
-          if (!preserveDomains) initialColorDomain.current = colorDomain;
+          if (preserveDomains && !initialColorDomain)
+            setInitialColorDomain(colorDomain);
+          if (!preserveDomains) setInitialColorDomain(colorDomain);
         },
         onSetElevationDomain: (elevationDomain) => {
-          if (preserveDomains && !initialElevationDomain.current)
-            initialElevationDomain.current = elevationDomain;
-          if (!preserveDomains) initialElevationDomain.current = elevationDomain;
+          if (preserveDomains && !initialElevationDomain)
+            setInitialElevationDomain(elevationDomain);
+          if (!preserveDomains) setInitialElevationDomain(elevationDomain);
         },
-        colorDomain: preserveDomains ? initialColorDomain.current : null,
-        elevationDomain: preserveDomains ? initialElevationDomain.current : null,
+        colorDomain: preserveDomains ? initialColorDomain : null,
+        elevationDomain: preserveDomains ? initialElevationDomain : null,
         updateTriggers: {
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
@@ -272,17 +274,17 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain: (colorDomain) => {
-          if (preserveDomains && !initialColorDomain.current)
-            initialColorDomain.current = colorDomain;
-          if (!preserveDomains) initialColorDomain.current = colorDomain;
+          if (preserveDomains && !initialColorDomain)
+            setInitialColorDomain(colorDomain);
+          if (!preserveDomains) setInitialColorDomain(colorDomain);
         },
         onSetElevationDomain: (elevationDomain) => {
-          if (preserveDomains && !initialElevationDomain.current)
-            initialElevationDomain.current = elevationDomain;
-          if (!preserveDomains) initialElevationDomain.current = elevationDomain;
+          if (preserveDomains && !initialElevationDomain)
+            setInitialElevationDomain(elevationDomain);
+          if (!preserveDomains) setInitialElevationDomain(elevationDomain);
         },
-        colorDomain: preserveDomains ? initialColorDomain.current : null,
-        elevationDomain: preserveDomains ? initialElevationDomain.current : null,
+        colorDomain: preserveDomains ? initialColorDomain : null,
+        elevationDomain: preserveDomains ? initialElevationDomain : null,
         updateTriggers: {
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
@@ -315,7 +317,6 @@ export default function SummaryPlot({
     layers.unshift(tileLayer);
   }
 
-  console.log('colorRange', colorRange)
 
   return (
     <>
@@ -345,7 +346,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
-      <p> {colorRange} </p>
+      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} />
     </>
   );
 }

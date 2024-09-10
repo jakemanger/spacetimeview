@@ -270,6 +270,7 @@ export default function SpaceTimeViewer({
           projection={projection}
           summaryHeight={summaryHeight}
           colorRange={colorRange}
+          legendTitle={columnToPlot}
         />
       );
     } else {
