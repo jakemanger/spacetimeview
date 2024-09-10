@@ -38,14 +38,6 @@ const pointLight2 = new PointLight({
 
 const lightingEffect = new LightingEffect({ ambientLight, pointLight1, pointLight2 });
 
-const colorRange = [
-  [1, 152, 189],
-  [73, 227, 206],
-  [216, 254, 181],
-  [254, 237, 177],
-  [254, 173, 84],
-  [209, 55, 78],
-];
 
 function getTooltip({ object }, elevationAggregation, filter, hasTime) {
   if (!object) return null;
@@ -143,6 +135,14 @@ export default function SummaryPlot({
   },
   projection = 'Mercator',
   summaryHeight = 25,
+  colorRange = [
+    [1, 152, 189],
+    [73, 227, 206],
+    [216, 254, 181],
+    [254, 237, 177],
+    [254, 173, 84],
+    [209, 55, 78],
+  ]
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -215,81 +215,81 @@ export default function SummaryPlot({
   const layers = [
     isGridView
       ? new GridLayer({
-          id: 'grid-heatmap',
-          colorRange,
-          coverage,
-          data,
-          elevationRange: [0, 3000],
-          elevationScale: data.length ? summaryHeight : 0,
-          extruded: true,
-          getPosition: (d) => [d.lng, d.lat],
-          pickable: true,
-          cellSize: radius,
-          getElevationValue: elevationFunction,
-          getColorValue: colorFunction,
-          upperPercentile,
-          material: {
-            ambient: 0.84,
-            diffuse: 0.8,
-            shininess: 32,
-            specularColor: [51, 51, 51],
-          },
-          onSetColorDomain: (colorDomain) => {
-            if (preserveDomains && !initialColorDomain.current)
-              initialColorDomain.current = colorDomain;
-            if (!preserveDomains) initialColorDomain.current = colorDomain;
-          },
-          onSetElevationDomain: (elevationDomain) => {
-            if (preserveDomains && !initialElevationDomain.current)
-              initialElevationDomain.current = elevationDomain;
-            if (!preserveDomains) initialElevationDomain.current = elevationDomain;
-          },
-          colorDomain: preserveDomains ? initialColorDomain.current : null,
-          elevationDomain: preserveDomains ? initialElevationDomain.current : null,
-          updateTriggers: {
-            getElevationValue: [filter, elevationAggregation, radius, coverage],
-            getColorValue: [filter, colorAggregation, radius, coverage],
-            getPosition: [filter, data, radius, coverage],
-          },
-        })
+        id: 'grid-heatmap',
+        colorRange,
+        coverage,
+        data,
+        elevationRange: [0, 3000],
+        elevationScale: data.length ? summaryHeight : 0,
+        extruded: true,
+        getPosition: (d) => [d.lng, d.lat],
+        pickable: true,
+        cellSize: radius,
+        getElevationValue: elevationFunction,
+        getColorValue: colorFunction,
+        upperPercentile,
+        material: {
+          ambient: 0.84,
+          diffuse: 0.8,
+          shininess: 32,
+          specularColor: [51, 51, 51],
+        },
+        onSetColorDomain: (colorDomain) => {
+          if (preserveDomains && !initialColorDomain.current)
+            initialColorDomain.current = colorDomain;
+          if (!preserveDomains) initialColorDomain.current = colorDomain;
+        },
+        onSetElevationDomain: (elevationDomain) => {
+          if (preserveDomains && !initialElevationDomain.current)
+            initialElevationDomain.current = elevationDomain;
+          if (!preserveDomains) initialElevationDomain.current = elevationDomain;
+        },
+        colorDomain: preserveDomains ? initialColorDomain.current : null,
+        elevationDomain: preserveDomains ? initialElevationDomain.current : null,
+        updateTriggers: {
+          getElevationValue: [filter, elevationAggregation, radius, coverage],
+          getColorValue: [filter, colorAggregation, radius, coverage],
+          getPosition: [filter, data, radius, coverage],
+        },
+      })
       : new HexagonLayer({
-          id: 'hex-heatmap',
-          colorRange,
-          coverage,
-          data,
-          elevationRange: [0, 3000],
-          elevationScale: data.length ? summaryHeight : 0,
-          extruded: true,
-          getPosition: (d) => [d.lng, d.lat],
-          pickable: true,
-          radius,
-          getElevationValue: elevationFunction,
-          getColorValue: colorFunction,
-          upperPercentile,
-          material: {
-            ambient: 0.84,
-            diffuse: 0.8,
-            shininess: 32,
-            specularColor: [51, 51, 51],
-          },
-          onSetColorDomain: (colorDomain) => {
-            if (preserveDomains && !initialColorDomain.current)
-              initialColorDomain.current = colorDomain;
-            if (!preserveDomains) initialColorDomain.current = colorDomain;
-          },
-          onSetElevationDomain: (elevationDomain) => {
-            if (preserveDomains && !initialElevationDomain.current)
-              initialElevationDomain.current = elevationDomain;
-            if (!preserveDomains) initialElevationDomain.current = elevationDomain;
-          },
-          colorDomain: preserveDomains ? initialColorDomain.current : null,
-          elevationDomain: preserveDomains ? initialElevationDomain.current : null,
-          updateTriggers: {
-            getElevationValue: [filter, elevationAggregation, radius, coverage],
-            getColorValue: [filter, colorAggregation, radius, coverage],
-            getPosition: [filter, data, radius, coverage],
-          },
-        }),
+        id: 'hex-heatmap',
+        colorRange,
+        coverage,
+        data,
+        elevationRange: [0, 3000],
+        elevationScale: data.length ? summaryHeight : 0,
+        extruded: true,
+        getPosition: (d) => [d.lng, d.lat],
+        pickable: true,
+        radius,
+        getElevationValue: elevationFunction,
+        getColorValue: colorFunction,
+        upperPercentile,
+        material: {
+          ambient: 0.84,
+          diffuse: 0.8,
+          shininess: 32,
+          specularColor: [51, 51, 51],
+        },
+        onSetColorDomain: (colorDomain) => {
+          if (preserveDomains && !initialColorDomain.current)
+            initialColorDomain.current = colorDomain;
+          if (!preserveDomains) initialColorDomain.current = colorDomain;
+        },
+        onSetElevationDomain: (elevationDomain) => {
+          if (preserveDomains && !initialElevationDomain.current)
+            initialElevationDomain.current = elevationDomain;
+          if (!preserveDomains) initialElevationDomain.current = elevationDomain;
+        },
+        colorDomain: preserveDomains ? initialColorDomain.current : null,
+        elevationDomain: preserveDomains ? initialElevationDomain.current : null,
+        updateTriggers: {
+          getElevationValue: [filter, elevationAggregation, radius, coverage],
+          getColorValue: [filter, colorAggregation, radius, coverage],
+          getPosition: [filter, data, radius, coverage],
+        },
+      }),
   ];
 
   if (projection === 'Globe') {
@@ -315,6 +315,8 @@ export default function SummaryPlot({
     // add to layers at front so rendered behind data
     layers.unshift(tileLayer);
   }
+
+  console.log('colorRange', colorRange)
 
   return (
     <>
@@ -344,6 +346,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
+      <p> {colorRange} </p>
     </>
   );
 }

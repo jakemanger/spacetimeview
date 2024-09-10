@@ -319,13 +319,3 @@ haversine_dist <- function(lat1, lng1, lat2, lng2) {
   d <- R * c
   return(d)
 }
-
-# Calculate distances between consecutive points
-distances <- c()
-for (i in 1:(nrow(data) - 1)) {
-  dist <- haversine_dist(
-    data$lat[i], data$lng[i],
-    data$lat[i + 1], data$lng[i + 1]
-  )
-  distances <- c(distances, dist)
-}

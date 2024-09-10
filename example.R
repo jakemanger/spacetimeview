@@ -32,3 +32,10 @@ spacetimeview(
   initialAggregate='MEAN',
   initialProjection='Mercator'
 )
+
+
+# devtools::load_all()
+# data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
+# data$val <- 400
+# spacetimeview(data = data)
+

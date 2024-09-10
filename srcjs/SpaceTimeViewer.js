@@ -9,7 +9,20 @@ import Typography from '@mui/material/Typography';
 import PinchIcon from '@mui/icons-material/Pinch';
 import './SpaceTimeViewer.css';
 import { Provider } from "@radix-ui/react-tooltip";
+import colorbrewer from 'colorbrewer';
 
+function hexToRgb(hex) {
+  // Remove the leading '#' if it's present
+  hex = hex.replace(/^#/, '');
+
+  // Parse the hexadecimal string into RGB values
+  let bigint = parseInt(hex, 16);
+  let r = (bigint >> 16) & 255;
+  let g = (bigint >> 8) & 255;
+  let b = bigint & 255;
+
+  return [r, g, b];
+}
 
 function getTimeRange(data) {
   if (!data || data.length === 0) {
@@ -41,10 +54,10 @@ export default function SpaceTimeViewer({
   initialRadiusMinPixels = 1,
   initialSummaryStyle = 'Grid',
   initialProjection = 'Mercator',
-	initialSummaryHeight = 20,
+  initialSummaryHeight = 20,
 }) {
-	// convert from R's wide format to long format
-	data = HTMLWidgets.dataframeToD3(data);
+  // convert from R's wide format to long format
+  data = HTMLWidgets.dataframeToD3(data);
 
 
   let [levaTheme, setLevaTheme] = useState({
@@ -63,6 +76,16 @@ export default function SpaceTimeViewer({
   });
 
   const [snackbarOpen, setSnackbarOpen] = useState(true);
+  const [colorRange, setColorRange] = useState(
+    [
+      [1, 152, 189],
+      [73, 227, 206],
+      [216, 254, 181],
+      [254, 237, 177],
+      [254, 173, 84],
+      [209, 55, 78],
+    ]
+  )
 
   // Extract column names from data
   const columnNames = useMemo(() => {
@@ -84,13 +107,18 @@ export default function SpaceTimeViewer({
 
   // Initialize Leva controls with props as default values
   const controlsConfig = {
-    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style', hint: 'The style of the plot. Either a summary plot or a scatter plot.'},
+    style: { value: initialStyle, options: ['Summary', 'Scatter'], label: 'Plot style', hint: 'The style of the plot. Either a summary plot or a scatter plot.' },
     animationSpeed: { value: initialAnimationSpeed, label: 'Animation Speed', step: 0.001, hint: 'The speed of the time animation in seconds.' },
     theme: { value: initialTheme, options: ['dark', 'light'], label: 'Theme', hint: 'The theme of the map.' },
     projection: { value: initialProjection, options: ['Mercator', 'Globe'], label: 'Projection', hint: 'The projection of the map.' },
     columnToPlot: { value: initialColumnToPlot, options: columnNames, label: 'Column to plot', hint: 'The column to plot on the map.' },
     'Additional summary settings': folder({
       summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style', hint: 'The style of the summary plot.' },
+      colorScheme: {
+        value: 'YlOrRd',
+        options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']), // Only show schemes with 6 classes
+        label: 'Color Scheme'
+      },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function', hint: 'The aggregation function to use for the color scale and height (if height > 0).' },
       repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function', hint: 'An additional aggregation function to use for data points within a grid cell that have the same time.' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data', hint: 'If true, the colour scale will be based on all data points. If false, the colour scale will be based on the current time window.' },
@@ -115,16 +143,30 @@ export default function SpaceTimeViewer({
     animationSpeed,
     theme,
     projection,
+    colorScheme,
     aggregate,
     repeatedPointsAggregate,
     preserveDomains,
     summaryRadius,
     summaryCoverage,
-		summaryHeight,
+    summaryHeight,
     summaryStyle,
     radiusScale,
     radiusMinPixels,
   } = useControls(controlsConfig);
+
+
+  useEffect(() => {
+    // Check if the selected color scheme has 6 classes
+    if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
+      const newColorRange = colorbrewer[colorScheme]['6'].map(hexToRgb); // Convert hex to RGB
+
+      setColorRange(newColorRange);
+    } else {
+      console.error(`Color scheme ${colorScheme} does not have 6 classes`);
+      setColorRange([]); // Set an empty or default color range
+    }
+  }, [colorScheme]);
 
   useEffect(() => {
     // Depending on the current theme from useControls, set the corresponding theme colors.
@@ -155,6 +197,7 @@ export default function SpaceTimeViewer({
     // Set the state of levaTheme to the new theme colors.
     setLevaTheme({ colors: newLevaThemeColors });
   }, [theme]);
+
 
   // find average of longitude and latitude and use as initial view state
   let INITIAL_VIEW_STATE = {
@@ -224,7 +267,8 @@ export default function SpaceTimeViewer({
           isGridView={summaryStyle === 'Grid'}
           initialViewState={INITIAL_VIEW_STATE}
           projection={projection}
-					summaryHeight={summaryHeight}
+          summaryHeight={summaryHeight}
+          colorRange={colorRange}
         />
       );
     } else {
@@ -234,6 +278,7 @@ export default function SpaceTimeViewer({
   }, [
     style,
     aggregate,
+    colorRange,
     repeatedPointsAggregate,
     preserveDomains,
     transformedData,
@@ -241,12 +286,12 @@ export default function SpaceTimeViewer({
     summaryRadius,
     summaryCoverage,
     animationSpeed,
-		summaryHeight,
+    summaryHeight,
     theme,
     radiusScale,
     radiusMinPixels,
     summaryStyle,
-    projection
+    projection,
   ]);
 
   const handleSnackbarClose = () => {
@@ -259,7 +304,7 @@ export default function SpaceTimeViewer({
     <div className="space-time-viewer">
       {plot}
       <Provider delayDuration={0}>
-        <Leva theme={levaTheme}/>
+        <Leva theme={levaTheme} />
       </Provider>
       <Snackbar
         open={snackbarOpen}
