@@ -52,7 +52,7 @@ export default function SpaceTimeViewer({
   initialTheme = 'light',
   initialRadiusScale = 1,
   initialRadiusMinPixels = 1,
-  initialSummaryStyle = 'Grid',
+  initialSummaryStyle = 'Hexagon',
   initialProjection = 'Mercator',
   initialSummaryHeight = 0,
   initialColorScheme = 'YlOrRd',
