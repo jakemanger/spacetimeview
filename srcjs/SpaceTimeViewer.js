@@ -54,7 +54,8 @@ export default function SpaceTimeViewer({
   initialRadiusMinPixels = 1,
   initialSummaryStyle = 'Grid',
   initialProjection = 'Mercator',
-  initialSummaryHeight = 20,
+  initialSummaryHeight = 0,
+  initialColorScheme = 'YlOrRd',
 }) {
   // convert from R's wide format to long format
   data = HTMLWidgets.dataframeToD3(data);
@@ -115,7 +116,7 @@ export default function SpaceTimeViewer({
     'Additional summary settings': folder({
       summaryStyle: { value: initialSummaryStyle, options: ['Grid', 'Hexagon'], label: 'Style', hint: 'The style of the summary plot.' },
       colorScheme: {
-        value: 'YlOrRd',
+        value: initialColorScheme,
         options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']), // Only show schemes with 6 classes
         label: 'Color Scheme'
       },

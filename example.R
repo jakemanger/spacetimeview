@@ -26,9 +26,6 @@ aggregated_data <- data %>%
 
 spacetimeview(
   data = aggregated_data,
-  initialSummaryRadius=55000,
-  initialAnimationSpeed=10,
-  initialSummaryCoverage=1,
   initialAggregate='MEAN',
   initialProjection='Mercator'
 )

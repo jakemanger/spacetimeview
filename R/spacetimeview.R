@@ -224,6 +224,7 @@ spacetimeview <- function(
   }
   
   if (initialSummaryRadius == 'auto') {
+    print('Estimating an optimal radius for summary grid cells...')
     distances <- c()
     for (i in 1:(nrow(data) - 1)) {
       dist <- haversine_dist(
@@ -234,7 +235,7 @@ spacetimeview <- function(
     }
     
     # calculate as the average distance
-    initialSummaryRadius <- mean(distances) / 12 
+    initialSummaryRadius <- mean(distances) / 3 
   }
   
   # print('Reformatting data as list to be put in JS')
