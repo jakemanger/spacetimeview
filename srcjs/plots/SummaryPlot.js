@@ -240,24 +240,16 @@ export default function SummaryPlot({
           if (colorDomain === null) return;
           console.log(colorDomain);
 
-          if (preserveDomains) {
-            if (initialColorDomain === null) {
-              setInitialColorDomain(colorDomain[0], colorDomain[1]);
-            } else {
-              setInitialColorDomain(Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1]));
-            }
+          if (preserveDomains && initialColorDomain !== null) {
+            setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
           } else setInitialColorDomain(colorDomain);
         },
         onSetElevationDomain: (elevationDomain) => {
           if (elevationDomain === null) return;
           console.log(elevationDomain);
 
-          if (preserveDomains) {
-            if (initialElevationDomain === null) {
-              setInitialElevationDomain(elevationDomain[0], elevationDomain[1]);
-            } else {
-              setInitialElevationDomain(Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1]));
-            }
+          if (preserveDomains && initialElevationDomain !== null) {
+            setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
           } else setInitialElevationDomain(elevationDomain);
         },
         colorDomain: preserveDomains ? initialColorDomain : null,
@@ -291,24 +283,16 @@ export default function SummaryPlot({
           if (colorDomain === null) return;
           console.log(colorDomain);
 
-          if (preserveDomains) {
-            if (initialColorDomain === null) {
-              setInitialColorDomain(colorDomain[0], colorDomain[1]);
-            } else {
-              setInitialColorDomain(Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1]));
-            }
+          if (preserveDomains && initialColorDomain !== null) {
+            setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
           } else setInitialColorDomain(colorDomain);
         },
         onSetElevationDomain: (elevationDomain) => {
           if (elevationDomain === null) return;
           console.log(elevationDomain);
 
-          if (preserveDomains) {
-            if (initialElevationDomain === null) {
-              setInitialElevationDomain(elevationDomain[0], elevationDomain[1]);
-            } else {
-              setInitialElevationDomain(Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1]));
-            }
+          if (preserveDomains && initialElevationDomain !== null) {
+            setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
           } else setInitialElevationDomain(elevationDomain);
         },
         colorDomain: preserveDomains ? initialColorDomain : null,

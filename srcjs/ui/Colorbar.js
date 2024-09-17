@@ -8,6 +8,7 @@ export default function Colorbar({ colorRange, colorDomain, title }) {
   if (colorDomain == null || colorRange == null) {
     return null;
   }
+  console.log('ColorDomain: ', colorDomain);
 
   // Reverse the color range and round the color domain
   const reversedColorRange = useMemo(() => [...colorRange].reverse(), [colorRange]);
