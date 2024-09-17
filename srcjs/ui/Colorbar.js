@@ -4,7 +4,7 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-export default function Colorbar({ colorRange, colorDomain, title }) {
+export default function Colorbar({ colorRange, colorDomain, title, numDecimals = 3 }) {
   if (colorDomain == null || colorRange == null || colorRange.length !== 6) {
     return null;
   }
@@ -20,13 +20,13 @@ export default function Colorbar({ colorRange, colorDomain, title }) {
       // If there are only two values, sample 7 evenly spaced values between min and max
       const [min, max] = colorDomain;
       const step = (max - min) / 6; // 6 intervals, 7 values
-      return Array.from({ length: 7 }, (_, i) => (min + i * step).toFixed(3)).reverse(); // Format to 3 decimals and reverse
+      return Array.from({ length: 7 }, (_, i) => (min + i * step).toFixed(numDecimals)).reverse(); // Format to 3 decimals and reverse
     } else {
       // If more than two values, sample based on index
       const step = (colorDomain.length - 1) / 6; // 6 intervals, so 7 values
       const sampled = Array.from({ length: 7 }, (_, i) => {
         const index = Math.round(i * step);
-        return colorDomain[index].toFixed(3); // Format to 3 decimals
+        return colorDomain[index].toFixed(numDecimals); // Format to 3 decimals
       });
       return sampled.reverse(); // Reverse to show from max to min
     }

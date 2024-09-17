@@ -131,7 +131,8 @@ export default function SummaryPlot({
     [209, 55, 78],
   ],
   legendTitle = 'Legend',
-  colorScaleType = 'quantize'
+  colorScaleType = 'quantize',
+  numDecimals = 1
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -361,7 +362,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
-      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} />
+      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} />
     </>
   );
 }

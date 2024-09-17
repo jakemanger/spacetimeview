@@ -56,7 +56,8 @@ export default function SpaceTimeViewer({
   initialProjection = 'Mercator',
   initialSummaryHeight = 0,
   initialColorScheme = 'YlOrRd',
-  initialColorScaleType = 'quantize'
+  initialColorScaleType = 'quantize',
+  initialNumDecimals = 1,
 }) {
   // convert from R's wide format to long format
   data = HTMLWidgets.dataframeToD3(data);
@@ -122,6 +123,7 @@ export default function SpaceTimeViewer({
         label: 'Color Scheme'
       },
       colorScaleType: { value: initialColorScaleType, options: ['quantize', 'quantile'], label: 'Color Scale Type', hint: 'The type of color scale to use.' },
+      numDecimals: { value: initialNumDecimals, label: 'Number of decimals', hint: 'The number of decimals to show in the legend.' },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function', hint: 'The aggregation function to use for the color scale and height (if height > 0).' },
       repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function', hint: 'An additional aggregation function to use for data points within a grid cell that have the same time.' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data', hint: 'If true, the colour scale will be based on all data points. If false, the colour scale will be based on the current time window.' },
@@ -148,6 +150,7 @@ export default function SpaceTimeViewer({
     projection,
     colorScheme,
     colorScaleType,
+    numDecimals,
     aggregate,
     repeatedPointsAggregate,
     preserveDomains,
@@ -275,6 +278,7 @@ export default function SpaceTimeViewer({
           colorRange={colorRange}
           legendTitle={columnToPlot}
           colorScaleType={colorScaleType}
+          numDecimals={numDecimals}
         />
       );
     } else {
