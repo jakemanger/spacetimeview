@@ -131,6 +131,7 @@ export default function SummaryPlot({
     [209, 55, 78],
   ],
   legendTitle = 'Legend',
+  colorScaleType = 'quantize'
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -259,6 +260,7 @@ export default function SummaryPlot({
           getColorValue: [filter, colorAggregation, radius, coverage],
           getPosition: [filter, data, radius, coverage],
         },
+        colorScaleType
       })
       : new HexagonLayer({
         id: 'hex-heatmap',
@@ -302,6 +304,7 @@ export default function SummaryPlot({
           getColorValue: [filter, colorAggregation, radius, coverage],
           getPosition: [filter, data, radius, coverage],
         },
+        colorScaleType
       }),
   ];
 

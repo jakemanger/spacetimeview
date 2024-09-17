@@ -1,27 +1,46 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 export default function Colorbar({ colorRange, colorDomain, title }) {
-  if (colorDomain == null || colorRange == null) {
+  if (colorDomain == null || colorRange == null || colorRange.length !== 6) {
     return null;
   }
+
   console.log('ColorDomain: ', colorDomain);
 
-  // Reverse the color range and round the color domain
+  // Reverse the color range
   const reversedColorRange = useMemo(() => [...colorRange].reverse(), [colorRange]);
-  const roundedColorDomain = useMemo(
-    () => [
-      Number(colorDomain[0].toPrecision(3)),
-      Number(colorDomain[1].toPrecision(3)),
-    ],
-    [colorDomain]
-  );
+
+  // Sample 7 values from the colorDomain and create 6 ranges
+  const sampledDomain = useMemo(() => {
+    if (colorDomain.length === 2) {
+      // If there are only two values, sample 7 evenly spaced values between min and max
+      const [min, max] = colorDomain;
+      const step = (max - min) / 6; // 6 intervals, 7 values
+      return Array.from({ length: 7 }, (_, i) => (min + i * step).toFixed(3)).reverse(); // Format to 3 decimals and reverse
+    } else {
+      // If more than two values, sample based on index
+      const step = (colorDomain.length - 1) / 6; // 6 intervals, so 7 values
+      const sampled = Array.from({ length: 7 }, (_, i) => {
+        const index = Math.round(i * step);
+        return colorDomain[index].toFixed(3); // Format to 3 decimals
+      });
+      return sampled.reverse(); // Reverse to show from max to min
+    }
+  }, [colorDomain]);
 
   const legendItems = reversedColorRange.map((color, index) => {
     const colorString = `rgb(${color.join(',')})`;
+
+    // Show ranges between consecutive values
+    let rangeText;
+    if (sampledDomain.length === 7 && index < 6) {
+      rangeText = `${sampledDomain[index + 1]} - ${sampledDomain[index]}`;
+    }
+
     return (
       <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
         <div
@@ -32,10 +51,7 @@ export default function Colorbar({ colorRange, colorDomain, title }) {
             marginRight: '5px',
           }}
         />
-        <span>
-          {index === 0 && roundedColorDomain[1]}
-          {index === reversedColorRange.length - 1 && roundedColorDomain[0]}
-        </span>
+        <span>{rangeText}</span>
       </div>
     );
   });

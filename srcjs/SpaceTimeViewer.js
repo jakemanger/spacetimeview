@@ -56,6 +56,7 @@ export default function SpaceTimeViewer({
   initialProjection = 'Mercator',
   initialSummaryHeight = 0,
   initialColorScheme = 'YlOrRd',
+  initialColorScaleType = 'quantize'
 }) {
   // convert from R's wide format to long format
   data = HTMLWidgets.dataframeToD3(data);
@@ -120,6 +121,7 @@ export default function SpaceTimeViewer({
         options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']), // Only show schemes with 6 classes
         label: 'Color Scheme'
       },
+      colorScaleType: { value: initialColorScaleType, options: ['quantize', 'quantile'], label: 'Color Scale Type', hint: 'The type of color scale to use.' },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function', hint: 'The aggregation function to use for the color scale and height (if height > 0).' },
       repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function', hint: 'An additional aggregation function to use for data points within a grid cell that have the same time.' },
       preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data', hint: 'If true, the colour scale will be based on all data points. If false, the colour scale will be based on the current time window.' },
@@ -145,6 +147,7 @@ export default function SpaceTimeViewer({
     theme,
     projection,
     colorScheme,
+    colorScaleType,
     aggregate,
     repeatedPointsAggregate,
     preserveDomains,
@@ -271,6 +274,7 @@ export default function SpaceTimeViewer({
           summaryHeight={summaryHeight}
           colorRange={colorRange}
           legendTitle={columnToPlot}
+          colorScaleType={colorScaleType}
         />
       );
     } else {
@@ -281,6 +285,7 @@ export default function SpaceTimeViewer({
     style,
     aggregate,
     colorRange,
+    colorScaleType,
     repeatedPointsAggregate,
     preserveDomains,
     transformedData,
