@@ -46,20 +46,19 @@ time
 spacetimeview(d)
 ```
 
-<figure>
-<img src="visualisation.gif" alt="Your spacetimeview visualisation" />
-<figcaption aria-hidden="true">Your spacetimeview
-visualisation</figcaption>
-</figure>
+![](visualisation.gif)
 
 Note, this interactive plot is also a website, that you can save as a
 html file
 
-    #> Auto-detected time column: `DateTime`
-    #> Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting
-    #> to `Magnitude`
-    #> [1] "Estimating an optimal radius for summary grid cells..."
-    #> [1] "Starting ReactR plot"
+``` r
+htmlwidgets::saveWidget(spacetimeview(d), "my_plot.html")
+#> Auto-detected time column: `DateTime`
+#> Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting
+#> to `Magnitude`
+#> [1] "Estimating an optimal radius for summary grid cells..."
+#> [1] "Starting ReactR plot"
+```
 
 and simply deploy to any website host, even free static site hosts like
 Github Pages
@@ -83,4 +82,4 @@ system("git push")
 
 Now if you navigate to the link provided above (e.g.
 <https://jakemanger.github.io/spacetimeview/>) you should see your data
-displayed in a responsive and interactive space time view.
+displayed in a free, responsive and interactive space time view website.

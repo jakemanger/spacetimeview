@@ -60,12 +60,12 @@ time
 ```{r make_plot, eval=FALSE}
 spacetimeview(d)
 ```
-![Your spacetimeview visualisation](visualisation.gif)
+![](visualisation.gif)
 
 Note, this interactive plot is also a website, that you can save as a
 html file
 
-```{r save_plot_as_html, echo = FALSE}
+```{r save_plot_as_html}
 htmlwidgets::saveWidget(spacetimeview(d), "my_plot.html")
 ```
 
@@ -86,4 +86,4 @@ system("git push")
 
 Now if you navigate to the link provided above (e.g.
 <https://jakemanger.github.io/spacetimeview/>) you should see your data
-displayed in a responsive and interactive space time view.
+displayed in a free, responsive and interactive space time view website.
