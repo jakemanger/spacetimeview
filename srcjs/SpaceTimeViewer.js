@@ -43,7 +43,7 @@ export default function SpaceTimeViewer({
   data = [],
   initialStyle = 'Summary',
   initialColumnToPlot = 'value',
-  initialAggregate = 'SUM',
+  initialAggregate = 'MEAN',
   initialRepeatedPointsAggregate = 'MEAN',
   initialPreserveDomains = false,
   initialSummaryRadius = 5000,
