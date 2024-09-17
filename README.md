@@ -44,14 +44,13 @@ time
 
 ``` r
 spacetimeview(d)
-#> Auto-detected time column: `DateTime`
-#> Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting
-#> to `Magnitude`
-#> [1] "Estimating an optimal radius for summary grid cells..."
-#> [1] "Starting ReactR plot"
 ```
 
-<img src="man/figures/README-make_plot-1.png" width="100%" />
+<figure>
+<img src="visualisation.gif" alt="Your spacetimeview visualisation" />
+<figcaption aria-hidden="true">Your spacetimeview
+visualisation</figcaption>
+</figure>
 
 Note, this interactive plot is also a website, that you can save as a
 html file

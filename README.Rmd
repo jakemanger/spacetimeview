@@ -57,9 +57,10 @@ d <- d[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
 Now, in one line of code, generate an interactive plot over space and
 time
 
-```{r make_plot}
+```{r make_plot, eval=FALSE}
 spacetimeview(d)
 ```
+![Your spacetimeview visualisation](visualisation.gif)
 
 Note, this interactive plot is also a website, that you can save as a
 html file
