@@ -1,139 +1,87 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
 # spacetimeview
 
-## Overview
+<!-- badges: start -->
+<!-- badges: end -->
 
 spacetimeview generates an interactive space time data dashboard in one
-line of code. You provide the data with a column of sf space objects and a 
-column of times and spacetimeview will turn it into an interactive plot.
+line of code. You provide the data with columns of GPS coordinates (or
+sf geometries) and a column of times and spacetimeview will turn it into
+an interactive plot.
 
 You can use the plot as a static website html file to share with others
-(hostable for free on services like github pages) or as an interactive html 
-widget to explore your data.
-
+(hostable for free on services like github pages) or as an interactive
+html widget to explore your data.
 
 ## Installation
-```R
-devtools::install_github('jakemanger/spacetimeview')
+
+You can install the development version of spacetimeview from
+[GitHub](https://github.com/) with:
+
+``` r
+# after cloning with `git clone git@github.com:jakemanger/spacetimeview.git`
+devtools::load_all()
+#> ℹ Loading spacetimeview
+# or install from github
+# install.packages("devtools")
+# devtools::install_github("jakemanger/spacetimeview")
 ```
 
-## Usage
+## Example
 
-### Make your dashboard
+Load your data with GPS coordinates and datetimes:
 
-Load your data with GPS coordinates and datetimes
-
-```R
+``` r
 library(spacetimeview)
-
 d <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
 d <- d[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
-names(d) <- c('lat', 'lng', 'timestamp', 'magnitude')
+```
+
+Now, in one line of code, generate an interactive plot over space and
+time
+
+``` r
 spacetimeview(d)
+#> Auto-detected time column: `DateTime`
+#> Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting
+#> to `Magnitude`
+#> [1] "Estimating an optimal radius for summary grid cells..."
+#> [1] "Starting ReactR plot"
 ```
 
-View it in RStudio
+<img src="man/figures/README-make_plot-1.png" width="100%" />
 
-GIF
+Note, this interactive plot is also a website, that you can save as a
+html file
 
+    #> Auto-detected time column: `DateTime`
+    #> Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting
+    #> to `Magnitude`
+    #> [1] "Estimating an optimal radius for summary grid cells..."
+    #> [1] "Starting ReactR plot"
 
-and save it as a html web page 
+and simply deploy to any website host, even free static site hosts like
+Github Pages
 
+``` r
+# automate GitHub Pages setup to deploy html files in the `docs` folder
+usethis::use_github_pages(branch='main', path='/docs')
+#> ✔ Setting active project to "/Users/jakemanger/projects/spacetimeview".
+#> ✔ GitHub Pages is publishing from:
+#> • URL: "https://jakemanger.github.io/spacetimeview/"
+#> • Branch: "main"
+#> • Path: "/docs"
 
-
-## Development
-1. Clone this repository
-```R
-git clone 
-```
-   
-2. Load the package for development
-```R
-devtools::load_all()
-```
-
-or install the R package
-
-```R
-renv::activate()
-devtools::document()
-devtools::install(quick = TRUE)
-library(spacetimeview)
-```
-
-3. Enjoy the package
-
-```R
-# histogram
-data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
-spacetimeview(data = data)
-
-# histogram over time plot
-data <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
-data <- data[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
-names(data) <- c('lat', 'lng', 'timestamp', 'magnitude')
-spacetimeview(data = data)
+# move the my_plot.html we just generated to the docs folder and push it to github
+system("mkdir -p docs/")
+system("mv ./my_plot.html ./docs/index.html")
+system("git add docs/index.html")
+system("git commit -m 'Deploy spacetimeview widget to GitHub Pages'")
+system("git push")
 ```
 
-4. See a more complicated example at `example.R`
-
-
-## Development
-
-This project was built with the `reactR` package. See here for development instructions
-from `reactR` https://cran.r-project.org/web/packages/reactR/vignettes/intro_htmlwidgets.html
-
-### Dependencies
-
-- Nodejs (install with nvm)
-- Yarn (install with npm)
-- Install dependencies with yarn
-```
-yarn install
-```
-
-
-### Workflow
-
-1. If you need to install a javascript dependency, install a javascript package with
-```bash
-yarn add PACKAGE_NAME
-```
-replacing `PACKAGE_NAME` with the package you are adding.
-
-2. If you need to edit any javascript or R files, edit them now.
-
-3. Pack the js files to inst/htmlwidgets/...
-
-```bash
-yarn run webpack
-```
-
-4. Load the package for development
-```R
-devtools::load_all()
-```
-
-or install the R package
-
-```R
-renv::activate()
-devtools::document()
-devtools::install(quick = TRUE)
-library(spacetimeview)
-```
-
-5. Enjoy the package
-
-```R
-# histogram
-data <- read.csv('https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv')
-spacetimeview(data = data)
-
-# histogram over time plot
-data <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
-data <- data[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
-names(data) <- c('lat', 'lng', 'timestamp', 'magnitude')
-spacetimeview(data = data)
-```
-
-6. See a more complicated example at `example.R`
+Now if you navigate to the link provided above (e.g.
+<https://jakemanger.github.io/spacetimeview/>) you should see your data
+displayed in a responsive and interactive space time view.

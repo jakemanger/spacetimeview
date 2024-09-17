@@ -8,3 +8,5 @@
 ^package\.json$
 ^webpack\.config\.js$
 ^yarn\.lock$
+^README\.Rmd$
+^LICENSE\.md$
