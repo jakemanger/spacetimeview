@@ -53,7 +53,7 @@ export default function SpaceTimeViewer({
   initialAnimationSpeed = 60,
   initialTheme = 'light',
   initialRadiusScale = 1,
-  initialRadiusMinPixels = 1,
+  initialRadiusMinPixels = 3,
   initialSummaryStyle = 'Hexagon',
   initialProjection = 'Mercator',
   initialSummaryHeight = 0,
@@ -341,6 +341,7 @@ export default function SpaceTimeViewer({
           initialViewState={INITIAL_VIEW_STATE}
           radiusScale={radiusScale}
           radiusMinPixels={radiusMinPixels}
+          animationSpeed={animationSpeed}
           projection={projection}
         />
       );

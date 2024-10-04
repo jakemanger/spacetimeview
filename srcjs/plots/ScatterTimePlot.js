@@ -38,15 +38,15 @@ function getMinMaxValues(data, key) {
 }
 
 function getTooltip({ object }, hasTime) {
-	let html = '';
+  let html = '';
   if (!object) {
     return;
   }
-	html = `\
-		Latitude, Longitude: ${object.lng.toFixed(2)}, ${object.lat.toFixed(2)}
+  html = `\
+		Latitude, Longitude: ${object.lng.toFixed(2)}, ${object.lat.toFixed(2)}<br />
 		${hasTime ? `
 			Time: ${new Date(object.timestamp).toUTCString()}
-		` : ''}
+		` : ''}<br />
 		${object.value ? `
 			Value: ${object.value.toFixed(2)}
 		` : ''}
@@ -58,7 +58,6 @@ function getTooltip({ object }, hasTime) {
       color: '#333',
       backgroundColor: '#fff',
       borderRadius: '5px',
-      lineHeight: '0.5',
       padding: '5px'
     }
   };
@@ -66,10 +65,10 @@ function getTooltip({ object }, hasTime) {
 }
 
 export default function ScatterTimePlot(
-  { 
-    data = [], 
-    mapStyle = MAP_STYLE, 
-    timeRange=[Infinity, -Infinity],
+  {
+    data = [],
+    mapStyle = MAP_STYLE,
+    timeRange = [Infinity, -Infinity],
     animationSpeed = 1,
     initialViewState = {
       longitude: 0,
@@ -87,10 +86,10 @@ export default function ScatterTimePlot(
 
   const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);
 
-  const colorScale = useMemo(() => 
+  const colorScale = useMemo(() =>
     d3.scaleSequential()
       .domain([minValue, maxValue])
-      .interpolator(d3.interpolateViridis), 
+      .interpolator(d3.interpolateViridis),
     [minValue, maxValue]
   );
 
@@ -98,7 +97,7 @@ export default function ScatterTimePlot(
     filter &&
     new ScatterplotLayer({
       id: 'scatterplot',
-      data: data, 
+      data: data,
       opacity: 0.8,
       radiusScale: radiusScale,  // Adjust this value to make points bigger
       radiusMinPixels: radiusMinPixels,  // Adjust this value to set a minimum point size
@@ -156,9 +155,9 @@ export default function ScatterTimePlot(
         getTooltip={({ object }) => getTooltip({ object }, !isNaN(timeRange[0]))}
       >
         {projection === 'Mercator' && (
-          <Map 
-            reuseMaps 
-            mapStyle={mapStyle} 
+          <Map
+            reuseMaps
+            mapStyle={mapStyle}
           />
         )}
       </DeckGL>
