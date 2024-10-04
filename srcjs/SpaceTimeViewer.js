@@ -110,7 +110,7 @@ export default function SpaceTimeViewer({
 
   // Initialize Leva controls with props as default values
   const controlsConfig = {
-    'Plot Style Settings': folder({
+    'General Settings': folder({
       style: {
         value: initialStyle,
         options: ['Summary', 'Scatter'],
@@ -196,7 +196,7 @@ export default function SpaceTimeViewer({
         label: 'Decimals in Legend',
         hint: 'Set the number of decimal places to display in the legend.'
       },
-    }, { collapsed: true, render: (get) => get('Plot Style Settings.style') === 'Summary' }),
+    }, { collapsed: true, render: (get) => get('General Settings.style') === 'Summary' }),
 
     'Scatter Plot Settings': folder({
       radiusScale: {
@@ -211,7 +211,7 @@ export default function SpaceTimeViewer({
         step: 0.001,
         hint: 'Set the minimum size for scatter plot points, in pixels.'
       },
-    }, { collapsed: true, render: (get) => get('Plot Style Settings.style') === 'Scatter' }),
+    }, { collapsed: true, render: (get) => get('General Settings.style') === 'Scatter' }),
 
     'Animation & Interaction': folder({
       animationSpeed: {
