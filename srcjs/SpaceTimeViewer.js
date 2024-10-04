@@ -11,18 +11,15 @@ import './SpaceTimeViewer.css';
 import { Provider } from "@radix-ui/react-tooltip";
 import colorbrewer from 'colorbrewer';
 import { Helmet } from 'react-helmet';
+import Header from './ui/Header';
 
 
 function hexToRgb(hex) {
-  // Remove the leading '#' if it's present
   hex = hex.replace(/^#/, '');
-
-  // Parse the hexadecimal string into RGB values
   let bigint = parseInt(hex, 16);
   let r = (bigint >> 16) & 255;
   let g = (bigint >> 8) & 255;
   let b = bigint & 255;
-
   return [r, g, b];
 }
 
@@ -60,10 +57,12 @@ export default function SpaceTimeViewer({
   initialColorScheme = 'YlOrRd',
   initialColorScaleType = 'quantize',
   initialNumDecimals = 1,
+  headerLogo = '',
+  headerTitle = '',
+  headerWebsiteLink = '',
+  socialLinks = {}
 }) {
-  // convert from R's wide format to long format
   data = HTMLWidgets.dataframeToD3(data);
-
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -92,25 +91,20 @@ export default function SpaceTimeViewer({
     ]
   )
 
-  // Extract column names from data
   const columnNames = useMemo(() => {
     if (data.length === 0) return [];
-    // exclude lng, lat, timestamp
     return Object.keys(data[0]).filter(
       key => key !== 'lng' && key !== 'lat' && key !== 'timestamp'
     );
   }, [data]);
 
-  // define aggregateOptions for the summary plot
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
-  // if there is no data[0].initialColumnToPlot then we can't use SUM, MEAN, MIN, MAX
   if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
   }
 
-  // Initialize Leva controls with props as default values
   const controlsConfig = {
     'General Settings': folder({
       style: {
@@ -225,7 +219,6 @@ export default function SpaceTimeViewer({
     })
   };
 
-  // Remove columnToPlot from controlsConfig if initialColumnToPlot is not valid
   if (!columnNames.includes(initialColumnToPlot)) {
     delete controlsConfig.columnToPlot;
   }
@@ -250,21 +243,17 @@ export default function SpaceTimeViewer({
     radiusMinPixels,
   } = useControls(controlsConfig);
 
-
   useEffect(() => {
-    // Check if the selected color scheme has 6 classes
     if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
-      const newColorRange = colorbrewer[colorScheme]['6'].map(hexToRgb); // Convert hex to RGB
-
+      const newColorRange = colorbrewer[colorScheme]['6'].map(hexToRgb);
       setColorRange(newColorRange);
     } else {
       console.error(`Color scheme ${colorScheme} does not have 6 classes`);
-      setColorRange([]); // Set an empty or default color range
+      setColorRange([]);
     }
   }, [colorScheme]);
 
   useEffect(() => {
-    // Depending on the current theme from useControls, set the corresponding theme colors.
     const newLevaThemeColors = theme === 'dark' ? {
       elevation1: '#292d39',
       elevation2: '#181C20',
@@ -288,13 +277,9 @@ export default function SpaceTimeViewer({
       highlight3: '#3E4C59',
       vivid1: '#FFC107',
     };
-
-    // Set the state of levaTheme to the new theme colors.
     setLevaTheme({ colors: newLevaThemeColors });
   }, [theme]);
 
-
-  // find average of longitude and latitude and use as initial view state
   let INITIAL_VIEW_STATE = {
     longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
     latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
@@ -305,7 +290,6 @@ export default function SpaceTimeViewer({
 
   const timeRange = useMemo(() => getTimeRange(data), [data]);
 
-  // Transform data based on selected columnToPlot
   const transformedData = useMemo(() => {
     return data.map(d => ({
       ...d,
@@ -313,7 +297,6 @@ export default function SpaceTimeViewer({
     }));
   }, [data, columnToPlot]);
 
-  // Determine the plot component based on the selected style
   const plot = useMemo(() => {
     if (!transformedData || !transformedData.some(d => d.lng && d.lat)) {
       let columnsInData = transformedData.map(d => Object.keys(d));
@@ -333,7 +316,6 @@ export default function SpaceTimeViewer({
     if (style === 'Scatter') {
       return (
         <ScatterTimePlot
-          // Sort data by value in ascending order, so that higher value points are rendered on top
           data={transformedData.sort((a, b) => a.value - b.value)}
           timeRange={timeRange}
           theme={theme}
@@ -350,7 +332,6 @@ export default function SpaceTimeViewer({
     } else if (style === 'Summary') {
       return (
         <SummaryPlot
-          // sort by time
           data={transformedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
           colorAggregation={aggregate}
           elevationAggregation={aggregate}
@@ -407,6 +388,12 @@ export default function SpaceTimeViewer({
       <Helmet>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Helmet>
+      <Header
+        logo={headerLogo}
+        title={headerTitle}
+        websiteLink={headerWebsiteLink}
+        socialLinks={socialLinks}
+      />
       {plot}
       <Provider delayDuration={0}>
         <Leva theme={levaTheme} />
