@@ -1,12 +1,15 @@
 body {
-	margin: 0;
-	padding: 0;
+  max-width: 100%;
+  max-height: 100%;
 	overflow: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .spacetimeview {
-	width: 100vw;
-	height: 100vh;
+  max-width: 100%;
+  max-height: 100%;
+	overflow: hidden;
 }
 
 /* Fix up the maplibre attribution, as it seems it is broken when used with deckgl */
@@ -27,3 +30,19 @@ body {
 div[mapboxgl-children] {
   display: none;
 }
+
+.leva-c-kWgxhW {
+  width: 350px;
+}
+
+@media (max-width: 768px) {
+  .leva-c-kWgxhW {
+    width: 95%;
+  }
+
+  .colorbar {
+    bottom: 110px !important;
+    left: 10px !important;
+  }
+}
+

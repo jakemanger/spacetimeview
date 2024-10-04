@@ -10,6 +10,8 @@ import PinchIcon from '@mui/icons-material/Pinch';
 import './SpaceTimeViewer.css';
 import { Provider } from "@radix-ui/react-tooltip";
 import colorbrewer from 'colorbrewer';
+import { Helmet } from 'react-helmet';
+
 
 function hexToRgb(hex) {
   // Remove the leading '#' if it's present
@@ -45,10 +47,10 @@ export default function SpaceTimeViewer({
   initialColumnToPlot = 'value',
   initialAggregate = 'MEAN',
   initialRepeatedPointsAggregate = 'MEAN',
-  initialStickyRange = false,
+  initialStickyRange = true,
   initialSummaryRadius = 5000,
   initialSummaryCoverage = 1,
-  initialAnimationSpeed = 10,
+  initialAnimationSpeed = 60,
   initialTheme = 'light',
   initialRadiusScale = 1,
   initialRadiusMinPixels = 1,
@@ -176,7 +178,7 @@ export default function SpaceTimeViewer({
       repeatedPointsAggregate: {
         value: initialRepeatedPointsAggregate,
         options: repeatedPointsAggregateOptions,
-        label: 'Repeated Data Handling',
+        label: 'Repeat Handling',
         hint: 'Choose how to aggregate data points that share the same time and location.'
       },
       colorScheme: {
@@ -399,6 +401,9 @@ export default function SpaceTimeViewer({
 
   return (
     <div className="space-time-viewer">
+      <Helmet>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </Helmet>
       {plot}
       <Provider delayDuration={0}>
         <Leva theme={levaTheme} />

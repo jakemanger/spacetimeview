@@ -94,12 +94,17 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
       sx={{
         position: 'absolute',
         zIndex: 1,
-        bottom: '40px',
+        bottom: '10px',
+        right: '10px',
         width: '100%',
         display: 'flex',
-        color: '#f5f1d8',
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden', // Prevent overflow outside of the box
+        padding: '10px 5px', // Added some top padding to prevent cutting off labels
+        maxWidth: '100%', // Ensure the box doesn't exceed the viewport width
+        boxSizing: 'border-box',
+        height: 'auto', // Allow the container to adjust its height
       }}
     >
       <FormControl variant="outlined" sx={{ m: 1, minWidth: 120 }}>
@@ -128,17 +133,22 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
           <MenuItem value="Custom">Custom</MenuItem>
         </Select>
       </FormControl>
+
       <Button
         color="inherit"
         onClick={() => setIsPlaying(!isPlaying)}
         title={isPlaying ? 'Stop' : 'Animate'}
+        sx={{
+          color: '#f5f1d8', // Set play button color to match your theme
+        }}
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </Button>
+
       <Slider
         sx={{
           marginLeft: 2,
-          width: '40%',
+          maxWidth: '40%',
           color: '#f5f1d8',
           '& .MuiSlider-valueLabel': {
             background: 'none',
@@ -153,6 +163,7 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
         valueLabelDisplay="on"
         valueLabelFormat={formatLabel}
       />
+
       <Snackbar open={showHint} autoHideDuration={6000} onClose={() => setShowHint(false)}>
         <Alert onClose={() => setShowHint(false)} severity="info" sx={{ width: '100%' }}>
           Click and drag the sliders to adjust the range.

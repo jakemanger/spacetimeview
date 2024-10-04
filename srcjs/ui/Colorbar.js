@@ -56,6 +56,7 @@ export default function Colorbar({ colorRange, colorDomain, title, numDecimals =
 
   return (
     <div
+      className='colorbar'
       style={{
         position: 'absolute',
         bottom: '20px',

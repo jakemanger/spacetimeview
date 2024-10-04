@@ -293,7 +293,7 @@ widget_html.spacetimeview <- function(id, style, class, ...) {
 #' @name spacetimeview-shiny
 #'
 #' @export
-spacetimeviewOutput <- function(outputId, width = '100vw', height = '100vh') {
+spacetimeviewOutput <- function(outputId, width = '100%', height = '100%') {
   htmlwidgets::shinyWidgetOutput(outputId, 'spacetimeview', width, height, package = 'spacetimeview')
 }
 
