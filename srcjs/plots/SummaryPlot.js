@@ -198,7 +198,6 @@ export default function SummaryPlot({
         return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
       });
     }
-    if (!points.length) return defaultValue;
 
     if (repeatedPointsAggregation !== 'None') {
       points = aggregateRepeatedPoints(points);
@@ -214,8 +213,8 @@ export default function SummaryPlot({
     return defaultValue;
   };
 
-  const elevationFunction = getAggregationFunction(elevationAggregation, 1);
-  const colorFunction = getAggregationFunction(colorAggregation, 1);
+  const elevationFunction = getAggregationFunction(elevationAggregation, 0);
+  const colorFunction = getAggregationFunction(colorAggregation, 0);
 
   const layers = [
     isGridView
