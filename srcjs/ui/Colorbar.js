@@ -9,8 +9,6 @@ export default function Colorbar({ colorRange, colorDomain, title, numDecimals =
     return null;
   }
 
-  console.log('ColorDomain: ', colorDomain);
-
   // Reverse the color range
   const reversedColorRange = useMemo(() => [...colorRange].reverse(), [colorRange]);
 

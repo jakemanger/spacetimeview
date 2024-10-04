@@ -16,6 +16,7 @@ import RangeInput from '../ui/RangeInput';
 import Colorbar from '../ui/Colorbar';
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
+import { PiYG } from 'colorbrewer';
 
 const MS_PER_DAY = 8.64e7;
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
@@ -154,22 +155,37 @@ export default function SummaryPlot({
 
   const lightingEffect = new LightingEffect({ ambientLight, directionalLight1, directionalLight2 })
 
+  function updateTimeRange(newFilter) {
+    if (!preserveDomains) {
+      setFilter(newFilter);
+    }
 
-  useEffect(() => {
-    if (preserveDomains) {
+    const newDuration = newFilter[1] - newFilter[0];
+    const oldDuration = filter[1] - filter[0];
+
+    if (newDuration !== oldDuration) {
       setInitialColorDomain(null);
       setInitialElevationDomain(null);
-      setTriggerDomainUpdate(true);
-      setFilter([0, Infinity]);
     }
-  }, [data, elevationAggregation, colorAggregation, preserveDomains, radius, coverage]);
+    setFilter(newFilter);
+  }
 
-  useEffect(() => {
-    if (triggerDomainUpdate) {
-      setTriggerDomainUpdate(false);
-      setFilter(timeRange);
-    }
-  }, [triggerDomainUpdate, timeRange]);
+  // useEffect(() => {
+  //   if (preserveDomains) {
+  //     setInitialColorDomain(null);
+  //     setInitialElevationDomain(null);
+  //     setTriggerDomainUpdate(true);
+  //     // setFilter([0, Infinity]);
+  //   }
+  // }, [data, elevationAggregation, colorAggregation, preserveDomains, radius, coverage]);
+  //
+  // useEffect(() => {
+  //   if (triggerDomainUpdate || !preserveDomains) {
+  //     setTriggerDomainUpdate(false);
+  //     console.log('Setting filter to ', timeRange);
+  //     setFilter(timeRange);
+  //   }
+  // }, [triggerDomainUpdate, timeRange]);
 
   const aggregateRepeatedPoints = (points) => {
     const groupedPoints = points.reduce((acc, point) => {
@@ -198,6 +214,7 @@ export default function SummaryPlot({
         return timestamp >= currentFilter[0] && timestamp <= currentFilter[1];
       });
     }
+    if (!points.length) return defaultValue;
 
     if (repeatedPointsAggregation !== 'None') {
       points = aggregateRepeatedPoints(points);
@@ -238,23 +255,18 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain: (colorDomain) => {
-          if (colorDomain === null) return;
-          console.log(colorDomain);
-
+          console.log('Setting color domain to ', colorDomain);
           if (preserveDomains && initialColorDomain !== null) {
             setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
           } else setInitialColorDomain(colorDomain);
         },
         onSetElevationDomain: (elevationDomain) => {
-          if (elevationDomain === null) return;
-          console.log(elevationDomain);
-
           if (preserveDomains && initialElevationDomain !== null) {
             setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
           } else setInitialElevationDomain(elevationDomain);
         },
-        colorDomain: preserveDomains ? initialColorDomain : null,
-        elevationDomain: preserveDomains ? initialElevationDomain : null,
+        colorDomain: null,
+        elevationDomain: null,
         updateTriggers: {
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
@@ -282,23 +294,19 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain: (colorDomain) => {
-          if (colorDomain === null) return;
-          console.log(colorDomain);
-
+          console.log('Setting color domain to ', colorDomain);
           if (preserveDomains && initialColorDomain !== null) {
             setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
           } else setInitialColorDomain(colorDomain);
         },
         onSetElevationDomain: (elevationDomain) => {
-          if (elevationDomain === null) return;
-          console.log(elevationDomain);
-
+          console.log('Setting elevation domain to ', elevationDomain);
           if (preserveDomains && initialElevationDomain !== null) {
             setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
           } else setInitialElevationDomain(elevationDomain);
         },
-        colorDomain: preserveDomains ? initialColorDomain : null,
-        elevationDomain: preserveDomains ? initialElevationDomain : null,
+        colorDomain: null,
+        elevationDomain: null,
         updateTriggers: {
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
@@ -357,7 +365,7 @@ export default function SummaryPlot({
             const date = new Date(timestamp);
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
           }}
-          onChange={setFilter}
+          onChange={updateTimeRange}
           data={data}
         />
       )}

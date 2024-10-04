@@ -45,7 +45,7 @@ export default function SpaceTimeViewer({
   initialColumnToPlot = 'value',
   initialAggregate = 'MEAN',
   initialRepeatedPointsAggregate = 'MEAN',
-  initialPreserveDomains = false,
+  initialStickyRange = false,
   initialSummaryRadius = 5000,
   initialSummaryCoverage = 1,
   initialAnimationSpeed = 10,
@@ -102,7 +102,7 @@ export default function SpaceTimeViewer({
   // define aggregateOptions for the summary plot
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
-  // if there is no data[0].initialColumnToPLot then we can't use SUM, MEAN, MIN, MAX
+  // if there is no data[0].initialColumnToPlot then we can't use SUM, MEAN, MIN, MAX
   if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
@@ -126,7 +126,7 @@ export default function SpaceTimeViewer({
       numDecimals: { value: initialNumDecimals, label: 'Number of decimals', hint: 'The number of decimals to show in the legend.' },
       aggregate: { value: initialAggregate, options: aggregateOptions, label: 'Aggregation function', hint: 'The aggregation function to use for the color scale and height (if height > 0).' },
       repeatedPointsAggregate: { value: initialRepeatedPointsAggregate, options: repeatedPointsAggregateOptions, label: 'Repeated points aggregation function', hint: 'An additional aggregation function to use for data points within a grid cell that have the same time.' },
-      preserveDomains: { value: initialPreserveDomains, label: 'Colour scale based on all data', hint: 'If true, the colour scale will be based on all data points. If false, the colour scale will be based on the current time window.' },
+      preserveDomains: { value: initialStickyRange, label: 'Sticky range', hint: 'If true, the min and max colour/elevation values will stick for relative comparison of summaries over time. ' },
       summaryRadius: { value: initialSummaryRadius, label: 'Radius', step: 1, hint: 'The radius of the grid cell or hexagon.' },
       summaryCoverage: { value: initialSummaryCoverage, label: 'Size of cell', step: 0.1, hint: 'The cell size factor. The size of a cell is calculated as `Size of cell * Radius`.' },
       summaryHeight: { value: initialSummaryHeight, label: 'Height', step: 1, hint: 'The height of the grid cell or hexagon.', hint: 'The height of the grid cell or hexagon.' },
