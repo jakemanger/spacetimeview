@@ -131,6 +131,12 @@ export default function SpaceTimeViewer({
         label: 'Map Projection',
         hint: 'Choose how the map projection is displayed.'
       },
+      colorScheme: {
+        value: initialColorScheme,
+        options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']),
+        label: 'Color Scheme',
+        hint: 'Select a color scheme to represent data visually.'
+      },
       theme: {
         value: initialTheme,
         options: ['light', 'dark'],
@@ -180,12 +186,6 @@ export default function SpaceTimeViewer({
         options: repeatedPointsAggregateOptions,
         label: 'Repeat Handling',
         hint: 'Choose how to aggregate data points that share the same time and location.'
-      },
-      colorScheme: {
-        value: initialColorScheme,
-        options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']),
-        label: 'Color Scheme',
-        hint: 'Select a color scheme to represent data visually.'
       },
       colorScaleType: {
         value: initialColorScaleType,
@@ -343,6 +343,8 @@ export default function SpaceTimeViewer({
           radiusMinPixels={radiusMinPixels}
           animationSpeed={animationSpeed}
           projection={projection}
+          colorRange={colorRange}
+          columnName={columnToPlot}
         />
       );
     } else if (style === 'Summary') {
