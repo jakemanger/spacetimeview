@@ -33,6 +33,7 @@ div[mapboxgl-children] {
 
 .leva-c-kWgxhW {
   width: 350px;
+  z-index: 9999;
 }
 
 @media (max-width: 768px) {
@@ -46,6 +47,6 @@ div[mapboxgl-children] {
   }
 }
 
-#deckgl-wrapper {
-  z-index: -1 !important;
-}
+/*#deckgl-wrapper {*/
+/*  z-index: -1 !important;*/
+/*}*/

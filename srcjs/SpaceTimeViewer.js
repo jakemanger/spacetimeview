@@ -262,7 +262,7 @@ export default function SpaceTimeViewer({
       accent2: '#007BFF',
       accent3: '#3C93FF',
       highlight1: '#535760',
-      highlight2: '#8C92A4',
+      highlight2: '#F1F3F5',
       highlight3: '#FEFEFE',
       vivid1: '#ffcc00',
     } : {
@@ -327,6 +327,7 @@ export default function SpaceTimeViewer({
           projection={projection}
           colorRange={colorRange}
           columnName={columnToPlot}
+          themeColors={levaTheme.colors}
         />
       );
     } else if (style === 'Summary') {
@@ -351,6 +352,7 @@ export default function SpaceTimeViewer({
           legendTitle={columnToPlot}
           colorScaleType={colorScaleType}
           numDecimals={numDecimals}
+          themeColors={levaTheme.colors}
         />
       );
     } else {
@@ -393,6 +395,7 @@ export default function SpaceTimeViewer({
         title={headerTitle}
         websiteLink={headerWebsiteLink}
         socialLinks={socialLinks}
+        themeColors={levaTheme.colors}
       />
       {plot}
       <Provider delayDuration={0}>

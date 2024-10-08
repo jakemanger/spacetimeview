@@ -75,7 +75,18 @@ export default function ScatterTimePlot({
     [254, 173, 84],
     [209, 55, 78],
   ],
-  columnName = 'value'
+  columnName = 'value',
+  themeColors = {
+    elevation1: '#292d39',
+    elevation2: '#181C20',
+    elevation3: '#373C4B',
+    accent1: '#0066DC',
+    accent2: '#007BFF',
+    accent3: '#3C93FF',
+    highlight1: '#535760',
+    highlight2: '#8C92A4',
+    highlight3: '#FEFEFE',
+  }
 }) {
   const [filter, setFilter] = useState(timeRange);
 
@@ -167,6 +178,7 @@ export default function ScatterTimePlot({
         colorDomain={[minValue, maxValue]}
         title={columnName}
         numDecimals={2}
+        themeColors={themeColors}
       />
     </>
   );

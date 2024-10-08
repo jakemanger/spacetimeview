@@ -4,7 +4,23 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-export default function Colorbar({ colorRange, colorDomain, title, numDecimals = 3 }) {
+export default function Colorbar({
+  colorRange,
+  colorDomain,
+  title,
+  numDecimals = 3,
+  themeColors = {
+    elevation1: '#292d39',
+    elevation2: '#181C20',
+    elevation3: '#373C4B',
+    accent1: '#0066DC',
+    accent2: '#007BFF',
+    accent3: '#3C93FF',
+    highlight1: '#535760',
+    highlight2: '#8C92A4',
+    highlight3: '#FEFEFE',
+  }
+}) {
   if (colorDomain == null || colorRange == null || colorRange.length !== 6) {
     return null;
   }
@@ -49,7 +65,7 @@ export default function Colorbar({ colorRange, colorDomain, title, numDecimals =
             marginRight: '5px',
           }}
         />
-        <span>{rangeText}</span>
+        <span style={{ color: themeColors.highlight2 }}>{rangeText}</span>
       </div>
     );
   });
@@ -61,14 +77,14 @@ export default function Colorbar({ colorRange, colorDomain, title, numDecimals =
         position: 'absolute',
         bottom: '20px',
         left: '20px',
-        backgroundColor: 'white',
+        backgroundColor: themeColors.elevation2,
         padding: '10px',
         borderRadius: '5px',
         boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)',
         fontFamily: 'sans-serif',
       }}
     >
-      <h4 style={{ marginTop: '0px' }}>{capitalizeFirstLetter(title)}</h4>
+      <h4 style={{ marginTop: '0px', color: themeColors.highlight2 }}>{capitalizeFirstLetter(title)}</h4>
       {legendItems}
     </div>
   );

@@ -133,7 +133,18 @@ export default function SummaryPlot({
   ],
   legendTitle = 'Legend',
   colorScaleType = 'quantize',
-  numDecimals = 1
+  numDecimals = 1,
+  themeColors = {
+    elevation1: '#292d39',
+    elevation2: '#181C20',
+    elevation3: '#373C4B',
+    accent1: '#0066DC',
+    accent2: '#007BFF',
+    accent3: '#3C93FF',
+    highlight1: '#535760',
+    highlight2: '#8C92A4',
+    highlight3: '#FEFEFE',
+  }
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
@@ -369,7 +380,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
-      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} />
+      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} />
     </>
   );
 }

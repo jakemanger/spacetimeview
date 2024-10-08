@@ -11,13 +11,29 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import GitHubIcon from '@mui/icons-material/GitHub';
 
-const Header = ({ logo, title = '', socialLinks = {}, websiteLink = '' }) => {
+const Header = ({
+  logo,
+  title = '',
+  socialLinks = {},
+  websiteLink = '',
+  themeColors = {
+    elevation1: '#292d39',
+    elevation2: '#181C20',
+    elevation3: '#373C4B',
+    accent1: '#0066DC',
+    accent2: '#007BFF',
+    accent3: '#3C93FF',
+    highlight1: '#535760',
+    highlight2: '#8C92A4',
+    highlight3: '#FEFEFE',
+  }
+}) => {
   if (!logo && !title && Object.keys(socialLinks).length === 0) {
     return null;
   }
 
   return (
-    <AppBar position="static" sx={{ height: '60px', backgroundColor: 'grey' }}> {/* Adjust background color to grey */}
+    <AppBar position="fixed" sx={{ height: '60px', backgroundColor: themeColors.elevation2, zIndex: 100 }}> {/* Adjust background color */}
       <Toolbar sx={{ minHeight: '60px', display: 'flex', justifyContent: 'space-between' }}> {/* Center items vertically and distribute space */}
         {/* Logo with optional website link */}
         {websiteLink ? (
@@ -26,7 +42,7 @@ const Header = ({ logo, title = '', socialLinks = {}, websiteLink = '' }) => {
               <img src={logo} alt="logo" style={{ height: '40px', marginRight: '10px' }} />
             )}
             {title && (
-              <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center' }}> {/* Center title */}
+              <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', color: themeColors.highlight2 }}> {/* Center title */}
                 {title}
               </Typography>
             )}
@@ -39,7 +55,7 @@ const Header = ({ logo, title = '', socialLinks = {}, websiteLink = '' }) => {
               </IconButton>
             )}
             {title && (
-              <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center' }}> {/* Center title */}
+              <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', color: themeColors.highlight2 }}> {/* Center title */}
                 {title}
               </Typography>
             )}
@@ -49,27 +65,27 @@ const Header = ({ logo, title = '', socialLinks = {}, websiteLink = '' }) => {
         {/* Social Media Links */}
         <Box>
           {socialLinks.facebook && (
-            <IconButton color="inherit" href={socialLinks.facebook} target="_blank">
+            <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.facebook} target="_blank">
               <FacebookIcon />
             </IconButton>
           )}
           {socialLinks.twitter && (
-            <IconButton color="inherit" href={socialLinks.twitter} target="_blank">
+            <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.twitter} target="_blank">
               <TwitterIcon />
             </IconButton>
           )}
           {socialLinks.linkedin && (
-            <IconButton color="inherit" href={socialLinks.linkedin} target="_blank">
+            <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.linkedin} target="_blank">
               <LinkedInIcon />
             </IconButton>
           )}
           {socialLinks.instagram && (
-            <IconButton color="inherit" href={socialLinks.instagram} target="_blank">
+            <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.instagram} target="_blank">
               <InstagramIcon />
             </IconButton>
           )}
           {socialLinks.github && (
-            <IconButton color="inherit" href={socialLinks.github} target="_blank">
+            <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.github} target="_blank">
               <GitHubIcon />
             </IconButton>
           )}

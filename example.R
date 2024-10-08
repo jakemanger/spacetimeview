@@ -27,7 +27,8 @@ aggregated_data <- data %>%
 spacetimeview(
   data = aggregated_data,
   initialAggregate='MEAN',
-  initialProjection='Mercator'
+  initialProjection='Mercator',
+  headerTitle='BOM Weather Data',
 )
 
 
