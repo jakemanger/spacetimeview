@@ -25,10 +25,14 @@ aggregated_data <- data %>%
   rename(timestamp = week)
 
 spacetimeview(
-  data = aggregated_data,
-  initialAggregate='MEAN',
-  initialProjection='Mercator',
+  data = aggregated_data, 
+  initialAggregate='MEAN', 
+  initialProjection='Mercator', 
   headerTitle='BOM Weather Data',
+  socialLinks=c(
+    'github'='https://github.com/jakemanger/spacetimeview', 
+    'twitter'='https://twitter.com/jakemanger'
+  )
 )
 
 

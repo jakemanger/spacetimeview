@@ -47,7 +47,7 @@ export default function SpaceTimeViewer({
   initialStickyRange = true,
   initialSummaryRadius = 5000,
   initialSummaryCoverage = 1,
-  initialAnimationSpeed = 60,
+  initialAnimationSpeed = 1,
   initialTheme = 'light',
   initialRadiusScale = 1,
   initialRadiusMinPixels = 3,
@@ -60,7 +60,23 @@ export default function SpaceTimeViewer({
   headerLogo = '',
   headerTitle = '',
   headerWebsiteLink = '',
-  socialLinks = {}
+  socialLinks = {},
+  visibleControls = [
+    'columnToPlot',
+    'style',
+    'colorScheme',
+    'animationSpeed',
+    'summaryRadius',
+    'radiumMinPixels',
+  ],
+  controlNames = {
+    'columnToPlot': 'Dataset',
+    'style': 'Plot Type',
+    'colorScheme': 'Color Scheme',
+    'animationSpeed': 'Animation Speed',
+    'summaryRadius': 'Cell Radius',
+    'radiusMinPixels': 'Minimum Point Radius',
+  }
 }) {
   data = HTMLWidgets.dataframeToD3(data);
 
@@ -106,117 +122,123 @@ export default function SpaceTimeViewer({
   }
 
   const controlsConfig = {
-    'General Settings': folder({
-      style: {
-        value: initialStyle,
-        options: ['Summary', 'Scatter'],
-        label: 'Plot Type',
-        hint: 'Select whether to display a Summary or Scatter plot.'
-      },
-      columnToPlot: {
-        value: initialColumnToPlot,
-        options: columnNames,
-        label: 'Column to Plot',
-        hint: 'Choose the data column to visualize on the map.'
-      },
-      projection: {
-        value: initialProjection,
-        options: ['Mercator', 'Globe'],
-        label: 'Map Projection',
-        hint: 'Choose how the map projection is displayed.'
-      },
-      colorScheme: {
-        value: initialColorScheme,
-        options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']),
-        label: 'Color Scheme',
-        hint: 'Select a color scheme to represent data visually.'
-      },
-      theme: {
-        value: initialTheme,
-        options: ['light', 'dark'],
-        label: 'Theme',
-        hint: 'Choose between light and dark themes for the map.'
-      },
-    }),
-
-    'Summary Plot Settings': folder({
-      summaryStyle: {
-        value: initialSummaryStyle,
-        options: ['Grid', 'Hexagon'],
-        label: 'Grid/Hexagon Style',
-        hint: 'Choose whether the summary plot uses a grid or hexagon layout.'
-      },
-      summaryRadius: {
-        value: initialSummaryRadius,
-        label: 'Radius',
-        step: 1,
-        hint: 'The radius of each grid cell or hexagon in the summary plot.'
-      },
-      summaryCoverage: {
-        value: initialSummaryCoverage,
-        label: 'Cell Size Factor',
-        step: 0.1,
-        hint: 'Controls the size of the grid cell or hexagon as a multiple of the radius.'
-      },
-      summaryHeight: {
-        value: initialSummaryHeight,
-        label: 'Height of Cells',
-        step: 1,
-        hint: 'Sets the 3D height of grid cells or hexagons in the summary plot.'
-      },
-      preserveDomains: {
-        value: initialStickyRange,
-        label: 'Sticky Range',
-        hint: 'If enabled, the min and max color/elevation values will persist across time intervals.'
-      },
-      aggregate: {
-        value: initialAggregate,
-        options: aggregateOptions,
-        label: 'Aggregation Type',
-        hint: 'Select the aggregation function for summarizing data in the grid or hexagon cells.'
-      },
-      repeatedPointsAggregate: {
-        value: initialRepeatedPointsAggregate,
-        options: repeatedPointsAggregateOptions,
-        label: 'Repeat Handling',
-        hint: 'Choose how to aggregate data points that share the same time and location.'
-      },
-      colorScaleType: {
-        value: initialColorScaleType,
-        options: ['quantize', 'quantile'],
-        label: 'Color Scale Type',
-        hint: 'Choose between quantize or quantile color scales for the summary plot.'
-      },
-      numDecimals: {
-        value: initialNumDecimals,
-        label: 'Decimals in Legend',
-        hint: 'Set the number of decimal places to display in the legend.'
-      },
-    }, { collapsed: true, render: (get) => get('General Settings.style') === 'Summary' }),
-
-    'Scatter Plot Settings': folder({
-      radiusScale: {
-        value: initialRadiusScale,
-        label: 'Point Radius Scale',
-        step: 100,
-        hint: 'Adjust the size of scatter plot points.'
-      },
-      radiusMinPixels: {
-        value: initialRadiusMinPixels,
-        label: 'Minimum Point Radius',
-        step: 0.001,
-        hint: 'Set the minimum size for scatter plot points, in pixels.'
-      },
-    }, { collapsed: true, render: (get) => get('General Settings.style') === 'Scatter' }),
-
-    'Animation & Interaction': folder({
-      animationSpeed: {
-        value: initialAnimationSpeed,
-        label: 'Animation Speed',
-        step: 1,
-        hint: 'Adjust the speed of the time animation, in seconds.'
-      },
-    })
+    style: {
+      value: initialStyle,
+      options: ['Summary', 'Scatter'],
+      label: controlNames['style'] || 'Plot Type',
+      hint: 'Select whether to display a Summary or Scatter plot.',
+      render: () => visibleControls.includes('style')
+    },
+    columnToPlot: {
+      value: initialColumnToPlot,
+      options: columnNames,
+      label: controlNames['columnToPlot'] || 'Dataset',
+      hint: 'Choose the data column to visualize on the map.',
+      render: () => visibleControls.includes('columnToPlot')
+    },
+    projection: {
+      value: initialProjection,
+      options: ['Mercator', 'Globe'],
+      label: controlNames['projection'] || 'Map Projection',
+      hint: 'Choose how the map projection is displayed.',
+      render: () => visibleControls.includes('projection')
+    },
+    colorScheme: {
+      value: initialColorScheme,
+      options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']),
+      label: controlNames['colorScheme'] || 'Color Scheme',
+      hint: 'Select a color scheme to represent data visually.',
+      render: () => visibleControls.includes('colorScheme')
+    },
+    theme: {
+      value: initialTheme,
+      options: ['light', 'dark'],
+      label: controlNames['theme'] || 'Theme',
+      hint: 'Choose between light and dark themes for the map.',
+      render: () => visibleControls.includes('theme')
+    },
+    summaryStyle: {
+      value: initialSummaryStyle,
+      options: ['Grid', 'Hexagon'],
+      label: controlNames['summaryStyle'] || 'Grid/Hexagon Style',
+      hint: 'Choose whether the summary plot uses a grid or hexagon layout.',
+      render: () => visibleControls.includes('summaryStyle')
+    },
+    summaryRadius: {
+      value: initialSummaryRadius,
+      label: controlNames['summaryRadius'] || 'Radius',
+      step: 1,
+      hint: 'The radius of each grid cell or hexagon in the summary plot.',
+      render: get => visibleControls.includes('summaryRadius') && get('style') === 'Summary'
+    },
+    summaryCoverage: {
+      value: initialSummaryCoverage,
+      label: controlNames['summaryCoverage'] || 'Cell Size Factor',
+      step: 0.1,
+      hint: 'Controls the size of the grid cell or hexagon as a multiple of the radius.',
+      render: get => visibleControls.includes('summaryCoverage') && get('style') === 'Summary'
+    },
+    summaryHeight: {
+      value: initialSummaryHeight,
+      label: controlNames['summaryHeight'] || 'Height of Cells',
+      step: 1,
+      hint: 'Sets the 3D height of grid cells or hexagons in the summary plot.',
+      render: get => visibleControls.includes('summaryHeight') && get('style') === 'Summary'
+    },
+    preserveDomains: {
+      value: initialStickyRange,
+      label: controlNames['preserveDomains'] || 'Sticky Range',
+      hint: 'If enabled, the min and max color/elevation values will persist across time intervals.',
+      render: get => visibleControls.includes('preserveDomains') && get('style') === 'Summary'
+    },
+    aggregate: {
+      value: initialAggregate,
+      options: aggregateOptions,
+      label: controlNames['aggregate'] || 'Aggregation Type',
+      hint: 'Select the aggregation function for summarizing data in the grid or hexagon cells.',
+      render: get => visibleControls.includes('aggregate') && get('style') === 'Summary'
+    },
+    repeatedPointsAggregate: {
+      value: initialRepeatedPointsAggregate,
+      options: repeatedPointsAggregateOptions,
+      label: controlNames['repeatedPointsAggregate'] || 'Repeat Handling',
+      hint: 'Choose how to aggregate data points that share the same time and location.',
+      render: () => visibleControls.includes('repeatedPointsAggregate')
+    },
+    colorScaleType: {
+      value: initialColorScaleType,
+      options: ['quantize', 'quantile'],
+      label: controlNames['colorScaleType'] || 'Color Scale Type',
+      hint: 'Choose between quantize or quantile color scales for the summary plot.',
+      render: () => visibleControls.includes('colorScaleType')
+    },
+    numDecimals: {
+      value: initialNumDecimals,
+      label: controlNames['numDecimals'] || 'Decimals in Legend',
+      hint: 'Set the number of decimal places to display in the legend.',
+      render: () => visibleControls.includes('numDecimals')
+    },
+    radiusScale: {
+      value: initialRadiusScale,
+      label: controlNames['radiusScale'] || 'Point Radius Scale',
+      step: 100,
+      hint: 'Adjust the size of scatter plot points.',
+      render: get => visibleControls.includes('radiusScale') && get('style') === 'Scatter'
+    },
+    radiusMinPixels: {
+      value: initialRadiusMinPixels,
+      label: controlNames['radiusMinPixels'] || 'Minimum Point Radius',
+      step: 0.001,
+      hint: 'Set the minimum size for scatter plot points, in pixels.',
+      render: get => visibleControls.includes('radiusMinPixels') && get('style') === 'Scatter'
+    },
+    animationSpeed: {
+      value: initialAnimationSpeed,
+      label: controlNames['animationSpeed'] || 'Animation Speed',
+      step: 1,
+      hint: 'Adjust the speed of the time animation, in seconds.',
+      render: () => visibleControls.includes('animationSpeed')
+    }
   };
 
   if (!columnNames.includes(initialColumnToPlot)) {
@@ -277,7 +299,13 @@ export default function SpaceTimeViewer({
       highlight3: '#3E4C59',
       vivid1: '#FFC107',
     };
-    setLevaTheme({ colors: newLevaThemeColors });
+    setLevaTheme({
+      colors: newLevaThemeColors,
+      shadows: {
+        level1: '0 0 10px rgba(0, 0, 0, 0.2)',
+        level2: '0 0 10px rgba(0, 0, 0, 0.2)',
+      },
+    });
   }, [theme]);
 
   let INITIAL_VIEW_STATE = {

@@ -80,8 +80,7 @@ export default function Colorbar({
         backgroundColor: themeColors.elevation2,
         padding: '10px',
         borderRadius: '5px',
-        boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)',
-        fontFamily: 'sans-serif',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
       }}
     >
       <h4 style={{ marginTop: '0px', color: themeColors.highlight2 }}>{capitalizeFirstLetter(title)}</h4>

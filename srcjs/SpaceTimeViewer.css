@@ -1,3 +1,17 @@
+* {
+  font-family: 'Roboto', sans-serif;
+}
+
+span, p {
+  font-size: 12px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: 16px;
+  /* not bold */
+  font-weight: 400;
+}
+
 body {
   max-width: 100%;
   max-height: 100%;
@@ -18,8 +32,6 @@ body {
 	bottom: 2px;
 	right: 2px;
 	z-index: 9999;
-	font-family: 'Helvetica Neue', sans-serif;
-	font-size: 12px;
 	pointer-events: none;
 }
 

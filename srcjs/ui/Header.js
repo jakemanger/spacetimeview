@@ -33,7 +33,7 @@ const Header = ({
   }
 
   return (
-    <AppBar position="fixed" sx={{ height: '60px', backgroundColor: themeColors.elevation2, zIndex: 100 }}> {/* Adjust background color */}
+    <AppBar position="fixed" sx={{ height: '60px', backgroundColor: themeColors.elevation2, zIndex: 100, boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)' }}>
       <Toolbar sx={{ minHeight: '60px', display: 'flex', justifyContent: 'space-between' }}> {/* Center items vertically and distribute space */}
         {/* Logo with optional website link */}
         {websiteLink ? (
