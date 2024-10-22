@@ -43,7 +43,7 @@ export default function SpaceTimeViewer({
   initialStyle = 'Summary',
   initialColumnToPlot = 'value',
   initialAggregate = 'MEAN',
-  initialRepeatedPointsAggregate = 'MEAN',
+  initialRepeatedPointsAggregate = 'None',
   initialStickyRange = true,
   initialSummaryRadius = 5000,
   initialSummaryCoverage = 1,
@@ -57,6 +57,7 @@ export default function SpaceTimeViewer({
   initialColorScheme = 'YlOrRd',
   initialColorScaleType = 'quantize',
   initialNumDecimals = 1,
+  factorLevels = null,
   headerLogo = '',
   headerTitle = '',
   headerWebsiteLink = '',
@@ -68,6 +69,7 @@ export default function SpaceTimeViewer({
     'animationSpeed',
     'summaryRadius',
     'radiumMinPixels',
+    'aggregate'
   ],
   controlNames = {
     'columnToPlot': 'Dataset',
@@ -76,9 +78,12 @@ export default function SpaceTimeViewer({
     'animationSpeed': 'Animation Speed',
     'summaryRadius': 'Cell Radius',
     'radiusMinPixels': 'Minimum Point Radius',
+    'aggregate': 'Aggregate'
   }
 }) {
   data = HTMLWidgets.dataframeToD3(data);
+  console.log('Received data:', data);
+  console.log('Factor levels:', factorLevels);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -114,8 +119,8 @@ export default function SpaceTimeViewer({
     );
   }, [data]);
 
-  let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
-  let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX'];
+  let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
+  let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
@@ -381,6 +386,7 @@ export default function SpaceTimeViewer({
           colorScaleType={colorScaleType}
           numDecimals={numDecimals}
           themeColors={levaTheme.colors}
+          factorLevels={factorLevels}
         />
       );
     } else {

@@ -16,7 +16,6 @@ import RangeInput from '../ui/RangeInput';
 import Colorbar from '../ui/Colorbar';
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
-import { PiYG } from 'colorbrewer';
 
 const MS_PER_DAY = 8.64e7;
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
@@ -27,10 +26,19 @@ const ambientLight = new AmbientLight({
 });
 
 
-function getTooltip({ object }, elevationAggregation, filter, hasTime) {
+function getTooltip({ object }, elevationAggregation, filter, hasTime, factorLevels=null) {
   if (!object) return null;
 
-  const { position, points, elevationValue } = object;
+  let { position, points, elevationValue } = object;
+  console.log('factorLevels', factorLevels);
+  console.log('elevationValue', elevationValue);
+  if (factorLevels) {
+    elevationValue = factorLevels[elevationValue];
+  } else {
+    elevationValue = elevationValue.toFixed(2);
+  }
+  console.log('elevationValue for tooltip:', elevationValue);
+
   const lat = position[1];
   const lng = position[0];
   const metricName =
@@ -86,7 +94,7 @@ function getTooltip({ object }, elevationAggregation, filter, hasTime) {
       <div>
         <p>Latitude: ${lat.toFixed(2)}</p>
         <p>Longitude: ${lng.toFixed(2)}</p>
-        <p>${metricName}: ${elevationValue.toFixed(2)}</p>
+        <p>${metricName}: ${elevationValue}</p>
         ${hasTime ? `<canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>` : ''}
       </div>
     `,
@@ -98,6 +106,26 @@ function getTooltip({ object }, elevationAggregation, filter, hasTime) {
       padding: '5px',
     },
   };
+}
+
+
+function findMode(arr, factorLevels=null) {
+  const frequency = {};
+  let maxCount = 0;
+  let mode = null;
+
+  // Count occurrences of each element
+  for (let num of arr) {
+    frequency[num] = (frequency[num] || 0) + 1;
+
+    // Keep track of the mode and the maximum count
+    if (frequency[num] > maxCount) {
+      maxCount = frequency[num];
+      mode = num;
+    }
+  }
+
+  return mode;
 }
 
 export default function SummaryPlot({
@@ -134,6 +162,7 @@ export default function SummaryPlot({
   legendTitle = 'Legend',
   colorScaleType = 'quantize',
   numDecimals = 1,
+  factorLevels = null,
   themeColors = {
     elevation1: '#292d39',
     elevation2: '#181C20',
@@ -181,23 +210,6 @@ export default function SummaryPlot({
     setFilter(newFilter);
   }
 
-  // useEffect(() => {
-  //   if (preserveDomains) {
-  //     setInitialColorDomain(null);
-  //     setInitialElevationDomain(null);
-  //     setTriggerDomainUpdate(true);
-  //     // setFilter([0, Infinity]);
-  //   }
-  // }, [data, elevationAggregation, colorAggregation, preserveDomains, radius, coverage]);
-  //
-  // useEffect(() => {
-  //   if (triggerDomainUpdate || !preserveDomains) {
-  //     setTriggerDomainUpdate(false);
-  //     console.log('Setting filter to ', timeRange);
-  //     setFilter(timeRange);
-  //   }
-  // }, [triggerDomainUpdate, timeRange]);
-
   const aggregateRepeatedPoints = (points) => {
     const groupedPoints = points.reduce((acc, point) => {
       const timeKey = new Date(point.timestamp).getTime();
@@ -212,6 +224,7 @@ export default function SummaryPlot({
       if (repeatedPointsAggregation === 'MEAN') return values.reduce((sum, val) => sum + val, 0) / values.length;
       if (repeatedPointsAggregation === 'MIN') return Math.min(...values);
       if (repeatedPointsAggregation === 'MAX') return Math.max(...values);
+      if (repeatedPointsAggregation === 'MODE') return findMode(values);
       if (repeatedPointsAggregation === 'COUNT') return values.length;
       return values[0]; // default to first value
     });
@@ -238,6 +251,7 @@ export default function SummaryPlot({
     if (aggregation === 'COUNT') return points.length;
     if (aggregation === 'MIN') return Math.min(...points);
     if (aggregation === 'MAX') return Math.max(...points);
+    if (aggregation === 'MODE') return findMode(points);
     return defaultValue;
   };
 
@@ -361,7 +375,7 @@ export default function SummaryPlot({
         initialViewState={initialViewState}
         controller={true}
         getTooltip={({ object }) =>
-          getTooltip({ object }, elevationAggregation, filter, !isNaN(timeRange[0]))
+          getTooltip({ object }, elevationAggregation, filter, !isNaN(timeRange[0]), factorLevels[legendTitle])
         }
       >
         {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}
@@ -380,7 +394,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
-      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} />
+      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels}/>
     </>
   );
 }

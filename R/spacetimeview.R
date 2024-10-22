@@ -200,9 +200,28 @@ spacetimeview <- function(
     lat_name = lat_name,
     lng_name = lng_name
   )
-  
+
+  factorLevels <- list()
+
   if (is.null(plottable_columns)) {
     plottable_columns <- names(data)[!(names(data) %in% c(required_cols, time_column_name))]
+    # if the plottable column is a character, convert to a factor
+    for (col in plottable_columns) {
+      if (is.character(data[[col]])) {
+        print(paste0('Converting character column `', col, '` to factor'))
+        data[[col]] <- as.factor(data[[col]])
+      }
+
+      if (is.factor(data[[col]])) {
+        factorLevels[[col]] <- levels(data[[col]])
+        # convert to integer
+        data[[col]] <- as.integer(data[[col]])
+      }
+    }
+  }
+
+  if (length(factorLevels) == 0) {
+    factorLevels <- NULL
   }
   
   if (length(plottable_columns) == 0) {
@@ -248,6 +267,7 @@ spacetimeview <- function(
       data = data,
       initialColumnToPlot = initialColumnToPlot,
       initialSummaryRadius = initialSummaryRadius,
+      factorLevels = factorLevels,
       ...
     )
   )
