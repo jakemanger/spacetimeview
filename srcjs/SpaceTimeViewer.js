@@ -413,6 +413,14 @@ export default function SpaceTimeViewer({
 
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
+  let topOffset = '20px';
+
+  const hasHeader = headerLogo !== '' || headerTitle !== '' || headerWebsiteLink !== '' || Object.keys(socialLinks).length > 0;
+
+  if (hasHeader) {
+    topOffset = '80px';
+  }
+
   return (
     <div className="space-time-viewer">
       <Helmet>
@@ -426,9 +434,11 @@ export default function SpaceTimeViewer({
         themeColors={levaTheme.colors}
       />
       {plot}
-      <Provider delayDuration={0}>
-        <Leva theme={levaTheme} />
-      </Provider>
+      <div style={{ position: 'fixed', top: topOffset, right: '20px' }}>
+        <Provider delayDuration={0}>
+          <Leva fill theme={levaTheme} />
+        </Provider>
+      </div>
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
