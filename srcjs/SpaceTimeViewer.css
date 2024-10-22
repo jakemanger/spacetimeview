@@ -33,6 +33,7 @@ body {
 	right: 2px;
 	z-index: 9999;
 	pointer-events: none;
+  font-size: 12px;
 }
 
 .maplibregl-ctrl-attrib-button {
