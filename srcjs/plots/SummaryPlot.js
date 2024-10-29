@@ -26,10 +26,11 @@ const ambientLight = new AmbientLight({
 });
 
 
-function getTooltip({ object }, elevationAggregation, filter, hasTime, factorLevels=null) {
+function getTooltip({ object }, elevationAggregation, filter, hasTime, factorLevels = null) {
   if (!object) return null;
 
   let { position, points, elevationValue } = object;
+  console.log('object', object)
   console.log('factorLevels', factorLevels);
   console.log('elevationValue', elevationValue);
   if (factorLevels) {
@@ -109,7 +110,7 @@ function getTooltip({ object }, elevationAggregation, filter, hasTime, factorLev
 }
 
 
-function findMode(arr, factorLevels=null) {
+function findMode(arr, factorLevels = null) {
   const frequency = {};
   let maxCount = 0;
   let mode = null;
@@ -203,7 +204,7 @@ export default function SummaryPlot({
     const newDuration = newFilter[1] - newFilter[0];
     const oldDuration = filter[1] - filter[0];
 
-    if (newDuration !== oldDuration) {
+    if (newDuration !== oldDuration && !factorLevels) {
       setInitialColorDomain(null);
       setInitialElevationDomain(null);
     }
@@ -258,6 +259,38 @@ export default function SummaryPlot({
   const elevationFunction = getAggregationFunction(elevationAggregation, 0);
   const colorFunction = getAggregationFunction(colorAggregation, 0);
 
+
+  const onSetColorDomain = (colorDomain) => {
+    console.log('Setting color domain to ', colorDomain);
+    if (factorLevels) {
+      // get the min and max from the factor levels
+      console.log('factorLevels', factorLevels);
+      console.log('Setting color domain to ', [0, factorLevels[legendTitle].length - 1]);
+      setInitialColorDomain([0, factorLevels[legendTitle].length - 1]);
+      return;
+    }
+    if (preserveDomains && initialColorDomain !== null) {
+      console.log('setting color domain with min and max');
+      setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
+    } else {
+      console.log('setting color domain to whatever deckgl provided');
+      setInitialColorDomain(colorDomain);
+    }
+  }
+  const onSetElevationDomain = (elevationDomain) => {
+    console.log('Setting elevation domain to ', elevationDomain);
+    if (factorLevels) {
+      // get the min and max from the factor levels
+      console.log('factorLevels', factorLevels);
+      console.log('Setting elevation domain to ', [0, factorLevels[legendTitle].length - 1]);
+      setInitialElevationDomain([0, factorLevels[legendTitle].length - 1]);
+      return;
+    }
+    if (preserveDomains && initialElevationDomain !== null) {
+      setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
+    } else setInitialElevationDomain(elevationDomain);
+  }
+
   const layers = [
     isGridView
       ? new GridLayer({
@@ -279,23 +312,16 @@ export default function SummaryPlot({
           shininess: 32,
           specularColor: [51, 51, 51],
         },
-        onSetColorDomain: (colorDomain) => {
-          console.log('Setting color domain to ', colorDomain);
-          if (preserveDomains && initialColorDomain !== null) {
-            setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
-          } else setInitialColorDomain(colorDomain);
-        },
-        onSetElevationDomain: (elevationDomain) => {
-          if (preserveDomains && initialElevationDomain !== null) {
-            setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
-          } else setInitialElevationDomain(elevationDomain);
-        },
-        colorDomain: null,
-        elevationDomain: null,
+        onSetColorDomain,
+        onSetElevationDomain,
+        colorDomain: initialColorDomain,
+        elevationDomain: initialElevationDomain,
         updateTriggers: {
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
           getPosition: [filter, data, radius, coverage],
+          colorDomain: initialColorDomain,
+          elevationDomain: initialElevationDomain,
         },
         colorScaleType
       })
@@ -318,24 +344,16 @@ export default function SummaryPlot({
           shininess: 32,
           specularColor: [51, 51, 51],
         },
-        onSetColorDomain: (colorDomain) => {
-          console.log('Setting color domain to ', colorDomain);
-          if (preserveDomains && initialColorDomain !== null) {
-            setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
-          } else setInitialColorDomain(colorDomain);
-        },
-        onSetElevationDomain: (elevationDomain) => {
-          console.log('Setting elevation domain to ', elevationDomain);
-          if (preserveDomains && initialElevationDomain !== null) {
-            setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
-          } else setInitialElevationDomain(elevationDomain);
-        },
-        colorDomain: null,
-        elevationDomain: null,
+        onSetColorDomain,
+        onSetElevationDomain,
+        colorDomain: initialColorDomain,
+        elevationDomain: initialElevationDomain,
         updateTriggers: {
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
           getPosition: [filter, data, radius, coverage],
+          colorDomain: [filter, initialColorDomain],
+          elevationDomain: [filter, initialElevationDomain],
         },
         colorScaleType
       }),
@@ -394,7 +412,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
-      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels}/>
+      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels} />
     </>
   );
 }
