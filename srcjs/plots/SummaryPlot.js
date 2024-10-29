@@ -197,14 +197,7 @@ export default function SummaryPlot({
   const lightingEffect = new LightingEffect({ ambientLight, directionalLight1, directionalLight2 })
 
   function updateTimeRange(newFilter) {
-    if (!preserveDomains) {
-      setFilter(newFilter);
-    }
-
-    const newDuration = newFilter[1] - newFilter[0];
-    const oldDuration = filter[1] - filter[0];
-
-    if (newDuration !== oldDuration && !factorLevels) {
+    if ((filter[0] !== newFilter[0] || filter[1] !== newFilter[1]) && !factorLevels) {
       setInitialColorDomain(null);
       setInitialElevationDomain(null);
     }
@@ -383,6 +376,7 @@ export default function SummaryPlot({
     layers.unshift(tileLayer);
   }
 
+  const relevantFactorLevels = factorLevels ? factorLevels[legendTitle] : null;
 
   return (
     <>
@@ -393,7 +387,7 @@ export default function SummaryPlot({
         initialViewState={initialViewState}
         controller={true}
         getTooltip={({ object }) =>
-          getTooltip({ object }, elevationAggregation, filter, !isNaN(timeRange[0]), factorLevels[legendTitle])
+          getTooltip({ object }, elevationAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels)
         }
       >
         {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}

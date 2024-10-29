@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Slider from '@mui/material/Slider';
 import Button from '@mui/material/IconButton';
 import PlayIcon from '@mui/icons-material/PlayArrow';
@@ -25,6 +25,7 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState('All');
   const [showHint, setShowHint] = useState(false);
+  const animationRef = useRef(null);
 
   const minInterval = useMemo(() => {
     if (!data || data.length < 2) return Infinity;
@@ -41,27 +42,41 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
     return Object.entries(durations).filter(([key, [_, duration]]) => duration >= minInterval);
   }, [minInterval]);
 
+  const handleSliderChange = (newValue) => {
+    const range = newValue[1] - newValue[0];
+    if (range < minInterval) {
+      onChange([newValue[0], newValue[0] + minInterval]);
+    } else {
+      onChange(newValue);
+    }
+    setDuration('Custom');
+    setShowHint(false);
+  };
+
   useEffect(() => {
-    let animation;
+    const animate = () => {
+      let nextStartValue = value[0] + animationSpeed;
+      let nextEndValue = value[1] + animationSpeed;
+
+      if (Math.abs(value[0] - value[1]) > ((max - min) * 0.8)) {
+        nextStartValue = min;
+        nextEndValue = min + ((max - min) * 0.2);
+      } else if (nextStartValue > max || nextEndValue > max) {
+        nextStartValue = min;
+        nextEndValue = min + (value[1] - value[0]);
+      }
+      handleSliderChange([nextStartValue, nextEndValue]);
+      animationRef.current = requestAnimationFrame(animate);
+    };
 
     if (isPlaying) {
-      animation = requestAnimationFrame(() => {
-        let nextStartValue = value[0] + animationSpeed;
-        let nextEndValue = value[1] + animationSpeed;
-
-        if (Math.abs(value[0] - value[1]) > ((max - min) * 0.8)) {
-          nextStartValue = min;
-          nextEndValue = min + ((max - min) * 0.2);
-        } else if (nextStartValue > max || nextEndValue > max) {
-          nextStartValue = min;
-          nextEndValue = min + (value[1] - value[0]);
-        }
-        onChange([nextStartValue, nextEndValue]);
-      });
+      animationRef.current = requestAnimationFrame(animate);
+    } else if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
     }
 
-    return () => animation && cancelAnimationFrame(animation);
-  }, [isPlaying, value, animationSpeed, max, min, onChange]);
+    return () => animationRef.current && cancelAnimationFrame(animationRef.current);
+  }, [isPlaying, value, animationSpeed, max, min]);
 
   const handleDurationChange = (event) => {
     const newDuration = event.target.value;
@@ -78,17 +93,6 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
     onChange([min, min + (newMax - newMin)]);
   };
 
-  const handleSliderChange = (event, newValue) => {
-    const range = newValue[1] - newValue[0];
-    if (range < minInterval) {
-      onChange([newValue[0], newValue[0] + minInterval]);
-    } else {
-      onChange(newValue);
-    }
-    setDuration('Custom');
-    setShowHint(false);
-  };
-
   return (
     <Box
       sx={{
@@ -100,11 +104,11 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        overflow: 'hidden', // Prevent overflow outside of the box
-        padding: '10px 5px', // Added some top padding to prevent cutting off labels
-        maxWidth: '100%', // Ensure the box doesn't exceed the viewport width
+        overflow: 'hidden',
+        padding: '10px 5px',
+        maxWidth: '100%',
         boxSizing: 'border-box',
-        height: 'auto', // Allow the container to adjust its height
+        height: 'auto',
       }}
     >
       <FormControl variant="outlined" sx={{ m: 1, minWidth: 120 }}>
@@ -139,7 +143,7 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
         onClick={() => setIsPlaying(!isPlaying)}
         title={isPlaying ? 'Stop' : 'Animate'}
         sx={{
-          color: '#f5f1d8', // Set play button color to match your theme
+          color: '#f5f1d8',
         }}
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
@@ -159,7 +163,7 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
         min={min}
         max={max}
         value={value}
-        onChange={handleSliderChange}
+        onChange={(e, newValue) => handleSliderChange(newValue)}
         valueLabelDisplay="on"
         valueLabelFormat={formatLabel}
       />
