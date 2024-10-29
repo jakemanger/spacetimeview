@@ -177,10 +177,17 @@ export default function SummaryPlot({
   }
 }) {
   const [filter, setFilter] = useState(timeRange);
-  const [triggerDomainUpdate, setTriggerDomainUpdate] = useState(false);
 
   const [initialColorDomain, setInitialColorDomain] = useState(null);
   const [initialElevationDomain, setInitialElevationDomain] = useState(null);
+  const [colorbarDomain, setColorbarDomain] = useState(initialColorDomain);
+
+  // Update colorbarDomain only when initialColorDomain is not null
+  useEffect(() => {
+    if (initialColorDomain !== null) {
+      setColorbarDomain(initialColorDomain);
+    }
+  }, [initialColorDomain]);
 
   const directionalLight1 = new DirectionalLight({
     color: [255, 255, 255],
@@ -313,8 +320,6 @@ export default function SummaryPlot({
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
           getPosition: [filter, data, radius, coverage],
-          colorDomain: initialColorDomain,
-          elevationDomain: initialElevationDomain,
         },
         colorScaleType
       })
@@ -345,8 +350,6 @@ export default function SummaryPlot({
           getElevationValue: [filter, elevationAggregation, radius, coverage],
           getColorValue: [filter, colorAggregation, radius, coverage],
           getPosition: [filter, data, radius, coverage],
-          colorDomain: [filter, initialColorDomain],
-          elevationDomain: [filter, initialElevationDomain],
         },
         colorScaleType
       }),
@@ -406,7 +409,7 @@ export default function SummaryPlot({
           data={data}
         />
       )}
-      <Colorbar colorRange={colorRange} colorDomain={initialColorDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels} />
+      <Colorbar colorRange={colorRange} colorDomain={colorbarDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels} />
     </>
   );
 }
