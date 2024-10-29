@@ -212,7 +212,8 @@ spacetimeview <- function(
         data[[col]] <- as.factor(data[[col]])
       }
 
-      if (is.factor(data[[col]])) {
+      # make sure it's not a time column
+      if (is.factor(data[[col]]) && col != 'timestamp') {
         factorLevels[[col]] <- levels(data[[col]])
         # convert to 0-based index for JS
         data[[col]] <- as.integer(data[[col]]) - 1
