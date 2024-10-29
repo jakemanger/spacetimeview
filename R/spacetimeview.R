@@ -1,23 +1,70 @@
-#' Spacetimeview
+#' Visualize Space-Time Data with an Interactive Map and Plots
 #'
-#' The `spacetimeview` function creates an interactive spatial-temporal visualization using HTML widgets. It is designed to plot geographical data with a time component, making it suitable for applications like tracking the movement of objects over time or visualizing changes in geographical data.
+#' This function provides a space-time visualization interface for exploring 
+#' geospatial and temporal data interactively. Users can toggle between 
+#' different plot types (e.g., Summary, Scatter) and adjust various controls 
+#' such as animation speed, radius scale, aggregation method, and theme.
 #'
-#' @param data A data frame, `sf`, `stars`, or `SpatRaster` object containing the data to visualize. Must include columns for latitude, longitude, and time.
-#' @param lat_name Character. Name of the latitude column. Defaults to 'auto', which attempts to automatically detect the correct column.
-#' @param lng_name Character. Name of the longitude column. Defaults to 'auto', which attempts to automatically detect the correct column.
-#' @param time_column_name Character. Name of the time column. Defaults to 'auto', which attempts to automatically detect the correct column.
-#' @param initialColumnToPlot Character. Name of the initial column to plot. Defaults to NULL, in which case the first plottable column is selected automatically.
-#' @param plottable_columns Character vector. Names of columns that can be plotted. Defaults to NULL, in which case all columns except for the required columns are considered plottable.
-#' @param ... Additional parameters to pass to the React component.
-#' @param width Character. Width of the widget. Defaults to '100vw'.
-#' @param height Character. Height of the widget. Defaults to '100vh'.
-#' @param elementId Character. ID of the HTML element to attach the widget to. Defaults to NULL.
-#' 
-#' @import htmlwidgets
+#' @param data A data frame containing space-time data with columns for 
+#'   latitude, longitude, timestamp, and one or more value columns. The data 
+#'   frame should include at least "lat", "lng", and "timestamp".
+#' @param initialStyle Character. Initial plot style, either "Summary" for 
+#'   aggregated visualizations or "Scatter" for individual data points.
+#' @param initialColumnToPlot Character. The name of the column to visualize on 
+#'   the map. Must be a column present in `data` other than "lat", "lng", 
+#'   or "timestamp".
+#' @param initialAggregate Character. Aggregation method for data in summary 
+#'   plots. Options are "SUM", "MEAN", "COUNT", "MIN", "MAX", or "MODE".
+#' @param initialRepeatedPointsAggregate Character. Specifies how to handle 
+#'   multiple points at the same location and time. Options include "SUM", 
+#'   "MEAN", "COUNT", "MIN", "MAX", and "MODE".
+#' @param initialStickyRange Logical. Whether to keep the min and max color 
+#'   values constant across time intervals. Default is `TRUE`.
+#' @param initialSummaryRadius Numeric. Sets the radius of grid or hexagon 
+#'   cells for summary plots. Adjusting this value affects cell size.
+#' @param initialSummaryCoverage Numeric. Controls the size of grid or hexagon 
+#'   cells as a multiple of `initialSummaryRadius`. Range is 0 to 1.
+#' @param initialAnimationSpeed Numeric. Speed of time animation, where 
+#'   higher values increase the animation speed.
+#' @param initialTheme Character. Theme for visualization, either "light" or 
+#'   "dark". This setting affects color schemes and overall UI theme.
+#' @param initialRadiusScale Numeric. Controls the size of points in scatter 
+#'   plots. Larger values increase point radius.
+#' @param initialRadiusMinPixels Numeric. Sets the minimum size of scatter plot 
+#'   points in pixels, ensuring visibility even when zoomed out.
+#' @param initialSummaryStyle Character. Determines the layout of summary 
+#'   plots, either "Grid" or "Hexagon".
+#' @param initialProjection Character. Map projection type, either "Mercator" 
+#'   or "Globe". Adjusts the map display style.
+#' @param initialSummaryHeight Numeric. Sets the height for 3D representation 
+#'   of cells in summary plots, adding dimensionality to data.
+#' @param initialColorScheme Character. Color scheme for representing data 
+#'   visually. Options align with `colorbrewer` color schemes.
+#' @param initialColorScaleType Character. Type of color scale, either 
+#'   "quantize" or "quantile", impacting color distribution on data ranges.
+#' @param initialNumDecimals Integer. Number of decimal places shown in the 
+#'   color legend.
+#' @param factorLevels List. Optional. Provides factor levels for categorical 
+#'   data, allowing for customized color mappings and labels.
+#' @param headerLogo Character. Optional. URL to the logo displayed in the 
+#'   header of the visualization.
+#' @param headerTitle Character. Title displayed in the header, typically 
+#'   representing the dataset or application name.
+#' @param headerWebsiteLink Character. URL link attached to the header title 
+#'   or logo, redirecting users to a related website.
+#' @param socialLinks Named list. URLs to social media accounts displayed as 
+#'   icons in the header. Supports keys like 'github', 'twitter', 'facebook', 
+#'   'linkedin', etc., which map to the respective profile URLs. For example:
+#'   `socialLinks = c(github = "https://github.com/jakemanger", twitter = "https://twitter.com/jakemanger")`
+#' @param visibleControls Character vector. List of control names to display in 
+#'   the interface. Controls include "columnToPlot", "style", "colorScheme", 
+#'   "animationSpeed", etc.
+#' @param controlNames Named list. Custom names for controls as displayed in 
+#'   the UI. Keys correspond to control identifiers (e.g., "columnToPlot") and 
+#'   values to the display names.
 #'
-#' @export
-#'
-#' @example
+#' @return An interactive space-time viewer for visualizing and exploring data.
+spacetimeview <- function(...) { }
 #' # Example usage:
 #' # Create a sample data frame with latitude, longitude, and time
 #' data <- data.frame(
@@ -32,6 +79,21 @@
 #'
 #' # Save the plot as an HTML file
 #' htmlwidgets::saveWidget(plot, "spacetime_plot.html")
+#'
+#' # plotting data with a specific aggregate, projection, a header title and social media links
+#' plot2 <– spacetimeview(
+#'   data = data, 
+#'   initialAggregate='MEAN', 
+#'   initialProjection='Mercator', 
+#'   headerTitle='BOM Weather Data',
+#'   socialLinks=c(
+#'     'github'='https://github.com/jakemanger/spacetimeview', 
+#'     'twitter'='https://twitter.com/jakemanger'
+#'   )
+#' )
+#'
+#' # Save the plot as an HTML file
+#' htmlwidgets::saveWidget(plot2, "spacetime_plot_with_website_header.html")
 spacetimeview <- function(
     data,
     lat_name = 'auto',
