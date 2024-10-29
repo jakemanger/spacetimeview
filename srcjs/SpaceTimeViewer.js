@@ -125,6 +125,16 @@ export default function SpaceTimeViewer({
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
   }
+  if (factorLevels) {
+    aggregateOptions = ['MODE', 'COUNT'];
+  }
+
+  // check whether initialAggregate is in aggregateOptions
+  // if not, set it to the 1st option for a safe default
+  if (!initialAggregate || !aggregateOptions.includes(initialAggregate)) {
+    console.error(`Invalid initial aggregate: ${initialAggregate}. Defaulting to ${aggregateOptions[0]}`);
+    initialAggregate = aggregateOptions[0];
+  }
 
   const controlsConfig = {
     style: {

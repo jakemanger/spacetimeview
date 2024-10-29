@@ -214,8 +214,8 @@ spacetimeview <- function(
 
       if (is.factor(data[[col]])) {
         factorLevels[[col]] <- levels(data[[col]])
-        # convert to integer
-        data[[col]] <- as.integer(data[[col]])
+        # convert to 0-based index for JS
+        data[[col]] <- as.integer(data[[col]]) - 1
       }
     }
   }
