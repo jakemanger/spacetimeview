@@ -305,9 +305,12 @@ spacetimeview <- function(
     )
   }
   
+  data <- data[order(data$lat, data$lng),]
+
   if (initialSummaryRadius == 'auto') {
     print('Estimating an optimal radius for summary grid cells...')
     distances <- c()
+    # sort by lat and long
     for (i in 1:min(10000, (nrow(data) - 1))) {
       dist <- haversine_dist(
         data$lat[i], data$lng[i],
@@ -317,7 +320,7 @@ spacetimeview <- function(
     }
     
     # calculate as the average distance
-    initialSummaryRadius <- mean(distances) / 3 
+    initialSummaryRadius <- mean(distances) * 8 
   }
   
   # print('Reformatting data as list to be put in JS')
