@@ -126,7 +126,7 @@ export default function SpaceTimeViewer({
     initialAggregate = 'COUNT';
   }
   if (factorLevels) {
-    aggregateOptions = ['MODE', 'COUNT'];
+    aggregateOptions = ['MODE'];
   }
 
   // check whether initialAggregate is in aggregateOptions
