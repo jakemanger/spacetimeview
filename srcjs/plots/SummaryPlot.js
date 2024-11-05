@@ -291,6 +291,19 @@ export default function SummaryPlot({
     } else setInitialElevationDomain(elevationDomain);
   }
 
+  let updateTriggers = {
+    getColorValue: [filter, colorAggregation, radius, coverage],
+    getPosition: [data, radius, coverage],
+  }
+
+  if (summaryHeight > 0) {
+    updateTriggers = {
+      getElevationValue: [filter, elevationAggregation, radius, coverage],
+      getColorValue: [filter, colorAggregation, radius, coverage],
+      getPosition: [data, radius, coverage],
+    }
+  }
+
   const layers = [
     isGridView
       ? new GridLayer({
@@ -316,11 +329,7 @@ export default function SummaryPlot({
         onSetElevationDomain,
         colorDomain: initialColorDomain,
         elevationDomain: initialElevationDomain,
-        updateTriggers: {
-          getElevationValue: [filter, elevationAggregation, radius, coverage],
-          getColorValue: [filter, colorAggregation, radius, coverage],
-          getPosition: [filter, data, radius, coverage],
-        },
+        updateTriggers: updateTriggers,
         colorScaleType
       })
       : new HexagonLayer({
@@ -346,11 +355,7 @@ export default function SummaryPlot({
         onSetElevationDomain,
         colorDomain: initialColorDomain,
         elevationDomain: initialElevationDomain,
-        updateTriggers: {
-          getElevationValue: [filter, elevationAggregation, radius, coverage],
-          getColorValue: [filter, colorAggregation, radius, coverage],
-          getPosition: [filter, data, radius, coverage],
-        },
+        updateTriggers: updateTriggers,
         colorScaleType
       }),
   ];
