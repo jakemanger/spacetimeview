@@ -26,25 +26,25 @@ const ambientLight = new AmbientLight({
 });
 
 
-function getTooltip({ object }, elevationAggregation, filter, hasTime, factorLevels = null) {
+function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels = null) {
   if (!object) return null;
 
-  let { position, points, elevationValue } = object;
+  let { position, points, colorValue } = object;
   console.log('object', object)
   console.log('factorLevels', factorLevels);
-  console.log('elevationValue', elevationValue);
+  console.log('colorValue', colorValue);
   if (factorLevels) {
-    elevationValue = factorLevels[elevationValue];
+    colorValue = factorLevels[colorValue];
   } else {
-    elevationValue = elevationValue.toFixed(2);
+    colorValue = colorValue.toFixed(2);
   }
-  console.log('elevationValue for tooltip:', elevationValue);
+  console.log('colorValue for tooltip:', colorValue);
 
   const lat = position[1];
   const lng = position[0];
   const metricName =
-    elevationAggregation.charAt(0).toUpperCase() +
-    elevationAggregation.slice(1).toLowerCase();
+    colorAggregation.charAt(0).toUpperCase() +
+    colorAggregation.slice(1).toLowerCase();
   const chartId = `chart-${lat}-${lng}`;
 
   let seriesData = points
@@ -95,7 +95,7 @@ function getTooltip({ object }, elevationAggregation, filter, hasTime, factorLev
       <div>
         <p>Latitude: ${lat.toFixed(2)}</p>
         <p>Longitude: ${lng.toFixed(2)}</p>
-        <p>${metricName}: ${elevationValue}</p>
+        <p>${metricName}: ${colorValue}</p>
         ${hasTime ? `<canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>` : ''}
       </div>
     `,
@@ -395,7 +395,7 @@ export default function SummaryPlot({
         initialViewState={initialViewState}
         controller={true}
         getTooltip={({ object }) =>
-          getTooltip({ object }, elevationAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels)
+          getTooltip({ object }, colorAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels)
         }
       >
         {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}
