@@ -24,8 +24,7 @@ export default function Colorbar({
 }) {
   if (
     colorDomain == null ||
-    colorRange == null ||
-    colorRange.length !== 6
+    colorRange == null
   ) {
     return null;
   }
@@ -36,19 +35,21 @@ export default function Colorbar({
     [colorRange]
   );
 
-  // Sample 7 values from the colorDomain and create 6 ranges
+  const colorDomainLength = colorDomain.length;
+
+  // Sample x + 1 values from the colorDomain and create x ranges
   const sampledDomain = useMemo(() => {
     if (colorDomain.length === 2) {
-      // If there are only two values, sample 7 evenly spaced values between min and max
+      // If there are only two values, sample x + 1 evenly spaced values between min and max
       const [min, max] = colorDomain;
-      const step = (max - min) / 6; // 6 intervals, 7 values
-      return Array.from({ length: 7 }, (_, i) =>
+      const step = (max - min) / colorDomainLength;
+      return Array.from({ length: colorDomainLength + 1 }, (_, i) =>
         (min + i * step).toFixed(numDecimals)
       ).reverse(); // Format to numDecimals and reverse
     } else {
       // If more than two values, sample based on index
-      const step = (colorDomain.length - 1) / 6; // 6 intervals, so 7 values
-      const sampled = Array.from({ length: 7 }, (_, i) => {
+      const step = (colorDomain.length - 1) / colorDomainLength;
+      const sampled = Array.from({ length: colorDomainLength + 1 }, (_, i) => {
         const index = Math.round(i * step);
         return colorDomain[index].toFixed(numDecimals); // Format to numDecimals
       });
@@ -64,7 +65,7 @@ export default function Colorbar({
     } else {
       // Generate labels from sampledDomain
       return reversedColorRange.map((_, index) => {
-        if (sampledDomain.length === 7 && index < 6) {
+        if (sampledDomain.length === colorDomainLength + 1 && index < colorDomainLength) {
           return `${sampledDomain[index + 1]} - ${sampledDomain[index]}`;
         }
         return '';

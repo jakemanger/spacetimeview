@@ -12,6 +12,7 @@ import { Provider } from "@radix-ui/react-tooltip";
 import colorbrewer from 'colorbrewer';
 import { Helmet } from 'react-helmet';
 import Header from './ui/Header';
+import { interpolateRgb } from 'd3-interpolate';
 
 
 function hexToRgb(hex) {
@@ -21,6 +22,14 @@ function hexToRgb(hex) {
   let g = (bigint >> 8) & 255;
   let b = bigint & 255;
   return [r, g, b];
+}
+
+function rgbStringToArray(rgbString) {
+  // Convert "rgb(r, g, b)" to [r, g, b]
+  return rgbString
+    .slice(4, -1) // Remove "rgb(" and ")"
+    .split(",")   // Split by ","
+    .map(Number); // Convert each part to a number
 }
 
 function getTimeRange(data) {
@@ -280,15 +289,31 @@ export default function SpaceTimeViewer({
     radiusMinPixels,
   } = useControls(controlsConfig);
 
+
   useEffect(() => {
+    console.log('Selected color scheme:', colorbrewer[colorScheme]);
     if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
-      const newColorRange = colorbrewer[colorScheme]['6'].map(hexToRgb);
-      setColorRange(newColorRange);
+      // Convert baseColorRange from arrays to "rgb(r, g, b)" strings for interpolation
+      let baseColorRange = colorbrewer[colorScheme]['6']
+        .map(hexToRgb)
+        .map(rgbArray => `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`);
+
+      const numClasses = factorLevels && factorLevels[columnToPlot] ? factorLevels[columnToPlot].length : baseColorRange.length;
+
+      // Generate interpolated colors between the start and end of baseColorRange
+      let interpolatedColorRange = [];
+      for (let i = 0; i < numClasses; i++) {
+        const t = i / (numClasses - 1);
+        const interpolatedColor = interpolateRgb(baseColorRange[0], baseColorRange[baseColorRange.length - 1])(t);
+        interpolatedColorRange.push(rgbStringToArray(interpolatedColor));
+      }
+
+      setColorRange(interpolatedColorRange);
     } else {
       console.error(`Color scheme ${colorScheme} does not have 6 classes`);
       setColorRange([]);
     }
-  }, [colorScheme]);
+  }, [colorScheme, factorLevels, columnToPlot]);
 
   useEffect(() => {
     const newLevaThemeColors = theme === 'dark' ? {

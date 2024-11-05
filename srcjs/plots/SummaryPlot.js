@@ -291,16 +291,17 @@ export default function SummaryPlot({
     } else setInitialElevationDomain(elevationDomain);
   }
 
+  console.log('Legend title:', legendTitle);
   let updateTriggers = {
-    getColorValue: [filter, colorAggregation, radius, coverage],
-    getPosition: [data, radius, coverage],
+    getColorValue: [filter, legendTitle, colorAggregation, radius, coverage],
+    getPosition: [data, legendTitle, radius, coverage],
   }
 
   if (summaryHeight > 0) {
     updateTriggers = {
-      getElevationValue: [filter, elevationAggregation, radius, coverage],
-      getColorValue: [filter, colorAggregation, radius, coverage],
-      getPosition: [data, radius, coverage],
+      getElevationValue: [filter, legendTitle, elevationAggregation, radius, coverage],
+      getColorValue: [filter, legendTitle, colorAggregation, radius, coverage],
+      getPosition: [data, legendTitle, radius, coverage],
     }
   }
 
