@@ -58,7 +58,7 @@ Now, in one line of code, generate an interactive plot over space and
 time
 
 ```{r make_plot, eval=FALSE}
-spacetimeview(d)
+spacetimeview(d, summary_radius = 10000, summary_height = 10000)
 ```
 ![](visualisation.gif)
 
@@ -76,14 +76,19 @@ Github Pages
 # automate GitHub Pages setup to deploy html files in the `docs` folder
 usethis::use_github_pages(branch='main', path='/docs')
 
-# move the my_plot.html we just generated to the docs folder and push it to github
+# move the my_plot.html we just generated to the docs/plot folder and push it to github
+# we use /plot so it doesn't conflict with pkgdown docs
 system("mkdir -p docs/")
-system("mv ./my_plot.html ./docs/index.html")
-system("git add docs/index.html")
-system("git commit -m 'Deploy spacetimeview widget to GitHub Pages'")
+system("mkdir -p docs/plot")
+
+# move the HTML file into the subdirectory and rename it as index.html for direct access
+system("mv ./my_plot.html ./docs/plot/index.html")
+
+# commit and push the changes to GitHub
+system("git add docs/plot/index.html")
+system("git commit -m 'Deploy spacetimeview widget to GitHub Pages under /plot'")
 system("git push")
 ```
-
 Now if you navigate to the link provided above (e.g.
-<https://jakemanger.github.io/spacetimeview/>) you should see your data
+<https://jakemanger.github.io/spacetimeview/plot>) you should see your data
 displayed in a free, responsive and interactive space time view website.

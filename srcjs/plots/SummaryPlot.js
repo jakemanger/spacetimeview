@@ -189,7 +189,7 @@ export default function SummaryPlot({
     // Reset domains when the categorical variable changes
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
-  }, [legendTitle]); // Replace `legendTitle` with the variable for the categorical data
+  }, [legendTitle, colorAggregation, elevationAggregation]); // Replace `legendTitle` with the variable for the categorical data
 
   const directionalLight1 = new DirectionalLight({
     color: [255, 255, 255],
@@ -288,6 +288,8 @@ export default function SummaryPlot({
     getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
     getPosition: [data, legendTitle, radius, coverage],
   }
+
+  console.log('summaryHeight', summaryHeight);
 
   if (summaryHeight > 0) {
     updateTriggers.getElevationValue = updateTriggers.getColorValue;

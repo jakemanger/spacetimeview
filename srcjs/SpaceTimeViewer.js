@@ -72,25 +72,29 @@ export default function SpaceTimeViewer({
   headerWebsiteLink = '',
   socialLinks = {},
   visibleControls = [
-    'columnToPlot',
+    'column_to_plot',
     'style',
-    'colorScheme',
-    'animationSpeed',
-    'summaryRadius',
-    'radiumMinPixels',
+    'color_scheme',
+    'animation_speed',
+    'summary_radius',
+    'summary_height',
+    'radium_min_pixels',
     'aggregate'
   ],
   controlNames = {
-    'columnToPlot': 'Dataset',
+    'column_to_plot': 'Dataset',
     'style': 'Plot Type',
-    'colorScheme': 'Color Scheme',
-    'animationSpeed': 'Animation Speed',
-    'summaryRadius': 'Cell Radius',
-    'radiusMinPixels': 'Minimum Point Radius',
+    'color_scheme': 'Color Scheme',
+    'animation_speed': 'Animation Speed',
+    'summary_radius': 'Cell Radius',
+    'summary_height': 'Cell Height',
+    'radius_min_pixels': 'Minimum Point Radius',
     'aggregate': 'Aggregate'
   }
 }) {
   data = HTMLWidgets.dataframeToD3(data);
+
+  console.log('initialSummaryHeight', initialSummaryHeight);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -152,9 +156,9 @@ export default function SpaceTimeViewer({
     columnToPlot: {
       value: initialColumnToPlot,
       options: columnNames,
-      label: controlNames['columnToPlot'] || 'Dataset',
+      label: controlNames['column_to_plot'] || 'Dataset',
       hint: 'Choose the data column to visualize on the map.',
-      render: () => visibleControls.includes('columnToPlot')
+      render: () => visibleControls.includes('column_to_plot')
     },
     projection: {
       value: initialProjection,
@@ -166,9 +170,9 @@ export default function SpaceTimeViewer({
     colorScheme: {
       value: initialColorScheme,
       options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']),
-      label: controlNames['colorScheme'] || 'Color Scheme',
+      label: controlNames['color_scheme'] || 'Color Scheme',
       hint: 'Select a color scheme to represent data visually.',
-      render: () => visibleControls.includes('colorScheme')
+      render: () => visibleControls.includes('color_scheme')
     },
     theme: {
       value: initialTheme,
@@ -180,36 +184,36 @@ export default function SpaceTimeViewer({
     summaryStyle: {
       value: initialSummaryStyle,
       options: ['Grid', 'Hexagon'],
-      label: controlNames['summaryStyle'] || 'Grid/Hexagon Style',
+      label: controlNames['summary_style'] || 'Grid/Hexagon Style',
       hint: 'Choose whether the summary plot uses a grid or hexagon layout.',
-      render: () => visibleControls.includes('summaryStyle')
+      render: () => visibleControls.includes('summary_style')
     },
     summaryRadius: {
       value: initialSummaryRadius,
-      label: controlNames['summaryRadius'] || 'Radius',
+      label: controlNames['summary_radius'] || 'Radius',
       step: 1,
       hint: 'The radius of each grid cell or hexagon in the summary plot.',
-      render: get => visibleControls.includes('summaryRadius') && get('style') === 'Summary'
+      render: get => visibleControls.includes('summary_radius') && get('style') === 'Summary'
     },
     summaryCoverage: {
       value: initialSummaryCoverage,
-      label: controlNames['summaryCoverage'] || 'Cell Size Factor',
+      label: controlNames['summary_coverage'] || 'Cell Size Factor',
       step: 0.1,
       hint: 'Controls the size of the grid cell or hexagon as a multiple of the radius.',
-      render: get => visibleControls.includes('summaryCoverage') && get('style') === 'Summary'
+      render: get => visibleControls.includes('summary_coverage') && get('style') === 'Summary'
     },
     summaryHeight: {
       value: initialSummaryHeight,
-      label: controlNames['summaryHeight'] || 'Height of Cells',
+      label: controlNames['summary_height'] || 'Height of Cells',
       step: 1,
       hint: 'Sets the 3D height of grid cells or hexagons in the summary plot.',
-      render: get => visibleControls.includes('summaryHeight') && get('style') === 'Summary'
+      render: get => visibleControls.includes('summary_height') && get('style') === 'Summary'
     },
     preserveDomains: {
       value: initialStickyRange,
-      label: controlNames['preserveDomains'] || 'Sticky Range',
+      label: controlNames['preserve_domains'] || 'Sticky Range',
       hint: 'If enabled, the min and max color/elevation values will persist across time intervals.',
-      render: get => visibleControls.includes('preserveDomains') && get('style') === 'Summary'
+      render: get => visibleControls.includes('preserve_domains') && get('style') === 'Summary'
     },
     aggregate: {
       value: aggregateOptions.includes(initialAggregate) ? initialAggregate : aggregateOptions[0],
@@ -228,43 +232,43 @@ export default function SpaceTimeViewer({
     repeatedPointsAggregate: {
       value: initialRepeatedPointsAggregate,
       options: repeatedPointsAggregateOptions,
-      label: controlNames['repeatedPointsAggregate'] || 'Repeat Handling',
+      label: controlNames['repeated_points_aggregate'] || 'Repeat Handling',
       hint: 'Choose how to aggregate data points that share the same time and location.',
-      render: () => visibleControls.includes('repeatedPointsAggregate')
+      render: () => visibleControls.includes('repeated_points_aggregate')
     },
     colorScaleType: {
       value: initialColorScaleType,
       options: ['quantize', 'quantile'],
-      label: controlNames['colorScaleType'] || 'Color Scale Type',
+      label: controlNames['color_scale_type'] || 'Color Scale Type',
       hint: 'Choose between quantize or quantile color scales for the summary plot.',
-      render: () => visibleControls.includes('colorScaleType')
+      render: () => visibleControls.includes('color_scale_type')
     },
     numDecimals: {
       value: initialNumDecimals,
-      label: controlNames['numDecimals'] || 'Decimals in Legend',
+      label: controlNames['num_decimals'] || 'Decimals in Legend',
       hint: 'Set the number of decimal places to display in the legend.',
-      render: () => visibleControls.includes('numDecimals')
+      render: () => visibleControls.includes('num_decimals')
     },
     radiusScale: {
       value: initialRadiusScale,
-      label: controlNames['radiusScale'] || 'Point Radius Scale',
+      label: controlNames['radius_scale'] || 'Point Radius Scale',
       step: 100,
       hint: 'Adjust the size of scatter plot points.',
-      render: get => visibleControls.includes('radiusScale') && get('style') === 'Scatter'
+      render: get => visibleControls.includes('radius_scale') && get('style') === 'Scatter'
     },
     radiusMinPixels: {
       value: initialRadiusMinPixels,
-      label: controlNames['radiusMinPixels'] || 'Minimum Point Radius',
+      label: controlNames['radius_min_pixels'] || 'Minimum Point Radius',
       step: 0.001,
       hint: 'Set the minimum size for scatter plot points, in pixels.',
-      render: get => visibleControls.includes('radiusMinPixels') && get('style') === 'Scatter'
+      render: get => visibleControls.includes('radius_min_pixels') && get('style') === 'Scatter'
     },
     animationSpeed: {
       value: initialAnimationSpeed,
-      label: controlNames['animationSpeed'] || 'Animation Speed',
+      label: controlNames['animation_speed'] || 'Animation Speed',
       step: 1,
       hint: 'Adjust the speed of the time animation, in seconds.',
-      render: () => visibleControls.includes('animationSpeed')
+      render: () => visibleControls.includes('animation_speed')
     }
   };
 

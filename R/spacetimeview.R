@@ -2,65 +2,65 @@
 #'
 #' This function provides a space-time visualization interface for exploring 
 #' geospatial and temporal data interactively. Users can toggle between 
-#' different plot types (e.g., Summary, Scatter) and adjust various controls 
+#' different plot types (e.g., summary, scatter) and adjust various controls 
 #' such as animation speed, radius scale, aggregation method, and theme.
 #'
 #' @param data A data frame containing space-time data with columns for 
 #'   latitude, longitude, timestamp, and one or more value columns. The data 
 #'   frame should include at least "lat", "lng", and "timestamp".
-#' @param initialStyle Character. Initial plot style, either "Summary" for 
-#'   aggregated visualizations or "Scatter" for individual data points.
-#' @param initialColumnToPlot Character. The name of the column to visualize on 
+#' @param style Character. Initial plot style, either "summary" for 
+#'   aggregated visualizations or "scatter" for individual data points.
+#' @param column_to_plot Character. The name of the column to visualize on 
 #'   the map. Must be a column present in `data` other than "lat", "lng", 
 #'   or "timestamp".
-#' @param initialAggregate Character. Aggregation method for data in summary 
+#' @param aggregate Character. Aggregation method for data in summary 
 #'   plots. Options are "SUM", "MEAN", "COUNT", "MIN", "MAX", or "MODE".
-#' @param initialRepeatedPointsAggregate Character. Specifies how to handle 
+#' @param repeated_points_aggregate Character. Specifies how to handle 
 #'   multiple points at the same location and time. Options include "SUM", 
 #'   "MEAN", "COUNT", "MIN", "MAX", and "MODE".
-#' @param initialStickyRange Logical. Whether to keep the min and max color 
+#' @param sticky_range Logical. Whether to keep the min and max color 
 #'   values constant across time intervals. Default is `TRUE`.
-#' @param initialSummaryRadius Numeric. Sets the radius of grid or hexagon 
+#' @param summary_radius Numeric. Sets the radius of grid or hexagon 
 #'   cells for summary plots. Adjusting this value affects cell size.
-#' @param initialSummaryCoverage Numeric. Controls the size of grid or hexagon 
-#'   cells as a multiple of `initialSummaryRadius`. Range is 0 to 1.
-#' @param initialAnimationSpeed Numeric. Speed of time animation, where 
+#' @param summary_coverage Numeric. Controls the size of grid or hexagon 
+#'   cells as a multiple of `summary_radius`. Range is 0 to 1.
+#' @param animation_speed Numeric. Speed of time animation, where 
 #'   higher values increase the animation speed.
-#' @param initialTheme Character. Theme for visualization, either "light" or 
+#' @param theme Character. Theme for visualization, either "light" or 
 #'   "dark". This setting affects color schemes and overall UI theme.
-#' @param initialRadiusScale Numeric. Controls the size of points in scatter 
+#' @param radius_scale Numeric. Controls the size of points in scatter 
 #'   plots. Larger values increase point radius.
-#' @param initialRadiusMinPixels Numeric. Sets the minimum size of scatter plot 
+#' @param radius_min_pixels Numeric. Sets the minimum size of scatter plot 
 #'   points in pixels, ensuring visibility even when zoomed out.
-#' @param initialSummaryStyle Character. Determines the layout of summary 
-#'   plots, either "Grid" or "Hexagon".
-#' @param initialProjection Character. Map projection type, either "Mercator" 
-#'   or "Globe". Adjusts the map display style.
-#' @param initialSummaryHeight Numeric. Sets the height for 3D representation 
+#' @param summary_style Character. Determines the layout of summary 
+#'   plots, either "grid" or "hexagon".
+#' @param projection Character. Map projection type, either "mercator" 
+#'   or "globe". Adjusts the map display style.
+#' @param summary_height Numeric. Sets the height for 3D representation 
 #'   of cells in summary plots, adding dimensionality to data.
-#' @param initialColorScheme Character. Color scheme for representing data 
+#' @param color_scheme Character. Color scheme for representing data 
 #'   visually. Options align with `colorbrewer` color schemes.
-#' @param initialColorScaleType Character. Type of color scale, either 
+#' @param color_scale_type Character. Type of color scale, either 
 #'   "quantize" or "quantile", impacting color distribution on data ranges.
-#' @param initialNumDecimals Integer. Number of decimal places shown in the 
+#' @param num_decimals Integer. Number of decimal places shown in the 
 #'   color legend.
-#' @param factorLevels List. Optional. Provides factor levels for categorical 
+#' @param factor_levels List. Optional. Provides factor levels for categorical 
 #'   data, allowing for customized color mappings and labels.
-#' @param headerLogo Character. Optional. URL to the logo displayed in the 
+#' @param header_logo Character. Optional. URL to the logo displayed in the 
 #'   header of the visualization.
-#' @param headerTitle Character. Title displayed in the header, typically 
+#' @param header_title Character. Title displayed in the header, typically 
 #'   representing the dataset or application name.
-#' @param headerWebsiteLink Character. URL link attached to the header title 
+#' @param header_website_link Character. URL link attached to the header title 
 #'   or logo, redirecting users to a related website.
-#' @param socialLinks Named list. URLs to social media accounts displayed as 
+#' @param social_links Named list. URLs to social media accounts displayed as 
 #'   icons in the header. Supports keys like 'github', 'twitter', 'facebook', 
 #'   'linkedin', etc., which map to the respective profile URLs. For example:
-#'   `socialLinks = c(github = "https://github.com/jakemanger", twitter = "https://twitter.com/jakemanger")`
-#' @param visibleControls Character vector. List of control names to display in 
-#'   the interface. Controls include "columnToPlot", "style", "colorScheme", 
-#'   "animationSpeed", etc.
-#' @param controlNames Named list. Custom names for controls as displayed in 
-#'   the UI. Keys correspond to control identifiers (e.g., "columnToPlot") and 
+#'   `social_links = c(github = "https://github.com/jakemanger", twitter = "https://twitter.com/jakemanger")`
+#' @param visible_controls Character vector. List of control names to display in 
+#'   the interface. Controls include "column_to_plot", "style", "color_scheme", 
+#'   "animation_speed", etc.
+#' @param control_names Named list. Custom names for controls as displayed in 
+#'   the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and 
 #'   values to the display names.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
@@ -85,12 +85,12 @@
 #' # plotting data with a specific aggregate, projection, a header title and social media links
 #' plot2 <- spacetimeview(
 #'   data = data, 
-#'   initialAggregate='MEAN', 
-#'   initialProjection='Mercator', 
-#'   headerTitle='BOM Weather Data',
-#'   socialLinks=c(
-#'     'github'='https://github.com/jakemanger/spacetimeview', 
-#'     'twitter'='https://twitter.com/jakemanger'
+#'   aggregate = 'MEAN', 
+#'   projection = 'mercator', 
+#'   header_title = 'BOM Weather Data',
+#'   social_links = c(
+#'     'github' = 'https://github.com/jakemanger/spacetimeview', 
+#'     'twitter' = 'https://twitter.com/jakemanger'
 #'   )
 #' )
 #' 
@@ -98,45 +98,47 @@
 #' htmlwidgets::saveWidget(plot2, "spacetime_plot_with_website_header.html")
 spacetimeview <- function(
     data,
-    initialStyle = 'Summary',
-    initialColumnToPlot = 'value',
-    initialAggregate = 'MEAN',
-    initialRepeatedPointsAggregate = 'None',
-    initialStickyRange = TRUE,
-    initialSummaryRadius = 'auto',
-    initialSummaryCoverage = 1,
-    initialAnimationSpeed = 1,
-    initialTheme = 'light',
-    initialRadiusScale = 1,
-    initialRadiusMinPixels = 3,
-    initialSummaryStyle = 'Hexagon',
-    initialProjection = 'Mercator',
-    initialSummaryHeight = 0,
-    initialColorScheme = 'YlOrRd',
-    initialColorScaleType = 'quantize',
-    initialNumDecimals = 1,
-    factorLevels = NULL,
-    headerLogo = '',
-    headerTitle = '',
-    headerWebsiteLink = '',
-    socialLinks = c(),
-    visibleControls = c(
-      'columnToPlot',
+    style = 'Summary',
+    column_to_plot = 'value',
+    aggregate = 'MEAN',
+    repeated_points_aggregate = 'None',
+    sticky_range = TRUE,
+    summary_radius = 'auto',
+    summary_coverage = 1,
+    animation_speed = 1,
+    theme = 'light',
+    radius_scale = 1,
+    radius_min_pixels = 3,
+    summary_style = 'Hexagon',
+    projection = 'Mercator',
+    summary_height = 0,
+    color_scheme = 'YlOrRd',
+    color_scale_type = 'quantize',
+    num_decimals = 1,
+    factor_levels = NULL,
+    header_logo = '',
+    header_title = '',
+    header_website_link = '',
+    social_links = c(),
+    visible_controls = c(
+      'column_to_plot',
       'style',
-      'colorScheme',
-      'animationSpeed',
-      'summaryRadius',
-      'radiumMinPixels',
+      'color_scheme',
+      'animation_speed',
+      'summary_radius',
+      'summary_height',
+      'radius_min_pixels',
       'aggregate'
     ),
-    controlNames = c(
-      'columnToPlot'='Dataset',
-      'style'='Plot Type',
-      'colorScheme'='Color Scheme',
-      'animationSpeed'='Animation Speed',
-      'summaryRadius'='Cell Radius',
-      'radiusMinPixels'='Minimum Point Radius',
-      'aggregate'='Aggregate'
+    control_names = c(
+      'column_to_plot' = 'Dataset',
+      'style' = 'Plot Type',
+      'color_scheme' = 'Color Scheme',
+      'animation_speed' = 'Animation Speed',
+      'summary_radius' = 'Cell Radius',
+      'summary_height' = 'Cell Height',
+      'radius_min_pixels' = 'Minimum Point Radius',
+      'aggregate' = 'Aggregate'
     ),
     lat_name = 'auto',
     lng_name = 'auto',
@@ -342,20 +344,20 @@ spacetimeview <- function(
         'Found columns were:', paste(names(data), collapse=', ')
       )
     )
-    initialColumnToPlot = NaN
-  } else if (!('initialColumnToPlot' %in% list(...))) {
-    initialColumnToPlot = plottable_columns[1]
+    column_to_plot = NaN
+  } else if (column_to_plot == 'value' || !('column_to_plot' %in% list(...))) {
+    column_to_plot = plottable_columns[1]
     warning(
       paste0(
-        'initialColumnToPlot was not specified. ',
-        'Defaulting to `', initialColumnToPlot, '`'
+        'column_to_plot was not specified. ',
+        'Defaulting to `', column_to_plot, '`'
       )
     )
   }
   
   data <- data[order(data$lat, data$lng),]
 
-  if (initialSummaryRadius == 'auto') {
+  if (summary_radius == 'auto') {
     print('Estimating an optimal radius for summary grid cells...')
     distances <- c()
     # sort by lat and long
@@ -368,7 +370,7 @@ spacetimeview <- function(
     }
     
     # calculate as the average distance
-    initialSummaryRadius <- mean(distances) * 8 
+    summary_radius <- mean(distances) * 8 
   }
   
   # print('Reformatting data as list to be put in JS')
@@ -379,9 +381,30 @@ spacetimeview <- function(
     "SpaceTimeViewer",
     list(
       data = data,
-      initialColumnToPlot = initialColumnToPlot,
-      initialSummaryRadius = initialSummaryRadius,
-      factorLevels = factorLevels,
+      initialStyle = style,
+      initialColumnToPlot = column_to_plot,
+      initialAggregate = aggregate,
+      initialRepeatedPointsAggregate = repeated_points_aggregate,
+      initialStickyRange = sticky_range,
+      initialSummaryRadius = summary_radius,
+      initialSummaryCoverage = summary_coverage,
+      initialAnimationSpeed = animation_speed,
+      initialTheme = theme,
+      initialRadiusScale = radius_scale,
+      initialRadiusMinPixels = radius_min_pixels,
+      initialSummaryStyle = summary_style,
+      initialProjection = projection,
+      initialSummaryHeight = summary_height,
+      initialColorScheme = color_scheme,
+      initialColorScaleType = color_scale_type,
+      initialNumDecimals = num_decimals,
+      factorLevels = factor_levels,
+      headerLogo = header_logo,
+      headerTitle = header_title,
+      headerWebsiteLink = header_website_link,
+      socialLinks = social_links,
+      visibleControls = visible_controls,
+      controlNames = control_names,
       ...
     )
   )

@@ -43,7 +43,7 @@ Now, in one line of code, generate an interactive plot over space and
 time
 
 ``` r
-spacetimeview(d)
+spacetimeview(d, summary_radius = 10000, summary_height = 10000)
 ```
 
 ![](visualisation.gif)
@@ -54,10 +54,12 @@ html file
 ``` r
 htmlwidgets::saveWidget(spacetimeview(d), "my_plot.html")
 #> Auto-detected time column: `DateTime`
-#> Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting
-#> to `Magnitude`
+#> [1] "Converting character column `timestamp` to factor"
+#> Warning in spacetimeview(d): column_to_plot was not specified. Defaulting to
+#> `Magnitude`
 #> [1] "Estimating an optimal radius for summary grid cells..."
 #> [1] "Starting ReactR plot"
+#> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
 and simply deploy to any website host, even free static site hosts like
@@ -72,14 +74,21 @@ usethis::use_github_pages(branch='main', path='/docs')
 #> • Branch: "main"
 #> • Path: "/docs"
 
-# move the my_plot.html we just generated to the docs folder and push it to github
+# move the my_plot.html we just generated to the docs/plot folder and push it to github
+# we use /plot so it doesn't conflict with pkgdown docs
 system("mkdir -p docs/")
-system("mv ./my_plot.html ./docs/index.html")
-system("git add docs/index.html")
-system("git commit -m 'Deploy spacetimeview widget to GitHub Pages'")
+system("mkdir -p docs/plot")
+
+# move the HTML file into the subdirectory and rename it as index.html for direct access
+system("mv ./my_plot.html ./docs/plot/index.html")
+
+# commit and push the changes to GitHub
+system("git add docs/plot/index.html")
+system("git commit -m 'Deploy spacetimeview widget to GitHub Pages under /plot'")
 system("git push")
 ```
 
 Now if you navigate to the link provided above (e.g.
-<https://jakemanger.github.io/spacetimeview/>) you should see your data
-displayed in a free, responsive and interactive space time view website.
+<https://jakemanger.github.io/spacetimeview/plot>) you should see your
+data displayed in a free, responsive and interactive space time view
+website.
