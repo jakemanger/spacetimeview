@@ -91,8 +91,6 @@ export default function SpaceTimeViewer({
   }
 }) {
   data = HTMLWidgets.dataframeToD3(data);
-  console.log('Received data:', data);
-  console.log('Factor levels:', factorLevels);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -301,10 +299,7 @@ export default function SpaceTimeViewer({
     aggregateToUse = factorAggregateOptions[0]
   }
 
-  console.log('aggregateToUse', aggregateToUse);
-
   useEffect(() => {
-    console.log('Selected color scheme:', colorbrewer[colorScheme]);
     if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
       // Convert baseColorRange from arrays to "rgb(r, g, b)" strings for interpolation
       let baseColorRange = colorbrewer[colorScheme]['6']
@@ -409,6 +404,7 @@ export default function SpaceTimeViewer({
           colorRange={colorRange}
           columnName={columnToPlot}
           themeColors={levaTheme.colors}
+          factorLevels={factorLevels}
         />
       );
     } else if (style === 'Summary') {
@@ -510,7 +506,7 @@ export default function SpaceTimeViewer({
           )}
         </Alert>
       </Snackbar>
-      </div>
+    </div>
   );
-  }
+}
 

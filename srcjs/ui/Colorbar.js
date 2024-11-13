@@ -22,6 +22,7 @@ export default function Colorbar({
     highlight3: '#FEFEFE',
   },
 }) {
+
   if (
     colorDomain == null ||
     colorRange == null

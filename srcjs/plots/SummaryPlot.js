@@ -30,15 +30,11 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
   if (!object) return null;
 
   let { position, points, colorValue } = object;
-  console.log('object', object)
-  console.log('factorLevels', factorLevels);
-  console.log('colorValue', colorValue);
   if (factorLevels && factorLevels[colorValue]) {
     colorValue = factorLevels[colorValue];
   } else {
     colorValue = colorValue.toFixed(2);
   }
-  console.log('colorValue for tooltip:', colorValue);
 
   const lat = position[1];
   const lng = position[0];
@@ -267,7 +263,6 @@ export default function SummaryPlot({
 
 
   const onSetColorDomain = (colorDomain) => {
-    console.log('Setting color domain to ', colorDomain);
     if (factorLevels && factorLevels[legendTitle]) {
       setInitialColorDomain([0, factorLevels[legendTitle].length - 1]);
       return;
@@ -289,7 +284,6 @@ export default function SummaryPlot({
     } else setInitialElevationDomain(elevationDomain);
   }
 
-  console.log('Legend title:', legendTitle);
   let updateTriggers = {
     getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
     getPosition: [data, legendTitle, radius, coverage],

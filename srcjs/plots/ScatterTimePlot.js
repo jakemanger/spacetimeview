@@ -31,19 +31,24 @@ function getMinMaxValues(data, key) {
   );
 }
 
-function getTooltip({ object }, hasTime) {
+function getTooltip({ object }, hasTime, factorLevels = null) {
   let html = '';
   if (!object) {
     return;
+  }
+  let valueToShow = object.value != null ? object.value : '';
+  console.log('factorLevels', factorLevels);
+  if (factorLevels) {
+    valueToShow = factorLevels[valueToShow];
+  } else {
+    valueToShow = object.value.toFixed(2)
   }
   html = `\
 		Latitude, Longitude: ${object.lng.toFixed(2)}, ${object.lat.toFixed(2)}<br />
 		${hasTime ? `
 			Time: ${new Date(object.timestamp).toUTCString()}
 		` : ''}<br />
-		${object.value ? `
-			Value: ${object.value.toFixed(2)}
-		` : ''}
+		${valueToShow}
 	`;
 
   return {
@@ -86,8 +91,11 @@ export default function ScatterTimePlot({
     highlight1: '#535760',
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
-  }
+  },
+  factorLevels = null
 }) {
+  console.log('factorLevels in ScatterTimePlot', factorLevels);
+
   const [filter, setFilter] = useState(timeRange);
 
   const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);
@@ -112,7 +120,6 @@ export default function ScatterTimePlot({
       getFillColor: d => {
         if (d.value != null) {
           const color = colorScale(d.value);
-          console.log('Value:', d.value, 'Mapped Color:', color);
           if (color) {
             return color
           }
@@ -156,7 +163,7 @@ export default function ScatterTimePlot({
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) => getTooltip({ object }, !isNaN(timeRange[0]))}
+        getTooltip={({ object }) => getTooltip({ object }, !isNaN(timeRange[0]), factorLevels[columnName])}
       >
         {projection === 'Mercator' && (
           <Map reuseMaps mapStyle={mapStyle} />
@@ -175,10 +182,15 @@ export default function ScatterTimePlot({
       )}
       <Colorbar
         colorRange={colorRange}
-        colorDomain={[minValue, maxValue]}
+        colorDomain={
+          factorLevels && factorLevels[columnName]
+            ? Array.from({ length: factorLevels[columnName].length }, (_, i) => i)
+            : [minValue, maxValue]
+        }
         title={columnName}
         numDecimals={2}
         themeColors={themeColors}
+        factorLevels={factorLevels}
       />
     </>
   );
