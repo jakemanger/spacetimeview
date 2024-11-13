@@ -95,6 +95,6 @@ website.
 
 ## Example repositories
 
-If you’d like to check out some nice examples see: -
-<https://github.com/jakemanger/spacetimeview_example> - add your project
-here
+If you’d like to check out some nice examples see: 
+- <https://github.com/jakemanger/spacetimeview_example>
+- add your project here
