@@ -189,6 +189,12 @@ export default function SummaryPlot({
     }
   }, [initialColorDomain]);
 
+  useEffect(() => {
+    // Reset domains when the categorical variable changes
+    setInitialColorDomain(null);
+    setInitialElevationDomain(null);
+  }, [legendTitle]); // Replace `legendTitle` with the variable for the categorical data
+
   const directionalLight1 = new DirectionalLight({
     color: [255, 255, 255],
     intensity: 0.4,
@@ -263,26 +269,18 @@ export default function SummaryPlot({
   const onSetColorDomain = (colorDomain) => {
     console.log('Setting color domain to ', colorDomain);
     if (factorLevels) {
-      // get the min and max from the factor levels
-      console.log('factorLevels', factorLevels);
-      console.log('Setting color domain to ', [0, factorLevels[legendTitle].length - 1]);
       setInitialColorDomain([0, factorLevels[legendTitle].length - 1]);
       return;
     }
     if (preserveDomains && initialColorDomain !== null) {
-      console.log('setting color domain with min and max');
       setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
     } else {
-      console.log('setting color domain to whatever deckgl provided');
       setInitialColorDomain(colorDomain);
     }
   }
   const onSetElevationDomain = (elevationDomain) => {
-    console.log('Setting elevation domain to ', elevationDomain);
     if (factorLevels) {
       // get the min and max from the factor levels
-      console.log('factorLevels', factorLevels);
-      console.log('Setting elevation domain to ', [0, factorLevels[legendTitle].length - 1]);
       setInitialElevationDomain([0, factorLevels[legendTitle].length - 1]);
       return;
     }
@@ -293,16 +291,12 @@ export default function SummaryPlot({
 
   console.log('Legend title:', legendTitle);
   let updateTriggers = {
-    getColorValue: [filter, legendTitle, colorAggregation, radius, coverage],
+    getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
     getPosition: [data, legendTitle, radius, coverage],
   }
 
   if (summaryHeight > 0) {
-    updateTriggers = {
-      getElevationValue: [filter, legendTitle, elevationAggregation, radius, coverage],
-      getColorValue: [filter, legendTitle, colorAggregation, radius, coverage],
-      getPosition: [data, legendTitle, radius, coverage],
-    }
+    updateTriggers.getElevationValue = updateTriggers.getColorValue;
   }
 
   const layers = [
