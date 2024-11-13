@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# spacetimeview
+# spacetimeview <a href="https://jakemanger.github.io/spacetimeview/"><img src="man/figures/logo.png" align="right" height="120" alt="spacetimeview website" /></a>
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -95,6 +95,8 @@ website.
 
 ## Example repositories
 
-If you’d like to check out some nice examples see: -
-<https://github.com/jakemanger/spacetimeview_example> - add your project
-here
+If you’d like to check out some nice examples see:
+
+- <https://github.com/jakemanger/spacetimeview_example>
+
+- add your project here

@@ -6,33 +6,34 @@
 \usage{
 spacetimeview(
   data,
-  initialStyle = "Summary",
-  initialColumnToPlot = "value",
-  initialAggregate = "MEAN",
-  initialRepeatedPointsAggregate = "None",
-  initialStickyRange = TRUE,
-  initialSummaryRadius = "auto",
-  initialSummaryCoverage = 1,
-  initialAnimationSpeed = 1,
-  initialTheme = "light",
-  initialRadiusScale = 1,
-  initialRadiusMinPixels = 3,
-  initialSummaryStyle = "Hexagon",
-  initialProjection = "Mercator",
-  initialSummaryHeight = 0,
-  initialColorScheme = "YlOrRd",
-  initialColorScaleType = "quantize",
-  initialNumDecimals = 1,
-  factorLevels = NULL,
-  headerLogo = "",
-  headerTitle = "",
-  headerWebsiteLink = "",
-  socialLinks = c(),
-  visibleControls = c("columnToPlot", "style", "colorScheme", "animationSpeed",
-    "summaryRadius", "radiumMinPixels", "aggregate"),
-  controlNames = c(columnToPlot = "Dataset", style = "Plot Type", colorScheme =
-    "Color Scheme", animationSpeed = "Animation Speed", summaryRadius = "Cell Radius",
-    radiusMinPixels = "Minimum Point Radius", aggregate = "Aggregate"),
+  style = "Summary",
+  column_to_plot = "value",
+  aggregate = "MEAN",
+  repeated_points_aggregate = "None",
+  sticky_range = TRUE,
+  summary_radius = "auto",
+  summary_coverage = 1,
+  animation_speed = 1,
+  theme = "light",
+  radius_scale = 1,
+  radius_min_pixels = 3,
+  summary_style = "Hexagon",
+  projection = "Mercator",
+  summary_height = 0,
+  color_scheme = "YlOrRd",
+  color_scale_type = "quantize",
+  num_decimals = 1,
+  factor_levels = NULL,
+  header_logo = "",
+  header_title = "",
+  header_website_link = "",
+  social_links = c(),
+  visible_controls = c("column_to_plot", "style", "color_scheme", "animation_speed",
+    "summary_radius", "summary_height", "radius_min_pixels", "aggregate"),
+  control_names = c(column_to_plot = "Dataset", style = "Plot Type", color_scheme =
+    "Color Scheme", animation_speed = "Animation Speed", summary_radius = "Cell Radius",
+    summary_height = "Cell Height", radius_min_pixels = "Minimum Point Radius", aggregate
+    = "Aggregate"),
   lat_name = "auto",
   lng_name = "auto",
   time_column_name = "auto",
@@ -48,82 +49,82 @@ spacetimeview(
 latitude, longitude, timestamp, and one or more value columns. The data
 frame should include at least "lat", "lng", and "timestamp".}
 
-\item{initialStyle}{Character. Initial plot style, either "Summary" for
-aggregated visualizations or "Scatter" for individual data points.}
+\item{style}{Character. Initial plot style, either "summary" for
+aggregated visualizations or "scatter" for individual data points.}
 
-\item{initialColumnToPlot}{Character. The name of the column to visualize on
+\item{column_to_plot}{Character. The name of the column to visualize on
 the map. Must be a column present in \code{data} other than "lat", "lng",
 or "timestamp".}
 
-\item{initialAggregate}{Character. Aggregation method for data in summary
+\item{aggregate}{Character. Aggregation method for data in summary
 plots. Options are "SUM", "MEAN", "COUNT", "MIN", "MAX", or "MODE".}
 
-\item{initialRepeatedPointsAggregate}{Character. Specifies how to handle
+\item{repeated_points_aggregate}{Character. Specifies how to handle
 multiple points at the same location and time. Options include "SUM",
 "MEAN", "COUNT", "MIN", "MAX", and "MODE".}
 
-\item{initialStickyRange}{Logical. Whether to keep the min and max color
+\item{sticky_range}{Logical. Whether to keep the min and max color
 values constant across time intervals. Default is \code{TRUE}.}
 
-\item{initialSummaryRadius}{Numeric. Sets the radius of grid or hexagon
+\item{summary_radius}{Numeric. Sets the radius of grid or hexagon
 cells for summary plots. Adjusting this value affects cell size.}
 
-\item{initialSummaryCoverage}{Numeric. Controls the size of grid or hexagon
-cells as a multiple of \code{initialSummaryRadius}. Range is 0 to 1.}
+\item{summary_coverage}{Numeric. Controls the size of grid or hexagon
+cells as a multiple of \code{summary_radius}. Range is 0 to 1.}
 
-\item{initialAnimationSpeed}{Numeric. Speed of time animation, where
+\item{animation_speed}{Numeric. Speed of time animation, where
 higher values increase the animation speed.}
 
-\item{initialTheme}{Character. Theme for visualization, either "light" or
+\item{theme}{Character. Theme for visualization, either "light" or
 "dark". This setting affects color schemes and overall UI theme.}
 
-\item{initialRadiusScale}{Numeric. Controls the size of points in scatter
+\item{radius_scale}{Numeric. Controls the size of points in scatter
 plots. Larger values increase point radius.}
 
-\item{initialRadiusMinPixels}{Numeric. Sets the minimum size of scatter plot
+\item{radius_min_pixels}{Numeric. Sets the minimum size of scatter plot
 points in pixels, ensuring visibility even when zoomed out.}
 
-\item{initialSummaryStyle}{Character. Determines the layout of summary
-plots, either "Grid" or "Hexagon".}
+\item{summary_style}{Character. Determines the layout of summary
+plots, either "grid" or "hexagon".}
 
-\item{initialProjection}{Character. Map projection type, either "Mercator"
-or "Globe". Adjusts the map display style.}
+\item{projection}{Character. Map projection type, either "mercator"
+or "globe". Adjusts the map display style.}
 
-\item{initialSummaryHeight}{Numeric. Sets the height for 3D representation
+\item{summary_height}{Numeric. Sets the height for 3D representation
 of cells in summary plots, adding dimensionality to data.}
 
-\item{initialColorScheme}{Character. Color scheme for representing data
+\item{color_scheme}{Character. Color scheme for representing data
 visually. Options align with \code{colorbrewer} color schemes.}
 
-\item{initialColorScaleType}{Character. Type of color scale, either
+\item{color_scale_type}{Character. Type of color scale, either
 "quantize" or "quantile", impacting color distribution on data ranges.}
 
-\item{initialNumDecimals}{Integer. Number of decimal places shown in the
+\item{num_decimals}{Integer. Number of decimal places shown in the
 color legend.}
 
-\item{factorLevels}{List. Optional. Provides factor levels for categorical
+\item{factor_levels}{List. Optional. Provides factor levels for categorical
 data, allowing for customized color mappings and labels.}
 
-\item{headerLogo}{Character. Optional. URL to the logo displayed in the
+\item{header_logo}{Character. Optional. URL to the logo displayed in the
 header of the visualization.}
 
-\item{headerTitle}{Character. Title displayed in the header, typically
+\item{header_title}{Character. Title displayed in the header, typically
 representing the dataset or application name.}
 
-\item{headerWebsiteLink}{Character. URL link attached to the header title
+\item{header_website_link}{Character. URL link attached to the header title
 or logo, redirecting users to a related website.}
 
-\item{socialLinks}{Named list. URLs to social media accounts displayed as
+\item{social_links}{Named list. URLs to social media accounts displayed as
 icons in the header. Supports keys like 'github', 'twitter', 'facebook',
 'linkedin', etc., which map to the respective profile URLs. For example:
-\code{socialLinks = c(github = "https://github.com/jakemanger", twitter = "https://twitter.com/jakemanger")}}
+\code{social_links = c(github = "https://github.com/jakemanger", twitter = "https://twitter.com/jakemanger")}}
 
-\item{visibleControls}{Character vector. List of control names to display in
-the interface. Controls include "columnToPlot", "style", "colorScheme",
-"animationSpeed", etc.}
+\item{visible_controls}{Character vector. List of control names to display in
+the interface. Controls include "column_to_plot", "style", "color_scheme",
+"animation_speed", etc.}
 
-\item{controlNames}{Named list. Custom names for controls as displayed in
-the UI. Keys correspond to control identifiers (e.g., "columnToPlot") and
+\item{control_names}{Named list. Custom names for controls as displayed in
+the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and
 values to the display names.}
 }
 \value{
@@ -132,7 +133,7 @@ An interactive space-time viewer for visualizing and exploring data.
 \description{
 This function provides a space-time visualization interface for exploring
 geospatial and temporal data interactively. Users can toggle between
-different plot types (e.g., Summary, Scatter) and adjust various controls
+different plot types (e.g., summary, scatter) and adjust various controls
 such as animation speed, radius scale, aggregation method, and theme.
 }
 \examples{
@@ -155,12 +156,12 @@ htmlwidgets::saveWidget(plot, "spacetime_plot.html")
 # plotting data with a specific aggregate, projection, a header title and social media links
 plot2 <- spacetimeview(
   data = data, 
-  initialAggregate='MEAN', 
-  initialProjection='Mercator', 
-  headerTitle='BOM Weather Data',
-  socialLinks=c(
-    'github'='https://github.com/jakemanger/spacetimeview', 
-    'twitter'='https://twitter.com/jakemanger'
+  aggregate = 'MEAN', 
+  projection = 'mercator', 
+  header_title = 'BOM Weather Data',
+  social_links = c(
+    'github' = 'https://github.com/jakemanger/spacetimeview', 
+    'twitter' = 'https://twitter.com/jakemanger'
   )
 )
 
