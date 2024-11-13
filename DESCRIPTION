@@ -1,14 +1,28 @@
 Package: spacetimeview
-Title: Crate Interactive Space Time Data Visualisations in One Line of Code
+Title: Create Interactive Space Time Data Visualisations in One Line of Code
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+  c(
+    person(
+      given = "Jake", 
+      family = "Manger", 
+      role = c("aut", "cre"),
+      email = "jake.manger@uwa.edu.au",
+      comment = c(ORCID = "0000-0002-0686-4788")
+    ),
+    person(
+      given = "Jacob", 
+      family =  "Berson",
+      role = c("aut"),
+      email = "jacob.berson@uwa.edu.au",
+      comment = c(ORCID = "0000-0002-7059-2131")
+    )
+  )
 Description: An instant space time data visualisation in one line of R code. Save it as a html file and deploy your data dashboard website for free to static site hosts like GitHub Pages.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Imports: 
     htmltools,
     htmlwidgets,
@@ -18,3 +32,4 @@ Imports:
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+URL: https://jakemanger.github.io/spacetimeview/

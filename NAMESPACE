@@ -3,4 +3,3 @@
 export(renderSpacetimeview)
 export(spacetimeview)
 export(spacetimeviewOutput)
-import(htmlwidgets)

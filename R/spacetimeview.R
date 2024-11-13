@@ -64,8 +64,10 @@
 #'   values to the display names.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
-spacetimeview <- function(...) { }
-#' # Example usage:
+#' @export
+#' @examples
+#' library(spacetimeview)
+#'
 #' # Create a sample data frame with latitude, longitude, and time
 #' data <- data.frame(
 #'   lat = runif(100, min = -30, max = 30),
@@ -73,15 +75,15 @@ spacetimeview <- function(...) { }
 #'   time = seq(as.POSIXct("2023-01-01"), by = "days", length.out = 100),
 #'   value = runif(100, min=0, max=10)
 #' )
-#'
+#' 
 #' # Generate the plot using spacetimeview
 #' plot <- spacetimeview(data)
-#'
+#' 
 #' # Save the plot as an HTML file
 #' htmlwidgets::saveWidget(plot, "spacetime_plot.html")
-#'
+#' 
 #' # plotting data with a specific aggregate, projection, a header title and social media links
-#' plot2 <– spacetimeview(
+#' plot2 <- spacetimeview(
 #'   data = data, 
 #'   initialAggregate='MEAN', 
 #'   initialProjection='Mercator', 
@@ -91,21 +93,59 @@ spacetimeview <- function(...) { }
 #'     'twitter'='https://twitter.com/jakemanger'
 #'   )
 #' )
-#'
+#' 
 #' # Save the plot as an HTML file
 #' htmlwidgets::saveWidget(plot2, "spacetime_plot_with_website_header.html")
 spacetimeview <- function(
     data,
+    initialStyle = 'Summary',
+    initialColumnToPlot = 'value',
+    initialAggregate = 'MEAN',
+    initialRepeatedPointsAggregate = 'None',
+    initialStickyRange = TRUE,
+    initialSummaryRadius = 'auto',
+    initialSummaryCoverage = 1,
+    initialAnimationSpeed = 1,
+    initialTheme = 'light',
+    initialRadiusScale = 1,
+    initialRadiusMinPixels = 3,
+    initialSummaryStyle = 'Hexagon',
+    initialProjection = 'Mercator',
+    initialSummaryHeight = 0,
+    initialColorScheme = 'YlOrRd',
+    initialColorScaleType = 'quantize',
+    initialNumDecimals = 1,
+    factorLevels = NULL,
+    headerLogo = '',
+    headerTitle = '',
+    headerWebsiteLink = '',
+    socialLinks = c(),
+    visibleControls = c(
+      'columnToPlot',
+      'style',
+      'colorScheme',
+      'animationSpeed',
+      'summaryRadius',
+      'radiumMinPixels',
+      'aggregate'
+    ),
+    controlNames = c(
+      'columnToPlot'='Dataset',
+      'style'='Plot Type',
+      'colorScheme'='Color Scheme',
+      'animationSpeed'='Animation Speed',
+      'summaryRadius'='Cell Radius',
+      'radiusMinPixels'='Minimum Point Radius',
+      'aggregate'='Aggregate'
+    ),
     lat_name = 'auto',
     lng_name = 'auto',
     time_column_name = 'auto',
-    initialSummaryRadius = 'auto',
-    initialColumnToPlot = NULL,
     plottable_columns = NULL,
-    ..., 
     width = '100vw', 
     height = '100vh', 
-    elementId = NULL
+    elementId = NULL,
+    ...
 ) {
   
   # columns we need to make for the js widget to work

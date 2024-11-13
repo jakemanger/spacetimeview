@@ -6,7 +6,7 @@
 \alias{renderSpacetimeview}
 \title{Shiny bindings for spacetimeview}
 \usage{
-spacetimeviewOutput(outputId, width = "100\%", height = "400px")
+spacetimeviewOutput(outputId, width = "100\%", height = "100\%")
 
 renderSpacetimeview(expr, env = parent.frame(), quoted = FALSE)
 }
