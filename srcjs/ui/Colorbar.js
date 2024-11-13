@@ -35,7 +35,7 @@ export default function Colorbar({
     [colorRange]
   );
 
-  const colorDomainLength = colorDomain.length;
+  const colorDomainLength = factorLevels && factorLevels[title] ? colorDomain.length : 6;
 
   // Sample x + 1 values from the colorDomain and create x ranges
   const sampledDomain = useMemo(() => {

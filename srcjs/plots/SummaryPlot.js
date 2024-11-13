@@ -33,7 +33,7 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
   console.log('object', object)
   console.log('factorLevels', factorLevels);
   console.log('colorValue', colorValue);
-  if (factorLevels) {
+  if (factorLevels && factorLevels[colorValue]) {
     colorValue = factorLevels[colorValue];
   } else {
     colorValue = colorValue.toFixed(2);
@@ -210,7 +210,7 @@ export default function SummaryPlot({
   const lightingEffect = new LightingEffect({ ambientLight, directionalLight1, directionalLight2 })
 
   function updateTimeRange(newFilter) {
-    if ((filter[0] !== newFilter[0] || filter[1] !== newFilter[1]) && !factorLevels) {
+    if ((filter[0] !== newFilter[0] || filter[1] !== newFilter[1]) && (!factorLevels || !factorLevels[legendTitle])) {
       setInitialColorDomain(null);
       setInitialElevationDomain(null);
     }
@@ -268,7 +268,7 @@ export default function SummaryPlot({
 
   const onSetColorDomain = (colorDomain) => {
     console.log('Setting color domain to ', colorDomain);
-    if (factorLevels) {
+    if (factorLevels && factorLevels[legendTitle]) {
       setInitialColorDomain([0, factorLevels[legendTitle].length - 1]);
       return;
     }
@@ -279,7 +279,7 @@ export default function SummaryPlot({
     }
   }
   const onSetElevationDomain = (elevationDomain) => {
-    if (factorLevels) {
+    if (factorLevels && factorLevels[legendTitle]) {
       // get the min and max from the factor levels
       setInitialElevationDomain([0, factorLevels[legendTitle].length - 1]);
       return;
@@ -379,7 +379,7 @@ export default function SummaryPlot({
     layers.unshift(tileLayer);
   }
 
-  const relevantFactorLevels = factorLevels ? factorLevels[legendTitle] : null;
+  const relevantFactorLevels = (factorLevels && factorLevels[legendTitle]) || null;
 
   return (
     <>

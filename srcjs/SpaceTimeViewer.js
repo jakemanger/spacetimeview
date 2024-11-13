@@ -129,13 +129,11 @@ export default function SpaceTimeViewer({
   }, [data]);
 
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
+  let factorAggregateOptions = ['MODE'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
-  }
-  if (factorLevels) {
-    aggregateOptions = ['MODE'];
   }
 
   // check whether initialAggregate is in aggregateOptions
@@ -216,11 +214,18 @@ export default function SpaceTimeViewer({
       render: get => visibleControls.includes('preserveDomains') && get('style') === 'Summary'
     },
     aggregate: {
-      value: initialAggregate,
+      value: aggregateOptions.includes(initialAggregate) ? initialAggregate : aggregateOptions[0],
       options: aggregateOptions,
       label: controlNames['aggregate'] || 'Aggregation Type',
       hint: 'Select the aggregation function for summarizing data in the grid or hexagon cells.',
-      render: get => visibleControls.includes('aggregate') && get('style') === 'Summary'
+      render: get => visibleControls.includes('aggregate') && get('style') === 'Summary' && (!factorLevels || !factorLevels[get('columnToPlot')])
+    },
+    factorAggregate: {
+      value: factorAggregateOptions.includes(initialAggregate) ? initialAggregate : factorAggregateOptions[0],
+      options: factorAggregateOptions,
+      label: controlNames['aggregate'] || 'Aggregation Type',
+      hint: 'Select the aggregation function for summarizing data in the grid or hexagon cells.',
+      render: get => visibleControls.includes('aggregate') && get('style') === 'Summary' && factorLevels && factorLevels[get('columnToPlot')]
     },
     repeatedPointsAggregate: {
       value: initialRepeatedPointsAggregate,
@@ -279,6 +284,7 @@ export default function SpaceTimeViewer({
     colorScaleType,
     numDecimals,
     aggregate,
+    factorAggregate,
     repeatedPointsAggregate,
     preserveDomains,
     summaryRadius,
@@ -289,6 +295,13 @@ export default function SpaceTimeViewer({
     radiusMinPixels,
   } = useControls(controlsConfig);
 
+  let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
+
+  if (factorLevels && factorLevels[columnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
+    aggregateToUse = factorAggregateOptions[0]
+  }
+
+  console.log('aggregateToUse', aggregateToUse);
 
   useEffect(() => {
     console.log('Selected color scheme:', colorbrewer[colorScheme]);
@@ -402,8 +415,8 @@ export default function SpaceTimeViewer({
       return (
         <SummaryPlot
           data={transformedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
-          colorAggregation={aggregate}
-          elevationAggregation={aggregate}
+          colorAggregation={aggregateToUse}
+          elevationAggregation={aggregateToUse}
           repeatedPointsAggregation={repeatedPointsAggregate}
           preserveDomains={preserveDomains}
           timeRange={timeRange}
@@ -430,7 +443,7 @@ export default function SpaceTimeViewer({
     }
   }, [
     style,
-    aggregate,
+    aggregateToUse,
     colorRange,
     colorScaleType,
     repeatedPointsAggregate,
@@ -497,6 +510,7 @@ export default function SpaceTimeViewer({
           )}
         </Alert>
       </Snackbar>
-    </div>
+      </div>
   );
-}
+  }
+
