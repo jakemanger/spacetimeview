@@ -73,16 +73,18 @@
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">[</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Latitude'</span>, <span class="st">'Longitude'</span>, <span class="st">'DateTime'</span>, <span class="st">'Magnitude'</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>Now, in one line of code, generate an interactive plot over space and time</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span><span class="va">d</span>, summary_radius <span class="op">=</span> <span class="fl">10000</span>, summary_height <span class="op">=</span> <span class="fl">10000</span><span class="op">)</span></span></code></pre></div>
 <p><img src="visualisation.gif"></p>
 <p>Note, this interactive plot is also a website, that you can save as a html file</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="st">"my_plot.html"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Auto-detected time column: `DateTime`</span></span>
-<span><span class="co">#&gt; Warning in spacetimeview(d): initialColumnToPlot was not specified. Defaulting</span></span>
-<span><span class="co">#&gt; to `Magnitude`</span></span>
+<span><span class="co">#&gt; [1] "Converting character column `timestamp` to factor"</span></span>
+<span><span class="co">#&gt; Warning in spacetimeview(d): column_to_plot was not specified. Defaulting to</span></span>
+<span><span class="co">#&gt; `Magnitude`</span></span>
 <span><span class="co">#&gt; [1] "Estimating an optimal radius for summary grid cells..."</span></span>
-<span><span class="co">#&gt; [1] "Starting ReactR plot"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "Starting ReactR plot"</span></span>
+<span><span class="co">#&gt; Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.</span></span></code></pre></div>
 <p>and simply deploy to any website host, even free static site hosts like Github Pages</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># automate GitHub Pages setup to deploy html files in the `docs` folder</span></span>
@@ -93,13 +95,19 @@
 <span><span class="co">#&gt; • Branch: "main"</span></span>
 <span><span class="co">#&gt; • Path: "/docs"</span></span>
 <span></span>
-<span><span class="co"># move the my_plot.html we just generated to the docs folder and push it to github</span></span>
+<span><span class="co"># move the my_plot.html we just generated to the docs/plot folder and push it to github</span></span>
+<span><span class="co"># we use /plot so it doesn't conflict with pkgdown docs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"mkdir -p docs/"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"mv ./my_plot.html ./docs/index.html"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"git add docs/index.html"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"git commit -m 'Deploy spacetimeview widget to GitHub Pages'"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"mkdir -p docs/plot"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># move the HTML file into the subdirectory and rename it as index.html for direct access</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"mv ./my_plot.html ./docs/plot/index.html"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># commit and push the changes to GitHub</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"git add docs/plot/index.html"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"git commit -m 'Deploy spacetimeview widget to GitHub Pages under /plot'"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"git push"</span><span class="op">)</span></span></code></pre></div>
-<p>Now if you navigate to the link provided above (e.g. <a href="https://jakemanger.github.io/spacetimeview/" class="uri">https://jakemanger.github.io/spacetimeview/</a>) you should see your data displayed in a free, responsive and interactive space time view website.</p>
+<p>Now if you navigate to the link provided above (e.g. <a href="https://jakemanger.github.io/spacetimeview/plot" class="uri">https://jakemanger.github.io/spacetimeview/plot</a>) you should see your data displayed in a free, responsive and interactive space time view website.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">

@@ -243,12 +243,13 @@ values to the display names.</p></dd>
 <span class="r-in"><span><span class="va">plot</span> <span class="op">&lt;-</span> <span class="fu">spacetimeview</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Auto-detected time column: `time`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Converting character column `timestamp` to factor"</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>initialColumnToPlot was not specified. Defaulting to `value`</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>column_to_plot was not specified. Defaulting to `value`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Estimating an optimal radius for summary grid cells..."</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Starting ReactR plot"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Save the plot as an HTML file</span></span></span>
 <span class="r-in"><span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="va">plot</span>, <span class="st">"spacetime_plot.html"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># plotting data with a specific aggregate, projection, a header title and social media links</span></span></span>
 <span class="r-in"><span><span class="va">plot2</span> <span class="op">&lt;-</span> <span class="fu">spacetimeview</span><span class="op">(</span></span></span>
@@ -263,12 +264,14 @@ values to the display names.</p></dd>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Auto-detected time column: `time`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Converting character column `timestamp` to factor"</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>initialColumnToPlot was not specified. Defaulting to `value`</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>column_to_plot was not specified. Defaulting to `value`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Estimating an optimal radius for summary grid cells..."</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Starting ReactR plot"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Save the plot as an HTML file</span></span></span>
 <span class="r-in"><span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="va">plot2</span>, <span class="st">"spacetime_plot_with_website_header.html"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
