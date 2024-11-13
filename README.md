@@ -43,7 +43,7 @@ Now, in one line of code, generate an interactive plot over space and
 time
 
 ``` r
-spacetimeview(d, summary_radius = 10000, summary_height = 10000)
+spacetimeview(d, summary_radius = 10000, summary_height = 100)
 ```
 
 ![](visualisation.gif)
@@ -92,3 +92,9 @@ Now if you navigate to the link provided above (e.g.
 <https://jakemanger.github.io/spacetimeview/plot>) you should see your
 data displayed in a free, responsive and interactive space time view
 website.
+
+## Example repositories
+
+If you’d like to check out some nice examples see: -
+<https://github.com/jakemanger/spacetimeview_example> - add your project
+here
