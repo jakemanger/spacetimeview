@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import SummaryPlot from './plots/SummaryPlot';
 import ScatterTimePlot from './plots/ScatterTimePlot';
-import { useControls, Leva, folder } from 'leva';
+import { useControls, Leva } from 'leva';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
@@ -13,7 +13,8 @@ import colorbrewer from 'colorbrewer';
 import { Helmet } from 'react-helmet';
 import Header from './ui/Header';
 import { interpolateRgb } from 'd3-interpolate';
-
+import Select from 'react-select';
+import makeAnimated from 'react-select/animated';
 
 function hexToRgb(hex) {
   hex = hex.replace(/^#/, '');
@@ -78,8 +79,9 @@ export default function SpaceTimeViewer({
     'animation_speed',
     'summary_radius',
     'summary_height',
-    'radium_min_pixels',
-    'aggregate'
+    'radius_min_pixels',
+    'aggregate',
+    'filter_column'
   ],
   controlNames = {
     'column_to_plot': 'Dataset',
@@ -89,12 +91,16 @@ export default function SpaceTimeViewer({
     'summary_radius': 'Cell Radius',
     'summary_height': 'Cell Height',
     'radius_min_pixels': 'Minimum Point Radius',
-    'aggregate': 'Aggregate'
+    'aggregate': 'Aggregate',
+    'filter_column': 'Filter Column'
   },
   initialFilterColumn = null,
 }) {
-  data = HTMLWidgets.dataframeToD3(data);
-
+  // Memoize the data transformation to prevent unnecessary re-renders
+  const transformedData = useMemo(() => {
+    const convertedData = HTMLWidgets.dataframeToD3(data);
+    return convertedData;
+  }, [data]);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -121,25 +127,27 @@ export default function SpaceTimeViewer({
       [254, 173, 84],
       [209, 55, 78],
     ]
-  )
+  );
+
+  const [filterColumnValues, setFilterColumnValues] = useState([]);
+  const [filterOptions, setFilterOptions] = useState([]);
 
   const columnNames = useMemo(() => {
-    if (data.length === 0) return [];
-    return Object.keys(data[0]).filter(
+    if (transformedData.length === 0) return [];
+    return Object.keys(transformedData[0]).filter(
       key => key !== 'lng' && key !== 'lat' && key !== 'timestamp'
     );
-  }, [data]);
+  }, [transformedData]);
 
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   let factorAggregateOptions = ['MODE'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
-  if (!data.length || !data[0].hasOwnProperty(initialColumnToPlot)) {
+  if (!transformedData.length || !transformedData[0].hasOwnProperty(initialColumnToPlot)) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
   }
 
-  // check whether initialAggregate is in aggregateOptions
-  // if not, set it to the 1st option for a safe default
+  // Check whether initialAggregate is in aggregateOptions
   if (!initialAggregate || !aggregateOptions.includes(initialAggregate)) {
     console.error(`Invalid initial aggregate: ${initialAggregate}. Defaulting to ${aggregateOptions[0]}`);
     initialAggregate = aggregateOptions[0];
@@ -305,10 +313,6 @@ export default function SpaceTimeViewer({
     filterColumn
   } = useControls(controlsConfig);
 
-  // use first unique 3 values in filterColumn for testing
-  const filterColumnValues = Array.from(new Set(data.map(d => d[filterColumn]))).slice(0, 3);
-  console.log('filterColumnValues', filterColumnValues);
-
   let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
 
   if (factorLevels && factorLevels[columnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
@@ -372,20 +376,32 @@ export default function SpaceTimeViewer({
     });
   }, [theme]);
 
+  useEffect(() => {
+    console.log('setting filter options');
+    if (filterColumn) {
+      const uniqueValues = Array.from(new Set(transformedData.map(d => d[filterColumn])));
+      const options = uniqueValues.map(value => ({ value, label: String(value) }));
+      setFilterOptions(options);
+    } else {
+      setFilterOptions([]);
+      setFilterColumnValues([]);
+    }
+  }, [filterColumn, transformedData]);
+
   let INITIAL_VIEW_STATE = {
-    longitude: data.reduce((sum, d) => sum + d.lng, 0) / data.length,
-    latitude: data.reduce((sum, d) => sum + d.lat, 0) / data.length,
+    longitude: transformedData.reduce((sum, d) => sum + d.lng, 0) / transformedData.length,
+    latitude: transformedData.reduce((sum, d) => sum + d.lat, 0) / transformedData.length,
     zoom: 3,
     pitch: 0,
     bearing: 0
   };
 
-  const timeRange = useMemo(() => getTimeRange(data), [data]);
+  const timeRange = useMemo(() => getTimeRange(transformedData), [transformedData]);
 
-  const transformedData = useMemo(() => {
-    let dat = data;
+  const filteredData = useMemo(() => {
+    let dat = transformedData;
 
-    if (filterColumn) {
+    if (filterColumn && filterColumnValues.length > 0) {
       dat = dat.filter(d => filterColumnValues.includes(d[filterColumn]));
     }
 
@@ -393,12 +409,12 @@ export default function SpaceTimeViewer({
       ...d,
       value: d[columnToPlot]
     }));
-    return dat
-  }, [data, columnToPlot]);
+    return dat;
+  }, [transformedData, columnToPlot, filterColumn, filterColumnValues]);
 
   const plot = useMemo(() => {
-    if (!transformedData || !transformedData.some(d => d.lng && d.lat)) {
-      let columnsInData = transformedData.map(d => Object.keys(d));
+    if (!filteredData || !filteredData.some(d => d.lng && d.lat)) {
+      let columnsInData = filteredData.map(d => Object.keys(d));
       console.error(
         'Unsupported columns: ',
         columnsInData,
@@ -415,7 +431,7 @@ export default function SpaceTimeViewer({
     if (style === 'Scatter') {
       return (
         <ScatterTimePlot
-          data={transformedData.sort((a, b) => a.value - b.value)}
+          data={filteredData.sort((a, b) => a.value - b.value)}
           timeRange={timeRange}
           theme={theme}
           mapStyle={MAP_STYLE}
@@ -433,7 +449,7 @@ export default function SpaceTimeViewer({
     } else if (style === 'Summary') {
       return (
         <SummaryPlot
-          data={transformedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
+          data={filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
           colorAggregation={aggregateToUse}
           elevationAggregation={aggregateToUse}
           repeatedPointsAggregation={repeatedPointsAggregate}
@@ -467,7 +483,7 @@ export default function SpaceTimeViewer({
     colorScaleType,
     repeatedPointsAggregate,
     preserveDomains,
-    transformedData,
+    filteredData,
     timeRange,
     summaryRadius,
     summaryCoverage,
@@ -506,6 +522,18 @@ export default function SpaceTimeViewer({
         socialLinks={socialLinks}
         themeColors={levaTheme.colors}
       />
+      {filterColumn && (
+        <div style={{ position: 'fixed', top: topOffset, left: '20px', width: '300px', zIndex: 1000 }}>
+          <Select
+            components={makeAnimated()}
+            isMulti
+            options={filterOptions}
+            value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
+            onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
+            placeholder={`Filter ${filterColumn}...`}
+          />
+        </div>
+      )}
       {plot}
       <div style={{ position: 'fixed', top: topOffset, right: '20px' }}>
         <Provider delayDuration={0}>
@@ -532,4 +560,3 @@ export default function SpaceTimeViewer({
     </div>
   );
 }
-
