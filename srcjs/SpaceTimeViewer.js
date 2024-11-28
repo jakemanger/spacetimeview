@@ -377,16 +377,18 @@ export default function SpaceTimeViewer({
   }, [theme]);
 
   useEffect(() => {
-    console.log('setting filter options');
-    if (filterColumn) {
-      const uniqueValues = Array.from(new Set(transformedData.map(d => d[filterColumn])));
-      const options = uniqueValues.map(value => ({ value, label: String(value) }));
+    if (filterColumn && factorLevels && factorLevels[filterColumn]) {
+      const options = factorLevels[filterColumn].map((value, index) => ({
+        value: index, // Use index as the value
+        label: String(value), // Use the factor level as the label
+      }));
       setFilterOptions(options);
     } else {
       setFilterOptions([]);
       setFilterColumnValues([]);
     }
-  }, [filterColumn, transformedData]);
+  }, [filterColumn, factorLevels, transformedData]);
+
 
   let INITIAL_VIEW_STATE = {
     longitude: transformedData.reduce((sum, d) => sum + d.lng, 0) / transformedData.length,
