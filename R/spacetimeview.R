@@ -128,7 +128,8 @@ spacetimeview <- function(
       'summary_radius',
       'summary_height',
       'radius_min_pixels',
-      'aggregate'
+      'aggregate',
+      'filter_column'
     ),
     control_names = c(
       'column_to_plot' = 'Dataset',
@@ -138,8 +139,10 @@ spacetimeview <- function(
       'summary_radius' = 'Cell Radius',
       'summary_height' = 'Cell Height',
       'radius_min_pixels' = 'Minimum Point Radius',
-      'aggregate' = 'Aggregate'
+      'aggregate' = 'Aggregate',
+      'filter_column' = 'Filter'
     ),
+    filter_column = NULL,
     lat_name = 'auto',
     lng_name = 'auto',
     time_column_name = 'auto',
@@ -266,11 +269,13 @@ spacetimeview <- function(
     
     # then convert to timestamp format needed by js
     data$timestamp <- format(data[,time_column_name], "%Y/%m/%d %H:%M:%OS2")
+    # remove the original time column
+    data <- data[, !(names(data) %in% time_column_name)]
   }
     
   normalize_lat_lng_names <- function(data, lat_name, lng_name) {
     if (lat_name == 'auto') {
-      lat_possible_names <- c('lat', 'LAT', 'latitude', 'Latitude', 'LATITUDE', 'y', 'Y')
+      lat_possible_names <- c('lat', 'LAT', 'latitude', 'Latitude', 'LATITUDE', 'y', 'Y', 'decimalLatitude')
       # Find the matching column names for latitude
       lat_name <- lat_possible_names[which(lat_possible_names %in% names(data))]
       # Rename the columns if a match is found
@@ -284,7 +289,7 @@ spacetimeview <- function(
     }
     
     if (lng_name == 'auto') {
-      lng_possible_names <- c('lng', 'LNG', 'longitude', 'Longitude', 'LONGITUDE', 'long', 'LONG', 'x', 'X')
+      lng_possible_names <- c('lng', 'LNG', 'longitude', 'Longitude', 'LONGITUDE', 'long', 'LONG', 'x', 'X', 'decimalLongitude')
       # Find the matching column names for longitude
       lng_name <- lng_possible_names[which(lng_possible_names %in% names(data))]
       if (length(lng_name) > 0) {
@@ -305,10 +310,10 @@ spacetimeview <- function(
     lng_name = lng_name
   )
 
-  factorLevels <- list()
+  factor_levels <- list()
 
   if (is.null(plottable_columns)) {
-    plottable_columns <- names(data)[!(names(data) %in% c(required_cols, time_column_name))]
+    plottable_columns <- names(data)[!(names(data) %in% c(required_cols, time_column_name, 'timestamp'))]
   }
 
   for (col in plottable_columns) {
@@ -327,14 +332,14 @@ spacetimeview <- function(
     # make sure it's not a time column
     if (is.factor(data[[col]]) && col != 'timestamp') {
       print(paste0('Adding factor levels for column `', col, '`'))
-      factorLevels[[col]] <- levels(data[[col]])
+      factor_levels[[col]] <- levels(data[[col]])
       # convert to 0-based index for JS
       data[[col]] <- as.integer(data[[col]]) - 1
     }
   }
 
-  if (length(factorLevels) == 0) {
-    factorLevels <- NULL
+  if (length(factor_levels) == 0) {
+    factor_levels <- NULL
   }
   
   if (length(plottable_columns) == 0) {
@@ -377,6 +382,7 @@ spacetimeview <- function(
   data_list <- purrr::transpose(data)
   print('Starting ReactR plot')
   # describe a React component to send to the browser for rendering.
+  print(paste('plottable columns:', plottable_columns))
   component <- reactR::component(
     "SpaceTimeViewer",
     list(
@@ -405,6 +411,7 @@ spacetimeview <- function(
       socialLinks = social_links,
       visibleControls = visible_controls,
       controlNames = control_names,
+      initialFilterColumn = filter_column,
       ...
     )
   )

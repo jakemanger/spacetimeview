@@ -90,7 +90,8 @@ export default function SpaceTimeViewer({
     'summary_height': 'Cell Height',
     'radius_min_pixels': 'Minimum Point Radius',
     'aggregate': 'Aggregate'
-  }
+  },
+  initialFilterColumn = null,
 }) {
   data = HTMLWidgets.dataframeToD3(data);
 
@@ -269,6 +270,13 @@ export default function SpaceTimeViewer({
       step: 1,
       hint: 'Adjust the speed of the time animation, in seconds.',
       render: () => visibleControls.includes('animation_speed')
+    },
+    filterColumn: {
+      value: initialFilterColumn,
+      options: columnNames.concat(null),
+      label: controlNames['filter_column'] || 'Filter Column',
+      hint: 'Choose a column to filter the data by.',
+      render: () => visibleControls.includes('filter_column'),
     }
   };
 
@@ -295,7 +303,12 @@ export default function SpaceTimeViewer({
     summaryStyle,
     radiusScale,
     radiusMinPixels,
+    filterColumn
   } = useControls(controlsConfig);
+
+  // use first unique 3 values in filterColumn for testing
+  const filterColumnValues = Array.from(new Set(data.map(d => d[filterColumn]))).slice(0, 3);
+  console.log('filterColumnValues', filterColumnValues);
 
   let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
 
@@ -371,10 +384,17 @@ export default function SpaceTimeViewer({
   const timeRange = useMemo(() => getTimeRange(data), [data]);
 
   const transformedData = useMemo(() => {
-    return data.map(d => ({
+    let dat = data;
+
+    if (filterColumn) {
+      dat = dat.filter(d => filterColumnValues.includes(d[filterColumn]));
+    }
+
+    dat = dat.map(d => ({
       ...d,
       value: d[columnToPlot]
     }));
+    return dat
   }, [data, columnToPlot]);
 
   const plot = useMemo(() => {
