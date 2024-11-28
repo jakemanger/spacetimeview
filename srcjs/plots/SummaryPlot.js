@@ -289,8 +289,6 @@ export default function SummaryPlot({
     getPosition: [data, legendTitle, radius, coverage],
   }
 
-  console.log('summaryHeight', summaryHeight);
-
   if (summaryHeight > 0) {
     updateTriggers.getElevationValue = updateTriggers.getColorValue;
   }

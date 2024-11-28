@@ -95,7 +95,6 @@ export default function SpaceTimeViewer({
 }) {
   data = HTMLWidgets.dataframeToD3(data);
 
-  console.log('initialSummaryHeight', initialSummaryHeight);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
