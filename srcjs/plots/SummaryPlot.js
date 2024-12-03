@@ -170,7 +170,8 @@ export default function SummaryPlot({
     highlight1: '#535760',
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
-  }
+  },
+  filterColumnValues = []
 }) {
   const [filter, setFilter] = useState(timeRange);
 
@@ -178,18 +179,25 @@ export default function SummaryPlot({
   const [initialElevationDomain, setInitialElevationDomain] = useState(null);
   const [colorbarDomain, setColorbarDomain] = useState(initialColorDomain);
 
-  // Update colorbarDomain only when initialColorDomain is not null
+  // uudate colorbarDomain only when initialColorDomain is not null
   useEffect(() => {
     if (initialColorDomain !== null) {
       setColorbarDomain(initialColorDomain);
     }
   }, [initialColorDomain]);
 
+  // Introduce a ref to track domain initialization
+  const domainInitializedRef = useRef(false);
+
   useEffect(() => {
-    // Reset domains when the categorical variable changes
+    // reset domains when the categorical variable changes
+    console.log('Resetting domains due to data, time filter, filterColumnValues, or aggregation change');
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
-  }, [legendTitle, colorAggregation, elevationAggregation]); // Replace `legendTitle` with the variable for the categorical data
+
+    // reset the initialization tracking
+    domainInitializedRef.current = false;
+  }, [data, filter, filterColumnValues, legendTitle, colorAggregation, elevationAggregation]);
 
   const directionalLight1 = new DirectionalLight({
     color: [255, 255, 255],
@@ -263,25 +271,56 @@ export default function SummaryPlot({
 
 
   const onSetColorDomain = (colorDomain) => {
+    // if using factor levels, set a predefined domain
     if (factorLevels && factorLevels[legendTitle]) {
-      setInitialColorDomain([0, factorLevels[legendTitle].length - 1]);
+      const factorLevelsDomain = [0, factorLevels[legendTitle].length - 1];
+      setInitialColorDomain(factorLevelsDomain);
       return;
     }
+
+    // prevent multiple unnecessary domain sets
+    if (domainInitializedRef.current) return;
+
+    // apply domain preservation logic
     if (preserveDomains && initialColorDomain !== null) {
-      setInitialColorDomain([Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])]);
+      const newDomain = [
+        Math.min(colorDomain[0], initialColorDomain[0]),
+        Math.max(colorDomain[1], initialColorDomain[1])
+      ];
+      setInitialColorDomain(newDomain);
+      domainInitializedRef.current = true;
     } else {
       setInitialColorDomain(colorDomain);
+      domainInitializedRef.current = true;
     }
+
+    console.log('Setting color domain to:', colorDomain);
   }
   const onSetElevationDomain = (elevationDomain) => {
+    // if using factor levels, set a predefined domain
     if (factorLevels && factorLevels[legendTitle]) {
-      // get the min and max from the factor levels
-      setInitialElevationDomain([0, factorLevels[legendTitle].length - 1]);
+      const factorLevelsDomain = [0, factorLevels[legendTitle].length - 1];
+      setInitialElevationDomain(factorLevelsDomain);
       return;
     }
+
+    // prevent multiple unnecessary domain sets
+    if (domainInitializedRef.current) return;
+
+    // apply domain preservation logic
     if (preserveDomains && initialElevationDomain !== null) {
-      setInitialElevationDomain([Math.min(elevationDomain[0], initialElevationDomain[0]), Math.max(elevationDomain[1], initialElevationDomain[1])]);
-    } else setInitialElevationDomain(elevationDomain);
+      const newDomain = [
+        Math.min(elevationDomain[0], initialElevationDomain[0]),
+        Math.max(elevationDomain[1], initialElevationDomain[1])
+      ];
+      setInitialElevationDomain(newDomain);
+      domainInitializedRef.current = true;
+    } else {
+      setInitialElevationDomain(elevationDomain);
+      domainInitializedRef.current = true;
+    }
+
+    console.log('Setting elevation domain to:', elevationDomain);
   }
 
   let updateTriggers = {

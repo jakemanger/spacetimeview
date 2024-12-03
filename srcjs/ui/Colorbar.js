@@ -22,79 +22,87 @@ export default function Colorbar({
     highlight3: '#FEFEFE',
   },
 }) {
-
-  if (
-    colorDomain == null ||
-    colorRange == null
-  ) {
+  // Early return if essential props are missing
+  if (!colorDomain || !colorRange) {
     return null;
   }
 
   // Reverse the color range
-  const reversedColorRange = useMemo(
+  const reversedColorRange = React.useMemo(
     () => [...colorRange].reverse(),
     [colorRange]
   );
 
-  const colorDomainLength = factorLevels && factorLevels[title] ? colorDomain.length : 6;
+  // Determine color domain length dynamically
+  const colorDomainLength = React.useMemo(() => {
+    return (factorLevels && factorLevels[title])
+      ? factorLevels[title].length
+      : 6;
+  }, [factorLevels, title]);
 
-  // Sample x + 1 values from the colorDomain and create x ranges
-  const sampledDomain = useMemo(() => {
+  // Sampled domain calculation with improved handling
+  const sampledDomain = React.useMemo(() => {
+    // Handle factor levels case
+    if (factorLevels && factorLevels[title]) {
+      return Array.from({ length: colorDomainLength }, (_, i) => i);
+    }
+
+    // Handle numeric domain
     if (colorDomain.length === 2) {
-      // If there are only two values, sample x + 1 evenly spaced values between min and max
       const [min, max] = colorDomain;
       const step = (max - min) / colorDomainLength;
       return Array.from({ length: colorDomainLength + 1 }, (_, i) =>
         (min + i * step).toFixed(numDecimals)
-      ).reverse(); // Format to numDecimals and reverse
-    } else {
-      // If more than two values, sample based on index
-      const step = (colorDomain.length - 1) / colorDomainLength;
-      const sampled = Array.from({ length: colorDomainLength + 1 }, (_, i) => {
-        const index = Math.round(i * step);
-        return colorDomain[index].toFixed(numDecimals); // Format to numDecimals
-      });
-      return sampled.reverse(); // Reverse to show from max to min
+      ).reverse();
     }
-  }, [colorDomain, numDecimals]);
 
-  // Generate labels
-  const labels = useMemo(() => {
+    // Handle multi-value domain
+    const step = (colorDomain.length - 1) / colorDomainLength;
+    return Array.from({ length: colorDomainLength + 1 }, (_, i) => {
+      const index = Math.round(i * step);
+      return colorDomain[index].toFixed(numDecimals);
+    }).reverse();
+  }, [colorDomain, numDecimals, factorLevels, title, colorDomainLength]);
+
+  // Labels generation with improved handling
+  const labels = React.useMemo(() => {
     if (factorLevels && factorLevels[title]) {
-      // Use factorLevels for labels, reversing to match the reversedColorRange
+      // Use factor levels, reversing to match color range
       return [...factorLevels[title]].reverse();
-    } else {
-      // Generate labels from sampledDomain
-      return reversedColorRange.map((_, index) => {
-        if (sampledDomain.length === colorDomainLength + 1 && index < colorDomainLength) {
-          return `${sampledDomain[index + 1]} - ${sampledDomain[index]}`;
-        }
-        return '';
-      });
     }
-  }, [factorLevels, title, sampledDomain, reversedColorRange]);
 
-  const legendItems = reversedColorRange.map((color, index) => {
-    const colorString = `rgb(${color.join(',')})`;
-    const label = labels[index];
+    // Generate labels from sampled domain for numeric data
+    return reversedColorRange.map((_, index) => {
+      if (sampledDomain.length === colorDomainLength + 1 && index < colorDomainLength) {
+        return `${sampledDomain[index + 1]} - ${sampledDomain[index]}`;
+      }
+      return '';
+    });
+  }, [factorLevels, title, sampledDomain, reversedColorRange, colorDomainLength]);
 
-    return (
-      <div
-        key={index}
-        style={{ display: 'flex', alignItems: 'center' }}
-      >
+  // Legend items generation
+  const legendItems = React.useMemo(() => {
+    return reversedColorRange.map((color, index) => {
+      const colorString = `rgb(${color.join(',')})`;
+      const label = labels[index];
+      return (
         <div
-          style={{
-            backgroundColor: colorString,
-            width: '20px',
-            height: '20px',
-            marginRight: '5px',
-          }}
-        />
-        <span style={{ color: themeColors.highlight2 }}>{label}</span>
-      </div>
-    );
-  });
+          key={index}
+          style={{ display: 'flex', alignItems: 'center', marginBottom: '0px' }}
+        >
+          <div
+            style={{
+              backgroundColor: colorString,
+              width: '20px',
+              height: '20px',
+              marginRight: '5px',
+            }}
+          />
+          <span style={{ color: themeColors.highlight2 }}>{label}</span>
+        </div>
+      );
+    });
+  }, [reversedColorRange, labels, themeColors]);
 
   return (
     <div

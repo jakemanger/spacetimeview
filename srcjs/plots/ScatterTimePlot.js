@@ -41,7 +41,11 @@ function getTooltip({ object }, hasTime, factorLevels = null) {
   if (factorLevels) {
     valueToShow = factorLevels[valueToShow];
   } else {
-    valueToShow = object.value.toFixed(2)
+    if (object.value === null) {
+      valueToShow = null;
+    } else {
+      valueToShow = object.value.toFixed(2)
+    }
   }
   html = `\
 		Latitude, Longitude: ${object.lng.toFixed(2)}, ${object.lat.toFixed(2)}<br />
@@ -129,11 +133,12 @@ export default function ScatterTimePlot({
       getFilterValue: d => new Date(d.timestamp).getTime(),
       filterRange: [filter[0], filter[1]],
       filterSoftRange: [
-        filter[0] * 0.9 + filter[1] * 0.1,
-        filter[0] * 0.1 + filter[1] * 0.9
+        filter[0] * 0.999 + filter[1] * 0.001,
+        filter[0] * 0.001 + filter[1] * 0.999
       ],
       extensions: [dataFilter],
-      pickable: true
+      pickable: true,
+      billboard: true
     })
   ];
 

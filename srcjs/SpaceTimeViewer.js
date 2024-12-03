@@ -403,18 +403,25 @@ export default function SpaceTimeViewer({
   const filteredData = useMemo(() => {
     let dat = transformedData;
 
+    // filter rows based on filterColumn and filterColumnValues
     if (filterColumn && filterColumnValues.length > 0) {
       dat = dat.filter(d => filterColumnValues.includes(d[filterColumn]));
     }
 
+    // remove rows where d[columnToPlot] is undefined or null
+    dat = dat.filter(d => d[columnToPlot] !== undefined && d[columnToPlot] !== null);
+
+    // add 'value' property with the value from columnToPlot
     dat = dat.map(d => ({
       ...d,
       value: d[columnToPlot]
     }));
+
     return dat;
   }, [transformedData, columnToPlot, filterColumn, filterColumnValues]);
 
   const plot = useMemo(() => {
+    console.log('replotting plot');
     if (!filteredData || !filteredData.some(d => d.lng && d.lat)) {
       let columnsInData = filteredData.map(d => Object.keys(d));
       console.error(
@@ -472,6 +479,7 @@ export default function SpaceTimeViewer({
           numDecimals={numDecimals}
           themeColors={levaTheme.colors}
           factorLevels={factorLevels}
+          filterColumnValues={filterColumnValues}
         />
       );
     } else {
@@ -485,7 +493,6 @@ export default function SpaceTimeViewer({
     colorScaleType,
     repeatedPointsAggregate,
     preserveDomains,
-    filteredData,
     timeRange,
     summaryRadius,
     summaryCoverage,
@@ -497,7 +504,7 @@ export default function SpaceTimeViewer({
     summaryStyle,
     projection,
     filterColumnValues,
-    filteredData
+    filteredData,
   ]);
 
   const handleSnackbarClose = () => {
