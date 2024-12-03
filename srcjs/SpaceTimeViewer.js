@@ -497,6 +497,7 @@ export default function SpaceTimeViewer({
     summaryStyle,
     projection,
     filterColumnValues,
+    filteredData
   ]);
 
   const handleSnackbarClose = () => {
