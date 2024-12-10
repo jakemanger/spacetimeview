@@ -123,27 +123,29 @@ export default function Colorbar({
         padding: '10px',
         borderRadius: '5px',
         boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
-        maxHeight: '30vh', // Limit to 50% of viewport height
+        maxHeight: '40vh',
       }}
     >
       <h4
         style={{
-          marginTop: '0px',
+          marginTop: '0',
+          marginBottom: '10px',
           color: themeColors.highlight2,
           fontSize: '1rem',
           position: 'sticky', // Make title stick to top when scrolling
           top: '0',
           backgroundColor: themeColors.elevation2,
-          zIndex: 1, // Ensure title is above scrollable content
-          paddingBottom: '5px',
         }}
       >
         {capitalizeFirstLetter(title)}
       </h4>
       <div
         style={{
-          maxHeight: 'calc(50vh - 40px)', // Subtract title and padding height
+          maxHeight: '30vh', // Account for actual header and padding
           overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'start',
         }}
       >
         {legendItems}
