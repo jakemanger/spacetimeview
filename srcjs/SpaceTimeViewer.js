@@ -95,6 +95,7 @@ export default function SpaceTimeViewer({
     'filter_column': 'Filter Column'
   },
   initialFilterColumn = null,
+  draggableMenu = false,
 }) {
   // Memoize the data transformation to prevent unnecessary re-renders
   const transformedData = useMemo(() => {
@@ -548,7 +549,17 @@ export default function SpaceTimeViewer({
       {plot}
       <div style={{ position: 'fixed', top: topOffset, right: '20px' }}>
         <Provider delayDuration={0}>
-          <Leva fill theme={levaTheme} />
+          <Leva
+            fill
+            titleBar={
+              {
+                drag: draggableMenu,
+                filter: false,
+              }
+            }
+            theme={levaTheme}
+            hideCopyButton
+          />
         </Provider>
       </div>
       <Snackbar

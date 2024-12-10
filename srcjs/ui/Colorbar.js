@@ -46,7 +46,6 @@ export default function Colorbar({
     if (factorLevels && factorLevels[title]) {
       return Array.from({ length: colorDomainLength }, (_, i) => i);
     }
-
     // Handle numeric domain
     if (colorDomain.length === 2) {
       const [min, max] = colorDomain;
@@ -55,7 +54,6 @@ export default function Colorbar({
         (min + i * step).toFixed(numDecimals)
       ).reverse();
     }
-
     // Handle multi-value domain
     const step = (colorDomain.length - 1) / colorDomainLength;
     return Array.from({ length: colorDomainLength + 1 }, (_, i) => {
@@ -70,7 +68,6 @@ export default function Colorbar({
       // Use factor levels, reversing to match color range
       return [...factorLevels[title]].reverse();
     }
-
     // Generate labels from sampled domain for numeric data
     return reversedColorRange.map((_, index) => {
       if (sampledDomain.length === colorDomainLength + 1 && index < colorDomainLength) {
@@ -88,7 +85,11 @@ export default function Colorbar({
       return (
         <div
           key={index}
-          style={{ display: 'flex', alignItems: 'center', marginBottom: '0px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '0px',
+          }}
         >
           <div
             style={{
@@ -98,7 +99,14 @@ export default function Colorbar({
               marginRight: '5px',
             }}
           />
-          <span style={{ color: themeColors.highlight2 }}>{label}</span>
+          <span
+            style={{
+              color: themeColors.highlight2,
+              fontSize: '12px',
+            }}
+          >
+            {label}
+          </span>
         </div>
       );
     });
@@ -115,17 +123,31 @@ export default function Colorbar({
         padding: '10px',
         borderRadius: '5px',
         boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+        maxHeight: '50vh', // Limit to 50% of viewport height
       }}
     >
       <h4
         style={{
           marginTop: '0px',
           color: themeColors.highlight2,
+          fontSize: '1rem',
+          position: 'sticky', // Make title stick to top when scrolling
+          top: '0',
+          backgroundColor: themeColors.elevation2,
+          zIndex: 1, // Ensure title is above scrollable content
+          paddingBottom: '5px',
         }}
       >
         {capitalizeFirstLetter(title)}
       </h4>
-      {legendItems}
+      <div
+        style={{
+          maxHeight: 'calc(50vh - 40px)', // Subtract title and padding height
+          overflowY: 'auto',
+        }}
+      >
+        {legendItems}
+      </div>
     </div>
   );
 }
