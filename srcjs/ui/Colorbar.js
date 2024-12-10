@@ -123,7 +123,7 @@ export default function Colorbar({
         padding: '10px',
         borderRadius: '5px',
         boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
-        maxHeight: '50vh', // Limit to 50% of viewport height
+        maxHeight: '30vh', // Limit to 50% of viewport height
       }}
     >
       <h4
