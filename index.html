@@ -89,11 +89,11 @@
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="st">"my_plot.html"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Auto-detected time column: `DateTime`</span></span>
-<span><span class="co">#&gt; [1] "Converting character column `timestamp` to factor"</span></span>
 <span><span class="co">#&gt; Warning in spacetimeview(d): column_to_plot was not specified. Defaulting to</span></span>
 <span><span class="co">#&gt; `Magnitude`</span></span>
 <span><span class="co">#&gt; [1] "Estimating an optimal radius for summary grid cells..."</span></span>
 <span><span class="co">#&gt; [1] "Starting ReactR plot"</span></span>
+<span><span class="co">#&gt; [1] "plottable columns: Magnitude"</span></span>
 <span><span class="co">#&gt; Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.</span></span></code></pre></div>
 <p>and simply deploy to any website host, even free static site hosts like Github Pages</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -122,11 +122,16 @@
 <div class="section level2">
 <h2 id="example-repositories">Example repositories<a class="anchor" aria-label="anchor" href="#example-repositories"></a>
 </h2>
-<p>For examples, check out:</p>
+<p>If you’d like to check out some nice examples see:</p>
 <ul>
-<li><p><a href="https://github.com/jakemanger/spacetimeview_example" class="external-link uri">https://github.com/jakemanger/spacetimeview_example</a> (Click “Use this template” at the top to start with a ready-made setup)</p></li>
+<li><p><a href="https://github.com/jakemanger/spacetimeview_example" class="external-link uri">https://github.com/jakemanger/spacetimeview_example</a></p></li>
 <li><p>add your project here</p></li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="about">About<a class="anchor" aria-label="anchor" href="#about"></a>
+</h2>
+<p>This project is built on top of the javascript <code>deck.gl</code> and <code>react-map-gl</code> packages, using grid aggregation methods to summarize data spatially and temporally, or via a scatter plot to visualize individual data points. Spacetimeview provides R users with a simple interface to access these powerful tools in a distributable dashboard.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
