@@ -8,13 +8,12 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import PinchIcon from '@mui/icons-material/Pinch';
 import './SpaceTimeViewer.css';
-import { Provider } from "@radix-ui/react-tooltip";
 import colorbrewer from 'colorbrewer';
 import { Helmet } from 'react-helmet';
 import Header from './ui/Header';
 import { interpolateRgb } from 'd3-interpolate';
-import Select from 'react-select';
-import makeAnimated from 'react-select/animated';
+import ControlsMenu from './ui/ControlsMenu';
+
 
 function hexToRgb(hex) {
   hex = hex.replace(/^#/, '');
@@ -81,7 +80,7 @@ export default function SpaceTimeViewer({
     'summary_height',
     'radius_min_pixels',
     'aggregate',
-    'filter_column'
+    'filter_column',
   ],
   controlNames = {
     'column_to_plot': 'Dataset',
@@ -534,34 +533,44 @@ export default function SpaceTimeViewer({
         socialLinks={socialLinks}
         themeColors={levaTheme.colors}
       />
-      {filterColumn && (
-        <div style={{ position: 'fixed', top: topOffset, left: '20px', width: '300px', zIndex: 1000 }}>
-          <Select
-            components={makeAnimated()}
-            isMulti
-            options={filterOptions}
-            value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
-            onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
-            placeholder={`Filter ${filterColumn}...`}
-          />
-        </div>
-      )}
+      <ControlsMenu
+        dockPosition="floating"
+        levaTheme={levaTheme}
+        filterColumn={filterColumn}
+        filterOptions={filterOptions}
+        filterColumnValues={filterColumnValues}
+        setFilterColumnValues={setFilterColumnValues}
+        draggableMenu={draggableMenu}
+      />
+
+      {/* {filterColumn && ( */}
+      {/*   <div style={{ position: 'fixed', top: topOffset, left: '20px', width: '300px', zIndex: 1000 }}> */}
+      {/*     <Select */}
+      {/*       components={makeAnimated()} */}
+      {/*       isMulti */}
+      {/*       options={filterOptions} */}
+      {/*       value={filterOptions.filter(option => filterColumnValues.includes(option.value))} */}
+      {/*       onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])} */}
+      {/*       placeholder={`Filter ${filterColumn}...`} */}
+      {/*     /> */}
+      {/*   </div> */}
+      {/* )} */}
       {plot}
-      <div style={{ position: 'fixed', top: topOffset, right: '20px' }}>
-        <Provider delayDuration={0}>
-          <Leva
-            fill
-            titleBar={
-              {
-                drag: draggableMenu,
-                filter: false,
-              }
-            }
-            theme={levaTheme}
-            hideCopyButton
-          />
-        </Provider>
-      </div>
+      {/* <div style={{ position: 'fixed', top: topOffset, right: '20px' }}> */}
+      {/*   <Provider delayDuration={0}> */}
+      {/*   </Provider> */}
+      {/*     <Leva */}
+      {/*       fill */}
+      {/*       titleBar={ */}
+      {/*         { */}
+      {/*           drag: draggableMenu, */}
+      {/*           filter: false, */}
+      {/*         } */}
+      {/*       } */}
+      {/*       theme={levaTheme} */}
+      {/*       hideCopyButton */}
+      {/*     /> */}
+      {/* </div> */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
