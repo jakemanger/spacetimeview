@@ -4,6 +4,9 @@
 #' geospatial and temporal data interactively. Users can toggle between 
 #' different plot types (e.g., summary, scatter) and adjust various controls 
 #' such as animation speed, radius scale, aggregation method, and theme.
+#' The project is built on top of the `deck.gl` and `react-map-gl` packages,
+#' using grid aggregation methods to summarize data spatially and temporally, 
+#' or via a scatter plot to visualize individual data points.
 #'
 #' @param data A data frame containing space-time data with columns for 
 #'   latitude, longitude, timestamp, and one or more value columns. The data 

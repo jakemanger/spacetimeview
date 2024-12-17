@@ -29,11 +29,13 @@ spacetimeview(
   header_website_link = "",
   social_links = c(),
   visible_controls = c("column_to_plot", "style", "color_scheme", "animation_speed",
-    "summary_radius", "summary_height", "radius_min_pixels", "aggregate"),
+    "summary_radius", "summary_height", "radius_min_pixels", "aggregate",
+    "filter_column"),
   control_names = c(column_to_plot = "Dataset", style = "Plot Type", color_scheme =
     "Color Scheme", animation_speed = "Animation Speed", summary_radius = "Cell Radius",
     summary_height = "Cell Height", radius_min_pixels = "Minimum Point Radius", aggregate
-    = "Aggregate"),
+    = "Aggregate", filter_column = "Filter"),
+  filter_column = NULL,
   lat_name = "auto",
   lng_name = "auto",
   time_column_name = "auto",
@@ -135,6 +137,9 @@ This function provides a space-time visualization interface for exploring
 geospatial and temporal data interactively. Users can toggle between
 different plot types (e.g., summary, scatter) and adjust various controls
 such as animation speed, radius scale, aggregation method, and theme.
+The project is built on top of the \code{deck.gl} and \code{react-map-gl} packages,
+using grid aggregation methods to summarize data spatially and temporally,
+or via a scatter plot to visualize individual data points.
 }
 \examples{
 library(spacetimeview)

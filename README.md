@@ -54,11 +54,11 @@ html file
 ``` r
 htmlwidgets::saveWidget(spacetimeview(d), "my_plot.html")
 #> Auto-detected time column: `DateTime`
-#> [1] "Converting character column `timestamp` to factor"
 #> Warning in spacetimeview(d): column_to_plot was not specified. Defaulting to
 #> `Magnitude`
 #> [1] "Estimating an optimal radius for summary grid cells..."
 #> [1] "Starting ReactR plot"
+#> [1] "plottable columns: Magnitude"
 #> Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.
 ```
 
@@ -95,8 +95,16 @@ website.
 
 ## Example repositories
 
-For examples, check out:
+If you’d like to check out some nice examples see:
 
-- <https://github.com/jakemanger/spacetimeview_example> (Click "Use this template" at the top to start with a ready-made setup)
+- <https://github.com/jakemanger/spacetimeview_example>
 
 - add your project here
+
+## About
+
+This project is built on top of the javascript `deck.gl` and
+`react-map-gl` packages, using grid aggregation methods to summarize
+data spatially and temporally, or via a scatter plot to visualize
+individual data points. Spacetimeview provides R users with a simple
+interface to access these powerful tools in a distributable dashboard.
