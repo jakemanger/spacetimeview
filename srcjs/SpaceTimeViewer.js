@@ -94,7 +94,7 @@ export default function SpaceTimeViewer({
     'filter_column': 'Filter Column'
   },
   initialFilterColumn = null,
-  draggableMenu = false,
+  draggableMenu = true,
 }) {
   // Memoize the data transformation to prevent unnecessary re-renders
   const transformedData = useMemo(() => {
@@ -611,7 +611,7 @@ export default function SpaceTimeViewer({
   }
 
   return (
-    <div className="space-time-viewer">
+    <div className="spacetimeview">
       <Helmet>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Helmet>
@@ -631,35 +631,7 @@ export default function SpaceTimeViewer({
         setFilterColumnValues={setFilterColumnValues}
         draggableMenu={draggableMenu}
       />
-
-      {/* {filterColumn && ( */}
-      {/*   <div style={{ position: 'fixed', top: topOffset, left: '20px', width: '300px', zIndex: 1000 }}> */}
-      {/*     <Select */}
-      {/*       components={makeAnimated()} */}
-      {/*       isMulti */}
-      {/*       options={filterOptions} */}
-      {/*       value={filterOptions.filter(option => filterColumnValues.includes(option.value))} */}
-      {/*       onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])} */}
-      {/*       placeholder={`Filter ${filterColumn}...`} */}
-      {/*     /> */}
-      {/*   </div> */}
-      {/* )} */}
       {plot}
-      {/* <div style={{ position: 'fixed', top: topOffset, right: '20px' }}> */}
-      {/*   <Provider delayDuration={0}> */}
-      {/*   </Provider> */}
-      {/*     <Leva */}
-      {/*       fill */}
-      {/*       titleBar={ */}
-      {/*         { */}
-      {/*           drag: draggableMenu, */}
-      {/*           filter: false, */}
-      {/*         } */}
-      {/*       } */}
-      {/*       theme={levaTheme} */}
-      {/*       hideCopyButton */}
-      {/*     /> */}
-      {/* </div> */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
