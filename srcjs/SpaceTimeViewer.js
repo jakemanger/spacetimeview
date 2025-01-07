@@ -291,27 +291,116 @@ export default function SpaceTimeViewer({
     delete controlsConfig.columnToPlot;
   }
 
-  const {
-    style,
-    columnToPlot,
-    animationSpeed,
-    theme,
-    projection,
-    colorScheme,
-    colorScaleType,
-    numDecimals,
-    aggregate,
-    factorAggregate,
-    repeatedPointsAggregate,
-    preserveDomains,
-    summaryRadius,
-    summaryCoverage,
-    summaryHeight,
-    summaryStyle,
-    radiusScale,
-    radiusMinPixels,
-    filterColumn
-  } = useControls(controlsConfig);
+  const [
+    {
+      style,
+      columnToPlot,
+      animationSpeed,
+      theme,
+      projection,
+      colorScheme,
+      colorScaleType,
+      numDecimals,
+      aggregate,
+      factorAggregate,
+      repeatedPointsAggregate,
+      preserveDomains,
+      summaryRadius,
+      summaryCoverage,
+      summaryHeight,
+      summaryStyle,
+      radiusScale,
+      radiusMinPixels,
+      filterColumn
+    },
+    set
+  ] = useControls(
+    () => controlsConfig,
+    [
+      data,
+      initialStyle,
+      initialColumnToPlot,
+      initialAggregate,
+      initialRepeatedPointsAggregate,
+      initialStickyRange,
+      initialSummaryRadius,
+      initialSummaryCoverage,
+      initialAnimationSpeed,
+      initialTheme,
+      initialRadiusScale,
+      initialRadiusMinPixels,
+      initialSummaryStyle,
+      initialProjection,
+      initialSummaryHeight,
+      initialColorScheme,
+      initialColorScaleType,
+      initialNumDecimals,
+      factorLevels,
+      headerLogo,
+      headerTitle,
+      headerWebsiteLink,
+      socialLinks,
+      visibleControls,
+      controlNames,
+      initialFilterColumn,
+      draggableMenu,
+    ]
+  );
+
+  // if any input props change (e.g. shiny controlling the ui)
+  useEffect(() => {
+    set(
+      {
+        style: initialStyle,
+        columnToPlot: initialColumnToPlot,
+        projection: initialProjection,
+        colorScheme: initialColorScheme,
+        theme: initialTheme,
+        summaryStyle: initialSummaryStyle,
+        summaryRadius: initialSummaryRadius,
+        summaryCoverage: initialSummaryCoverage,
+        summaryHeight: initialSummaryHeight,
+        preserveDomains: initialStickyRange,
+        aggregate: aggregateOptions.includes(initialAggregate) ? initialAggregate : aggregateOptions[0],
+        factorAggregate: factorAggregateOptions.includes(initialAggregate) ? initialAggregate : factorAggregateOptions[0],
+        repeatedPointsAggregate: initialRepeatedPointsAggregate,
+        colorScaleType: initialColorScaleType,
+        numDecimals: initialNumDecimals,
+        radiusScale: initialRadiusScale,
+        radiusMinPixels: initialRadiusMinPixels,
+        animationSpeed: initialAnimationSpeed,
+        filterColumn: initialFilterColumn,
+      }
+    )
+  }, [
+    data,
+    initialStyle,
+    initialColumnToPlot,
+    initialAggregate,
+    initialRepeatedPointsAggregate,
+    initialStickyRange,
+    initialSummaryRadius,
+    initialSummaryCoverage,
+    initialAnimationSpeed,
+    initialTheme,
+    initialRadiusScale,
+    initialRadiusMinPixels,
+    initialSummaryStyle,
+    initialProjection,
+    initialSummaryHeight,
+    initialColorScheme,
+    initialColorScaleType,
+    initialNumDecimals,
+    factorLevels,
+    headerLogo,
+    headerTitle,
+    headerWebsiteLink,
+    socialLinks,
+    visibleControls,
+    controlNames,
+    initialFilterColumn,
+    draggableMenu,
+  ]);
 
   let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
 
