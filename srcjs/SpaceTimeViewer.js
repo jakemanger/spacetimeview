@@ -615,13 +615,15 @@ export default function SpaceTimeViewer({
       <Helmet>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Helmet>
-      <Header
-        logo={headerLogo}
-        title={headerTitle}
-        websiteLink={headerWebsiteLink}
-        socialLinks={socialLinks}
-        themeColors={levaTheme.colors}
-      />
+      {hasHeader && (
+        <Header
+          logo={headerLogo}
+          title={headerTitle}
+          websiteLink={headerWebsiteLink}
+          socialLinks={socialLinks}
+          themeColors={levaTheme.colors}
+        />
+      )}
       <ControlsMenu
         dockPosition="floating"
         levaTheme={levaTheme}

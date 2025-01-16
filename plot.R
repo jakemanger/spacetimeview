@@ -20,6 +20,8 @@ dungfauna_occurrence <- dungfauna_occurrence[
   )
 ]
 
+browser()
+
 # now make your dashboard in one line of code
 p <- spacetimeview(
   dungfauna_occurrence,
@@ -28,6 +30,7 @@ p <- spacetimeview(
   header_title='Dung Beetles of Australia',
   social_links=c('github'='https://github.com/jakemanger/spacetimeview_dungbeetles'),
   filter_column='scientificName',
+  draggableMenu=TRUE
 )
 
 print(p)
