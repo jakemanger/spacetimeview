@@ -98,8 +98,6 @@ export default function ScatterTimePlot({
   },
   factorLevels = null
 }) {
-  console.log('factorLevels in ScatterTimePlot', factorLevels);
-
   const [filter, setFilter] = useState(timeRange);
 
   const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);
