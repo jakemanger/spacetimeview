@@ -32,12 +32,12 @@ function getMinMaxValues(data, key) {
 }
 
 function getTooltip({ object }, hasTime, factorLevels = null) {
-  let html = '';
   if (!object) {
     return;
   }
+  let html = '';
   let valueToShow = object.value != null ? object.value : '';
-  console.log('factorLevels', factorLevels);
+
   if (factorLevels) {
     valueToShow = factorLevels[valueToShow];
   } else {
@@ -168,9 +168,11 @@ export default function ScatterTimePlot({
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) => {
-          getTooltip({ object }, !isNaN(timeRange[0]), factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null)
-        }}
+        getTooltip={({ object }) => getTooltip(
+          { object },
+          !isNaN(timeRange[0]),
+          factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null
+        )}
       >
         {projection === 'Mercator' && (
           <Map reuseMaps mapStyle={mapStyle} />
