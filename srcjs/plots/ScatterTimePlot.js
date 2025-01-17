@@ -168,7 +168,9 @@ export default function ScatterTimePlot({
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) => getTooltip({ object }, !isNaN(timeRange[0]), factorLevels[columnName])}
+        getTooltip={({ object }) => {
+          getTooltip({ object }, !isNaN(timeRange[0]), factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null)
+        }}
       >
         {projection === 'Mercator' && (
           <Map reuseMaps mapStyle={mapStyle} />
