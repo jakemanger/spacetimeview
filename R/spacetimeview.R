@@ -273,7 +273,9 @@ spacetimeview <- function(
     # then convert to timestamp format needed by js
     data$timestamp <- format(data[,time_column_name], "%Y/%m/%d %H:%M:%OS2")
     # remove the original time column
-    data <- data[, !(names(data) %in% time_column_name)]
+    if (time_column_name != 'timestamp') {
+      data <- data[, !(names(data) %in% time_column_name)]
+    }
   }
     
   normalize_lat_lng_names <- function(data, lat_name, lng_name) {
