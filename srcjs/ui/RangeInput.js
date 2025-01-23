@@ -159,6 +159,10 @@ export default function RangeInput({ min, max, value, animationSpeed, onChange, 
             color: '#f5f1d8',
             whiteSpace: 'nowrap',
           },
+          transition: 'none',
+          '& .MuiSlider-thumb, & .MuiSlider-track, & .MuiSlider-rail': {
+            transition: 'none',
+          }
         }}
         min={min}
         max={max}
