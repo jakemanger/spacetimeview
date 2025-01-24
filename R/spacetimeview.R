@@ -321,6 +321,13 @@ spacetimeview <- function(
     plottable_columns <- names(data)[!(names(data) %in% c(required_cols, time_column_name, 'timestamp'))]
   }
 
+  # now filter data to only include the columns we need
+  if ('timestamp' %in% names(data)) {
+    data <- data[, c(required_cols, 'timestamp', plottable_columns)]
+  } else {
+    data <- data[, c(required_cols, plottable_columns)]
+  }
+
   for (col in plottable_columns) {
     # if the plottable column is a character, convert to a factor
     if (is.character(data[[col]])) {
@@ -388,6 +395,7 @@ spacetimeview <- function(
   print('Starting ReactR plot')
   # describe a React component to send to the browser for rendering.
   print(paste('plottable columns:', plottable_columns))
+
   component <- reactR::component(
     "SpaceTimeViewer",
     list(
