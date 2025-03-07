@@ -25,11 +25,41 @@ const ambientLight = new AmbientLight({
   intensity: 1.0,
 });
 
-
 function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels = null) {
-  if (!object) return null;
+  if (!object) {
+    if (window.tooltipState?.chartContainer) {
+      window.tooltipState.chartContainer.style.display = 'none';
+    }
+    return null;
+  }
 
-  let { position, points, colorValue } = object;
+  // Initialize global state if needed
+  if (!window.tooltipState) {
+    // Create a persistent container for charts
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.pointerEvents = 'none';
+    container.style.zIndex = '10000';
+    container.style.backgroundColor = 'white';
+    container.style.padding = '5px';
+    container.style.borderRadius = '5px';
+    container.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+    document.body.appendChild(container);
+
+    window.tooltipState = {
+      currentObjectId: null,
+      chartInstances: {},
+      lastData: {},
+      chartContainer: container
+    };
+  }
+
+  // Create a unique identifier for this object
+  const position = object.position;
+  const objectId = `${position[0].toFixed(6)}-${position[1].toFixed(6)}`;
+  
+  // Extract data
+  let { points, colorValue } = object;
   if (factorLevels && factorLevels[colorValue]) {
     colorValue = factorLevels[colorValue];
   } else {
@@ -41,7 +71,7 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
   const metricName =
     colorAggregation.charAt(0).toUpperCase() +
     colorAggregation.slice(1).toLowerCase();
-  const chartId = `chart-${lat}-${lng}`;
+  const chartId = `chart-${objectId}`;
 
   let seriesData = points
     .map(d => ({
@@ -96,88 +126,216 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
     return trendData;
   };
 
-  // Calculate trend line
-  const trendLineData = calculateTrendLine(seriesData);
+  // Calculate appropriate y-axis range with a small padding
+  const calculateYAxisRange = (data) => {
+    if (!data || data.length === 0) return { min: 0, max: 1 };
+    
+    const yValues = data.map(d => d.y);
+    const minY = Math.min(...yValues);
+    const maxY = Math.max(...yValues);
+    
+    // Add 10% padding above and below
+    const padding = (maxY - minY) * 0.1;
+    
+    // If min and max are very close, add some separation
+    if (Math.abs(maxY - minY) < 0.001) {
+      return { 
+        min: minY - 0.5, 
+        max: maxY + 0.5 
+      };
+    }
+    
+    return { 
+      min: minY - padding, 
+      max: maxY + padding 
+    };
+  };
 
-  setTimeout(() => {
-    const ctx = document.getElementById(chartId)?.getContext('2d');
-    if (ctx) {
-      new Chart(ctx, {
-        type: 'scatter',
-        data: {
-          datasets: [
-            {
-              label: 'Data Points',
-              type: 'scatter',
-              data: seriesData,
-              pointBackgroundColor: 'rgba(54, 162, 235, 0.8)',
-              pointBorderColor: 'rgba(54, 162, 235, 1)',
-              pointRadius: 4,
-              pointHoverRadius: 6,
-            },
-            {
-              label: 'Trend Line',
-              type: 'line',
-              data: trendLineData,
-              borderColor: 'rgba(255, 99, 132, 1)',
-              backgroundColor: 'rgba(255, 99, 132, 0.1)',
-              pointRadius: 0,
-              fill: false,
-              tension: 0.4,
-              // Add confidence interval fill
-              fill: '+1',
-            }
-          ],
-        },
-        options: {
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                unit: 'day'
-              },
-              title: {
-                display: true,
-                text: 'Time'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Values',
-              },
-            },
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const point = context.raw;
-                  return `Value: ${point.y.toFixed(2)} at ${new Date(point.x).toLocaleDateString()}`;
+  // Check if we need to update the chart
+  const chartNeedsUpdate = !window.tooltipState.lastData[objectId] || 
+    JSON.stringify(seriesData) !== JSON.stringify(window.tooltipState.lastData[objectId]);
+
+  if (hasTime) {
+    // Update chart container content and position
+    window.tooltipState.chartContainer.style.display = 'block';
+    
+    // Only update chart content if needed
+    if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId) {
+      window.tooltipState.chartContainer.innerHTML = `
+        <div style="margin-bottom: 5px;">
+          <div>Latitude: ${lat.toFixed(2)}</div>
+          <div>Longitude: ${lng.toFixed(2)}</div>
+          <div>${metricName}: ${colorValue}</div>
+        </div>
+        <div style="width: 300px; height: 200px;">
+          <canvas id="${chartId}" width="300" height="200"></canvas>
+        </div>
+        <div style="text-align: center; margin-top: 5px; font-size: 12px;">
+          <span style="display: inline-block; margin-right: 10px;">
+            <span style="color: rgba(54, 162, 235, 1); font-weight: bold;">●</span> Data Points
+          </span>
+          <span style="display: inline-block;">
+            <span style="color: rgba(255, 99, 132, 1); font-weight: bold;">—</span> Trend Line
+          </span>
+        </div>
+      `;
+
+      // Clean up old chart if switching to new object
+      if (window.tooltipState.currentObjectId !== objectId && window.tooltipState.chartInstances[window.tooltipState.currentObjectId]) {
+        window.tooltipState.chartInstances[window.tooltipState.currentObjectId].destroy();
+        delete window.tooltipState.chartInstances[window.tooltipState.currentObjectId];
+      }
+
+      window.tooltipState.currentObjectId = objectId;
+      window.tooltipState.lastData[objectId] = seriesData;
+
+      // Create or update chart
+      window.requestAnimationFrame(() => {
+        const ctx = document.getElementById(chartId)?.getContext('2d');
+        if (!ctx) return;
+
+        const trendLineData = calculateTrendLine(seriesData);
+        const yAxisRange = calculateYAxisRange([...seriesData, ...trendLineData]);
+
+        if (window.tooltipState.chartInstances[objectId]) {
+          const chart = window.tooltipState.chartInstances[objectId];
+          chart.data.datasets[0].data = seriesData;
+          chart.data.datasets[1].data = trendLineData;
+          chart.options.scales.y.min = yAxisRange.min;
+          chart.options.scales.y.max = yAxisRange.max;
+          chart.options.scales.x.time.unit = determineTimeUnit(seriesData);
+          chart.update('none');
+        } else {
+          const chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+              datasets: [
+                {
+                  label: 'Data Points',
+                  type: 'scatter',
+                  data: seriesData,
+                  pointBackgroundColor: 'rgba(54, 162, 235, 0.8)',
+                  pointBorderColor: 'rgba(54, 162, 235, 1)',
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  showLine: false,
+                },
+                {
+                  label: 'Trend Line',
+                  type: 'line',
+                  data: trendLineData,
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                  pointRadius: 0,
+                  fill: false,
+                  tension: 0.4,
                 }
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 1.5,
+              animation: false,
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    unit: determineTimeUnit(seriesData),
+                    displayFormats: {
+                      millisecond: 'HH:mm:ss.SSS',
+                      second: 'HH:mm:ss',
+                      minute: 'HH:mm',
+                      hour: 'HH:mm',
+                      day: 'MMM d',
+                      week: 'MMM d',
+                      month: 'MMM yyyy',
+                      quarter: 'MMM yyyy',
+                      year: 'yyyy'
+                    }
+                  },
+                  title: {
+                    display: true,
+                    text: 'Time'
+                  },
+                  ticks: {
+                    autoSkip: true,
+                    maxRotation: 45,
+                    minRotation: 0
+                  }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: 'Values',
+                  },
+                  min: yAxisRange.min,
+                  max: yAxisRange.max,
+                  beginAtZero: false
+                },
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const point = context.raw;
+                      return `Value: ${point.y.toFixed(2)} at ${new Date(point.x).toLocaleString()}`;
+                    }
+                  }
+                },
+                legend: {
+                  display: false,
+                }
+              },
+              interaction: {
+                intersect: false,
+                mode: 'nearest'
               }
             },
-            legend: {
-              display: true,
-              position: 'top',
-            }
-          },
-          interaction: {
-            intersect: false,
-            mode: 'nearest'
-          }
-        },
+          });
+          window.tooltipState.chartInstances[objectId] = chart;
+        }
       });
     }
-  }, 0);
 
+    // Position the container near the mouse
+    const moveContainer = (event) => {
+      const container = window.tooltipState.chartContainer;
+      const padding = 20;
+      let left = event.clientX + padding;
+      let top = event.clientY + padding;
+
+      // Adjust position if it would go off screen
+      if (left + container.offsetWidth > window.innerWidth) {
+        left = event.clientX - container.offsetWidth - padding;
+      }
+      if (top + container.offsetHeight > window.innerHeight) {
+        top = event.clientY - container.offsetHeight - padding;
+      }
+
+      container.style.left = `${left}px`;
+      container.style.top = `${top}px`;
+    };
+
+    // Update position on mousemove
+    document.addEventListener('mousemove', moveContainer);
+    
+    // Return minimal tooltip
+    return {
+      html: '',
+      style: {
+        display: 'none'  // Hide the default tooltip
+      }
+    };
+  }
+
+  // For non-time data, return simple tooltip
   return {
     html: `
       <div>
         <p>Latitude: ${lat.toFixed(2)}</p>
         <p>Longitude: ${lng.toFixed(2)}</p>
         <p>${metricName}: ${colorValue}</p>
-        ${hasTime ? `<canvas id="${chartId}" style="width: 300px; height: 200px;"></canvas>` : ''}
       </div>
     `,
     style: {
@@ -190,6 +348,22 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
   };
 }
 
+// Function to determine the appropriate time unit based on the data range
+function determineTimeUnit(data) {
+  if (!data || data.length < 2) return 'day';
+  
+  // Calculate time range in milliseconds
+  const timeRange = Math.max(...data.map(d => d.x)) - Math.min(...data.map(d => d.x));
+  
+  // Determine appropriate unit based on range
+  if (timeRange < 1000 * 60) return 'millisecond'; // Less than a minute
+  if (timeRange < 1000 * 60 * 60) return 'minute'; // Less than an hour
+  if (timeRange < 1000 * 60 * 60 * 24) return 'hour'; // Less than a day
+  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day'; // Less than a week
+  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week'; // Less than a month
+  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month'; // Less than a year
+  return 'year'; // More than a year
+}
 
 function findMode(arr, factorLevels = null) {
   const frequency = {};
