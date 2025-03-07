@@ -1,6 +1,7 @@
 # devtools::install_github("jakemanger/spacetimeview")
 # devtools::install_github("jdberson/dungfaunaR")
-library(spacetimeview)
+# library(spacetimeview)
+devtools::load_all()
 library(dungfaunaR)
 
 # load your data
@@ -19,8 +20,6 @@ dungfauna_occurrence <- dungfauna_occurrence[
     'county'
   )
 ]
-
-browser()
 
 # now make your dashboard in one line of code
 p <- spacetimeview(

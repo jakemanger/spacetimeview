@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Leva } from 'leva';
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
@@ -13,11 +13,65 @@ export default function ControlsMenu({
   filterColumnValues,
   setFilterColumnValues,
 }) {
+  // Initialize position to match the default position in dockStyles
+  const [position, setPosition] = useState({ x: 20, y: 80 });
+  const controlsRef = useRef(null);
+  const [bounds, setBounds] = useState({ left: 0, top: 80, right: 0, bottom: 0 });
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Set initial position based on dockPosition
+  useEffect(() => {
+    if (dockPosition === 'floating' && controlsRef.current) {
+      // Only set initial position when in floating mode
+      const initialX = 20; // Default left position
+      const initialY = 80; // Default top position
+      setPosition({ x: initialX, y: initialY });
+    }
+  }, [dockPosition]);
+
+  // Update bounds when window is resized or collapsed state changes
+  useEffect(() => {
+    const updateBounds = () => {
+      if (controlsRef.current) {
+        const { width, height } = controlsRef.current.getBoundingClientRect();
+        // Set minimum top to header height (80px)
+        const headerHeight = 80;
+        const newBounds = {
+          left: 0,
+          top: headerHeight,
+          right: window.innerWidth - width,
+          bottom: window.innerHeight - height
+        };
+        setBounds(newBounds);
+        
+        // Adjust position if it's outside the new bounds
+        setPosition(prevPosition => ({
+          x: Math.min(Math.max(prevPosition.x, newBounds.left), newBounds.right),
+          y: Math.min(Math.max(prevPosition.y, newBounds.top), newBounds.bottom)
+        }));
+      }
+    };
+
+    // Initial bounds calculation
+    updateBounds();
+
+    // Add event listener for window resize
+    window.addEventListener('resize', updateBounds);
+
+    // Clean up
+    return () => window.removeEventListener('resize', updateBounds);
+  }, [collapsed]);
+
+  // Handle drag stop to update position
+  const handleDragStop = (e, data) => {
+    setPosition({ x: data.x, y: data.y });
+  };
+
   const dockStyles = {
     left: {
       position: 'fixed',
       left: '20px',
-      top: '60px',
+      top: '80px',
       zIndex: 1000,
       background: 'white',
       padding: '10px',
@@ -30,7 +84,7 @@ export default function ControlsMenu({
     right: {
       position: 'fixed',
       right: '20px',
-      top: '60px',
+      top: '80px',
       zIndex: 1000,
       background: 'white',
       padding: '10px',
@@ -80,59 +134,136 @@ export default function ControlsMenu({
   };
 
   return dockPosition === 'floating' ? (
-    <Draggable handle=".draggable-handle">
-      <div style={dockStyles[dockPosition]}>
-        <div className="draggable-handle" style={{ cursor: 'move', marginBottom: '10px', background: '#f1f3f5', padding: '5px', borderRadius: '4px', textAlign: 'center', fontSize: '4px', fontWeight: 'bold' }}>
+    <Draggable 
+      handle=".draggable-handle" 
+      onStop={handleDragStop}
+      position={position}
+      bounds={bounds}
+    >
+      <div style={dockStyles[dockPosition]} ref={controlsRef}>
+        <div className="draggable-handle" style={{ 
+          cursor: 'move', 
+          marginBottom: collapsed ? '0' : '10px', 
+          background: '#f1f3f5', 
+          padding: '5px', 
+          borderRadius: '4px', 
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
           </svg>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent dragging when clicking the button
+              setCollapsed(!collapsed);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '2px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            {collapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            )}
+          </button>
         </div>
-        <Provider delayDuration={0}>
-          <Leva
-            fill
-            flat
-            titleBar={false}
-            theme={levaTheme}
-            hideCopyButton
-          />
-        </Provider>
-        {filterColumn && (
-          <div style={{ marginTop: '10px' }}>
-            <Select
-              components={makeAnimated()}
-              isMulti
-              options={filterOptions}
-              value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
-              onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
-              placeholder={`Filter ${filterColumn}...`}
-              styles={selectStyles}
-            />
-          </div>
+        {!collapsed && (
+          <>
+            <Provider delayDuration={0}>
+              <Leva
+                fill
+                flat
+                titleBar={false}
+                theme={levaTheme}
+                hideCopyButton
+              />
+            </Provider>
+            {filterColumn && (
+              <div style={{ marginTop: '10px' }}>
+                <Select
+                  components={makeAnimated()}
+                  isMulti
+                  options={filterOptions}
+                  value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
+                  onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
+                  placeholder={`Filter ${filterColumn}...`}
+                  styles={selectStyles}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </Draggable>
   ) : (
     <div style={dockStyles[dockPosition]}>
-      <Provider delayDuration={0}>
-        <Leva
-          fill
-          titleBar={false}
-          theme={levaTheme}
-          hideCopyButton
-        />
-      </Provider>
-      {filterColumn && (
-        <div style={{ marginTop: '10px' }}>
-          <Select
-            components={makeAnimated()}
-            isMulti
-            options={filterOptions}
-            value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
-            onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
-            placeholder={`Filter ${filterColumn}...`}
-            styles={selectStyles}
-          />
-        </div>
+      <div style={{ 
+        marginBottom: collapsed ? '0' : '10px', 
+        background: '#f1f3f5', 
+        padding: '5px', 
+        borderRadius: '4px', 
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center'
+      }}>
+        <button 
+          onClick={() => setCollapsed(!collapsed)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '2px',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          {collapsed ? (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+            </svg>
+          )}
+        </button>
+      </div>
+      {!collapsed && (
+        <>
+          <Provider delayDuration={0}>
+            <Leva
+              fill
+              titleBar={false}
+              theme={levaTheme}
+              hideCopyButton
+            />
+          </Provider>
+          {filterColumn && (
+            <div style={{ marginTop: '10px' }}>
+              <Select
+                components={makeAnimated()}
+                isMulti
+                options={filterOptions}
+                value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
+                onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
+                placeholder={`Filter ${filterColumn}...`}
+                styles={selectStyles}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
