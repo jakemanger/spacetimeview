@@ -172,10 +172,10 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
         </div>
         <div style="text-align: center; margin-top: 5px; font-size: 12px;">
           <span style="display: inline-block; margin-right: 10px;">
-            <span style="color: rgba(54, 162, 235, 1); font-weight: bold;">●</span> Data Points
+            <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold;">●</span> Data Points
           </span>
           <span style="display: inline-block;">
-            <span style="color: rgba(255, 99, 132, 1); font-weight: bold;">—</span> Trend Line
+            <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold;">—</span> Trend Line
           </span>
         </div>
       `;
@@ -214,18 +214,18 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
                   label: 'Data Points',
                   type: 'scatter',
                   data: seriesData,
-                  pointBackgroundColor: 'rgba(54, 162, 235, 0.8)',
-                  pointBorderColor: 'rgba(54, 162, 235, 1)',
-                  pointRadius: 4,
-                  pointHoverRadius: 6,
+                  pointBackgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  pointBorderColor: 'rgba(0, 0, 0, 0.8)',
+                  pointRadius: 2,
+                  pointHoverRadius: 4,
                   showLine: false,
                 },
                 {
                   label: 'Trend Line',
                   type: 'line',
                   data: trendLineData,
-                  borderColor: 'rgba(255, 99, 132, 1)',
-                  backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                  borderColor: 'rgba(0, 0, 0, 0.8)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
                   pointRadius: 0,
                   fill: false,
                   tension: 0.4,
@@ -302,17 +302,46 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
     const moveContainer = (event) => {
       const container = window.tooltipState.chartContainer;
       const padding = 20;
+      
+      // Get viewport dimensions
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Get container dimensions
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+      
+      // Calculate initial position (prefer right of cursor)
       let left = event.clientX + padding;
       let top = event.clientY + padding;
-
-      // Adjust position if it would go off screen
-      if (left + container.offsetWidth > window.innerWidth) {
-        left = event.clientX - container.offsetWidth - padding;
+      
+      // Check if container would go off the right edge
+      if (left + containerWidth > viewportWidth - padding) {
+        // Try positioning to the left of the cursor
+        left = event.clientX - containerWidth - padding;
+        
+        // If that would go off the left edge, center horizontally
+        if (left < padding) {
+          left = Math.max(padding, (viewportWidth - containerWidth) / 2);
+        }
       }
-      if (top + container.offsetHeight > window.innerHeight) {
-        top = event.clientY - container.offsetHeight - padding;
+      
+      // Check if container would go off the bottom edge
+      if (top + containerHeight > viewportHeight - padding) {
+        // Try positioning above the cursor
+        top = event.clientY - containerHeight - padding;
+        
+        // If that would go off the top edge, center vertically
+        if (top < padding) {
+          top = Math.max(padding, (viewportHeight - containerHeight) / 2);
+        }
       }
-
+      
+      // Ensure minimum padding from edges
+      left = Math.max(padding, Math.min(left, viewportWidth - containerWidth - padding));
+      top = Math.max(padding, Math.min(top, viewportHeight - containerHeight - padding));
+      
+      // Apply the position
       container.style.left = `${left}px`;
       container.style.top = `${top}px`;
     };
