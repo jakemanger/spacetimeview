@@ -50,29 +50,96 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
     }))
     .filter(d => d.x >= filter[0] && d.x <= filter[1]);
 
+  // Sort data by x-value for the trend line calculation
+  seriesData.sort((a, b) => a.x - b.x);
+
+  // Calculate LOESS regression if we have enough points
+  const calculateTrendLine = (data, bandwidth = 0.75) => {
+    if (data.length < 3) return [];
+    
+    // Simple implementation of LOESS (locally weighted regression)
+    const trendData = [];
+    const n = data.length;
+    
+    // Create x points for smooth curve
+    const numPoints = Math.min(100, n);
+    const xRange = data[n-1].x - data[0].x;
+    const step = xRange / (numPoints - 1);
+    
+    for (let i = 0; i < numPoints; i++) {
+      const x = data[0].x + i * step;
+      
+      // Calculate weighted regression at this point
+      let numerator = 0;
+      let denominator = 0;
+      
+      for (let j = 0; j < n; j++) {
+        // Calculate distance-based weight
+        const dist = Math.abs(x - data[j].x) / xRange;
+        const weight = dist <= bandwidth ? Math.pow(1 - Math.pow(dist / bandwidth, 3), 3) : 0;
+        
+        if (weight > 0) {
+          numerator += weight * data[j].y;
+          denominator += weight;
+        }
+      }
+      
+      // Only add points where we have enough data for smoothing
+      if (denominator > 0) {
+        trendData.push({
+          x: x,
+          y: numerator / denominator
+        });
+      }
+    }
+    
+    return trendData;
+  };
+
+  // Calculate trend line
+  const trendLineData = calculateTrendLine(seriesData);
+
   setTimeout(() => {
     const ctx = document.getElementById(chartId)?.getContext('2d');
     if (ctx) {
       new Chart(ctx, {
-        type: 'line',
+        type: 'scatter',
         data: {
-          labels: seriesData.map(d => new Date(d.x).toISOString().slice(0, 10)),
           datasets: [
             {
-              label: 'Data Over Time',
+              label: 'Data Points',
+              type: 'scatter',
               data: seriesData,
-              borderColor: 'rgba(255, 99, 132, 1)',
-              backgroundColor: 'rgba(255, 99, 132, 0.2)',
-              fill: false,
-              cubicInterpolationMode: 'monotone',
-              tension: 0.4,
+              pointBackgroundColor: 'rgba(54, 162, 235, 0.8)',
+              pointBorderColor: 'rgba(54, 162, 235, 1)',
+              pointRadius: 4,
+              pointHoverRadius: 6,
             },
+            {
+              label: 'Trend Line',
+              type: 'line',
+              data: trendLineData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.1)',
+              pointRadius: 0,
+              fill: false,
+              tension: 0.4,
+              // Add confidence interval fill
+              fill: '+1',
+            }
           ],
         },
         options: {
           scales: {
             x: {
               type: 'time',
+              time: {
+                unit: 'day'
+              },
+              title: {
+                display: true,
+                text: 'Time'
+              }
             },
             y: {
               title: {
@@ -81,6 +148,24 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
               },
             },
           },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const point = context.raw;
+                  return `Value: ${point.y.toFixed(2)} at ${new Date(point.x).toLocaleDateString()}`;
+                }
+              }
+            },
+            legend: {
+              display: true,
+              position: 'top',
+            }
+          },
+          interaction: {
+            intersect: false,
+            mode: 'nearest'
+          }
         },
       });
     }
