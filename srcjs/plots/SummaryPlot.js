@@ -84,7 +84,7 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
   seriesData.sort((a, b) => a.x - b.x);
 
   // Calculate LOESS regression if we have enough points
-  const calculateTrendLine = (data, bandwidth = 0.75) => {
+  const calculateTrendLine = (data, bandwidth = 0.3) => {
     if (data.length < 3) return [];
     
     // Simple implementation of LOESS (locally weighted regression)
