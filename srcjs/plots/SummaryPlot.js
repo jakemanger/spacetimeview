@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import {
   AmbientLight,
@@ -296,32 +296,6 @@ export default function SummaryPlot({
 
     console.log('Setting color domain to:', colorDomain);
   }
-  const onSetElevationDomain = (elevationDomain) => {
-    // if using factor levels, set a predefined domain
-    if (factorLevels && factorLevels[legendTitle]) {
-      const factorLevelsDomain = [0, factorLevels[legendTitle].length - 1];
-      setInitialElevationDomain(factorLevelsDomain);
-      return;
-    }
-
-    // prevent multiple unnecessary domain sets
-    if (domainInitializedRef.current) return;
-
-    // apply domain preservation logic
-    if (preserveDomains && initialElevationDomain !== null) {
-      const newDomain = [
-        Math.min(elevationDomain[0], initialElevationDomain[0]),
-        Math.max(elevationDomain[1], initialElevationDomain[1])
-      ];
-      setInitialElevationDomain(newDomain);
-      domainInitializedRef.current = true;
-    } else {
-      setInitialElevationDomain(elevationDomain);
-      domainInitializedRef.current = true;
-    }
-
-    console.log('Setting elevation domain to:', elevationDomain);
-  }
 
   let updateTriggers = {
     getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
@@ -354,7 +328,7 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain,
-        onSetElevationDomain,
+        onSetElevationDomain: onSetColorDomain,
         colorDomain: initialColorDomain,
         elevationDomain: initialElevationDomain,
         updateTriggers: updateTriggers,
@@ -380,7 +354,7 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain,
-        onSetElevationDomain,
+        onSetElevationDomain: onSetColorDomain,
         colorDomain: initialColorDomain,
         elevationDomain: initialElevationDomain,
         updateTriggers: updateTriggers,
