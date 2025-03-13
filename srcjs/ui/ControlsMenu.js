@@ -145,18 +145,28 @@ export default function ControlsMenu({
           cursor: 'move', 
           marginBottom: collapsed ? '0' : '10px', 
           background: '#f1f3f5', 
-          padding: '5px', 
+          padding: '15px', 
           borderRadius: '4px', 
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+          minWidth: '270px'
         }}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-          </svg>
+          <div style={{ position: 'absolute', top: '3px', left: '50%', transform: 'translateX(-50%)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="24" height="24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+            </svg>
+          </div>
           <button 
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation(); // Prevent dragging when clicking the button
+              setCollapsed(!collapsed);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setCollapsed(!collapsed);
             }}
             style={{
@@ -165,7 +175,9 @@ export default function ControlsMenu({
               cursor: 'pointer',
               padding: '2px',
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'absolute',
+              right: '5px'
             }}
           >
             {collapsed ? (
@@ -216,10 +228,20 @@ export default function ControlsMenu({
         borderRadius: '4px', 
         display: 'flex',
         justifyContent: 'flex-end',
-        alignItems: 'center'
+        alignItems: 'center',
+        minWidth: '300px'
       }}>
         <button 
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setCollapsed(!collapsed);
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setCollapsed(!collapsed);
+          }}
           style={{
             background: 'none',
             border: 'none',
