@@ -362,7 +362,7 @@ spacetimeview <- function(
       )
     )
     column_to_plot = NaN
-  } else if (column_to_plot == 'value' || !('column_to_plot' %in% list(...))) {
+  } else if (column_to_plot == 'value') {
     column_to_plot = plottable_columns[1]
     warning(
       paste0(
