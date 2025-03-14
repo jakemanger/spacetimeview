@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
@@ -35,9 +34,8 @@ function getTooltip({ object }, hasTime, factorLevels = null) {
   if (!object) {
     return;
   }
-  let html = '';
-  let valueToShow = object.value != null ? object.value : '';
 
+  let valueToShow = object.value != null ? object.value : '';
   if (factorLevels) {
     valueToShow = factorLevels[valueToShow];
   } else {
@@ -47,24 +45,76 @@ function getTooltip({ object }, hasTime, factorLevels = null) {
       valueToShow = object.value.toFixed(2)
     }
   }
-  html = `\
-		Latitude, Longitude: ${object.lng.toFixed(2)}, ${object.lat.toFixed(2)}<br />
-		${hasTime ? `
-			Time: ${new Date(object.timestamp).toUTCString()}
-		` : ''}<br />
-		${valueToShow}
-	`;
+
+  const html = `
+    <div style="
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.4;
+      max-width: 300px;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 12px;
+    ">
+      <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <div style="
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #1DA1F2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 12px;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+            <path d="M12 17l-5-5h10z"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-weight: bold; color: #14171A;">Location Data</div>
+          <div style="color: #657786; font-size: 0.9em;">Coordinates</div>
+        </div>
+      </div>
+      <div style="
+        color: #14171A;
+        font-size: 1em;
+        margin-bottom: 8px;
+        padding: 0 4px;
+      ">
+        📍 ${object.lng.toFixed(4)}°, ${object.lat.toFixed(4)}°
+      </div>
+      ${hasTime ? `
+        <div style="
+          color: #657786;
+          font-size: 0.9em;
+          margin-bottom: 8px;
+          padding: 0 4px;
+        ">
+          🕒 ${new Date(object.timestamp).toUTCString()}
+        </div>
+      ` : ''}
+      <div style="
+        color: #14171A;
+        font-size: 1em;
+        font-weight: 500;
+        padding: 0 4px;
+      ">
+        📊 Value: ${valueToShow}
+      </div>
+    </div>
+  `;
 
   return {
-    html: html,
+    html,
     style: {
-      color: '#333',
-      backgroundColor: '#fff',
-      borderRadius: '5px',
-      padding: '5px'
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      borderRadius: 0
     }
   };
-
 }
 
 export default function ScatterTimePlot({

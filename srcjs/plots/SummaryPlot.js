@@ -162,21 +162,74 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
     // Only update chart content if needed
     if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId) {
       window.tooltipState.chartContainer.innerHTML = `
-        <div style="margin-bottom: 5px;">
-          <div>Latitude: ${lat.toFixed(2)}</div>
-          <div>Longitude: ${lng.toFixed(2)}</div>
-          <div>${metricName}: ${colorValue}</div>
-        </div>
-        <div style="width: 300px; height: 200px;">
-          <canvas id="${chartId}" width="300" height="200"></canvas>
-        </div>
-        <div style="text-align: center; margin-top: 5px; font-size: 12px;">
-          <span style="display: inline-block; margin-right: 10px;">
-            <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold;">●</span> Data Points
-          </span>
-          <span style="display: inline-block;">
-            <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold;">—</span> Trend Line
-          </span>
+        <div style="
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          line-height: 1.4;
+          border-radius: 16px;
+          ackground: white;
+          bax-width: 350px;
+        ">
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <div style="
+              width: 48px;
+              height: 48px;
+              border-radius: 50%;
+              background: #1DA1F2;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-right: 12px;
+              flex-shrink: 0;
+            ">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                <path d="M12 17l-5-5h10z"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Summary</div>
+              <div style="color: #657786; font-size: 14px;">📍 ${lat.toFixed(4)}°, ${lng.toFixed(4)}°</div>
+            </div>
+          </div>
+          <div style="
+            color: #14171A;
+            font-size: 15px;
+            margin-bottom: 12px;
+            padding: 0 4px;
+            display: flex;
+            align-items: center;
+          ">
+            <span style="font-weight: 500;">${metricName}:</span>
+            <span style="margin-left: 8px; color: #1DA1F2;">${colorValue}</span>
+          </div>
+          <div style="
+            border-radius: 12px;
+            border: 1px solid #14171A;
+            padding: 12px;
+            margin-bottom: 12px;
+          ">
+            <div style="width: 100%; height: 200px;">
+              <canvas id="${chartId}" width="300" height="200"></canvas>
+            </div>
+          </div>
+          <div style="
+            text-align: center;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #657786;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+          ">
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold; font-size: 16px;">●</span>
+              Data Points
+            </span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold;">—</span>
+              Trend Line
+            </span>
+          </div>
         </div>
       `;
 
@@ -361,19 +414,57 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
   // For non-time data, return simple tooltip
   return {
     html: `
-      <div>
-        <p>Latitude: ${lat.toFixed(2)}</p>
-        <p>Longitude: ${lng.toFixed(2)}</p>
-        <p>${metricName}: ${colorValue}</p>
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        max-width: 300px;
+      ">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1DA1F2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+          ">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+              <path d="M12 17l-5-5h10z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Data</div>
+            <div style="color: #657786; font-size: 14px;">Coordinates</div>
+          </div>
+        </div>
+        <div style="color: #14171A; font-size: 15px; margin-bottom: 8px; padding: 0 4px;">
+          📍 ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
+        </div>
+        <div style="
+          color: #14171A;
+          font-size: 15px;
+          padding: 0 4px;
+          display: flex;
+          align-items: center;
+        ">
+          <span style="font-weight: 500;">${metricName}:</span>
+          <span style="margin-left: 8px; color: #1DA1F2;">${colorValue}</span>
+        </div>
       </div>
     `,
     style: {
-      color: '#333',
-      backgroundColor: '#fff',
-      borderRadius: '5px',
-      lineHeight: '0.5',
-      padding: '5px',
-    },
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      borderRadius: 0
+    }
   };
 }
 
