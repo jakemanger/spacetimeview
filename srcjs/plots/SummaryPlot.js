@@ -40,10 +40,10 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
     container.style.position = 'fixed';
     container.style.pointerEvents = 'none';
     container.style.zIndex = '10000';
-    container.style.backgroundColor = 'white';
-    container.style.padding = '5px';
-    container.style.borderRadius = '5px';
-    container.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+    container.style.backgroundColor = 'transparent';
+    container.style.padding = '0';
+    container.style.borderRadius = '0';
+    container.style.boxShadow = 'none';
     document.body.appendChild(container);
 
     window.tooltipState = {
@@ -166,8 +166,11 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
           line-height: 1.4;
           border-radius: 16px;
-          ackground: white;
-          bax-width: 350px;
+          background: white;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          padding: 16px;
+          max-width: 350px;
+          pointer-events: auto;
         ">
           <div style="display: flex; align-items: center; margin-bottom: 12px;">
             <div style="
@@ -202,11 +205,20 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
             <span style="font-weight: 500;">${metricName}:</span>
             <span style="margin-left: 8px; color: #1DA1F2;">${colorValue}</span>
           </div>
+          ${seriesData.length > 0 ? `
+            <div style="color: #657786; font-size: 14px; margin-bottom: 12px; padding: 0 4px;">
+              <div style="margin-bottom: 4px;">
+                🕒 ${new Date(seriesData[0].x).toLocaleDateString()} - ${new Date(seriesData[seriesData.length - 1].x).toLocaleDateString()}
+              </div>
+              <div>📊 ${seriesData.length} data points</div>
+            </div>
+          ` : ''}
           <div style="
+            background: white;
             border-radius: 12px;
-            border: 1px solid #14171A;
             padding: 12px;
             margin-bottom: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
           ">
             <div style="width: 100%; height: 200px;">
               <canvas id="${chartId}" width="300" height="200"></canvas>
@@ -441,11 +453,8 @@ function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels 
           </div>
           <div>
             <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Data</div>
-            <div style="color: #657786; font-size: 14px;">Coordinates</div>
+            <div style="color: #657786; font-size: 14px;">📍 ${lat.toFixed(4)}°, ${lng.toFixed(4)}°</div>
           </div>
-        </div>
-        <div style="color: #14171A; font-size: 15px; margin-bottom: 8px; padding: 0 4px;">
-          📍 ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
         </div>
         <div style="
           color: #14171A;

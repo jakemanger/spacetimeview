@@ -50,13 +50,13 @@ function getTooltip({ object }, hasTime, factorLevels = null) {
     <div style="
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.4;
-      max-width: 300px;
       border-radius: 16px;
       background: white;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      padding: 12px;
+      padding: 16px;
+      max-width: 300px;
     ">
-      <div style="display: flex; align-items: center; margin-bottom: 8px;">
+      <div style="display: flex; align-items: center; margin-bottom: 12px;">
         <div style="
           width: 48px;
           height: 48px;
@@ -73,35 +73,24 @@ function getTooltip({ object }, hasTime, factorLevels = null) {
           </svg>
         </div>
         <div>
-          <div style="font-weight: bold; color: #14171A;">Location Data</div>
-          <div style="color: #657786; font-size: 0.9em;">Coordinates</div>
+          <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Data</div>
+          <div style="color: #657786; font-size: 14px;">📍 ${object.lng.toFixed(4)}°, ${object.lat.toFixed(4)}°</div>
         </div>
       </div>
-      <div style="
-        color: #14171A;
-        font-size: 1em;
-        margin-bottom: 8px;
-        padding: 0 4px;
-      ">
-        📍 ${object.lng.toFixed(4)}°, ${object.lat.toFixed(4)}°
-      </div>
       ${hasTime ? `
-        <div style="
-          color: #657786;
-          font-size: 0.9em;
-          margin-bottom: 8px;
-          padding: 0 4px;
-        ">
+        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px;">
           🕒 ${new Date(object.timestamp).toUTCString()}
         </div>
       ` : ''}
       <div style="
         color: #14171A;
-        font-size: 1em;
-        font-weight: 500;
+        font-size: 15px;
         padding: 0 4px;
+        display: flex;
+        align-items: center;
       ">
-        📊 Value: ${valueToShow}
+        <span style="font-weight: 500;">Value:</span>
+        <span style="margin-left: 8px; color: #1DA1F2;">${valueToShow}</span>
       </div>
     </div>
   `;
