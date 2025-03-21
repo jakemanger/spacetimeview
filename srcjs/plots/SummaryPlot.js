@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import {
   AmbientLight,
@@ -562,10 +562,54 @@ export default function SummaryPlot({
   filterColumnValues = []
 }) {
   const [filter, setFilter] = useState(timeRange);
-
+  const [viewMode, setViewMode] = useState('historical');
   const [initialColorDomain, setInitialColorDomain] = useState(null);
   const [initialElevationDomain, setInitialElevationDomain] = useState(null);
   const [colorbarDomain, setColorbarDomain] = useState(initialColorDomain);
+
+  // Process data for seasonal view (normalize all dates to the same year)
+  const normalizedData = useMemo(() => {
+    if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
+    
+    // Use a reference year (2000 as it's a leap year)
+    const referenceYear = 2000;
+    
+    return data.map(d => {
+      const date = new Date(d.timestamp);
+      // Create a new date with the same month/day but reference year
+      const normalizedDate = new Date(
+        referenceYear,
+        date.getMonth(),
+        date.getDate(),
+        date.getHours(),
+        date.getMinutes(),
+        date.getSeconds()
+      );
+      
+      return {
+        ...d,
+        originalTimestamp: d.timestamp,
+        timestamp: normalizedDate.toISOString()
+      };
+    });
+  }, [data, viewMode]);
+  
+  // Calculate time range for the normalized data
+  const normalizedTimeRange = useMemo(() => {
+    if (viewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
+      return timeRange;
+    }
+    
+    return normalizedData.reduce(
+      (range, d) => {
+        const t = new Date(d.timestamp).getTime();
+        range[0] = Math.min(range[0], t);
+        range[1] = Math.max(range[1], t);
+        return range;
+      },
+      [Infinity, -Infinity]
+    );
+  }, [normalizedData, timeRange, viewMode]);
 
   // uudate colorbarDomain only when initialColorDomain is not null
   useEffect(() => {
@@ -700,9 +744,9 @@ export default function SummaryPlot({
         id: 'grid-heatmap',
         colorRange,
         coverage,
-        data,
+        data: normalizedData,
         extruded: summaryHeight > 0,
-        elevationScale: data.length ? summaryHeight : 0,
+        elevationScale: normalizedData.length ? summaryHeight : 0,
         getPosition: (d) => [d.lng, d.lat],
         pickable: true,
         cellSize: radius,
@@ -726,9 +770,9 @@ export default function SummaryPlot({
         id: 'hex-heatmap',
         colorRange,
         coverage,
-        data,
+        data: normalizedData,
         extruded: summaryHeight > 0,
-        elevationScale: data.length ? summaryHeight : 0,
+        elevationScale: normalizedData.length ? summaryHeight : 0,
         getPosition: (d) => [d.lng, d.lat],
         pickable: true,
         radius,
@@ -776,6 +820,10 @@ export default function SummaryPlot({
 
   const relevantFactorLevels = (factorLevels && factorLevels[legendTitle]) || null;
 
+  // Use normalizedData when in seasonal view
+  const displayData = viewMode === 'seasonal' ? normalizedData : data;
+  const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
+
   return (
     <>
       <DeckGL
@@ -792,8 +840,8 @@ export default function SummaryPlot({
       </DeckGL>
       {!isNaN(timeRange[0]) && (
         <RangeInput
-          min={timeRange[0]}
-          max={timeRange[1]}
+          min={displayTimeRange[0]}
+          max={displayTimeRange[1]}
           value={filter}
           animationSpeed={MS_PER_DAY * animationSpeed}
           formatLabel={(timestamp) => {
@@ -801,7 +849,9 @@ export default function SummaryPlot({
             return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`;
           }}
           onChange={updateTimeRange}
-          data={data}
+          data={displayData}
+          onViewModeChange={(mode) => setViewMode(mode)}
+          viewMode={viewMode}
         />
       )}
       <Colorbar colorRange={colorRange} colorDomain={colorbarDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels} />

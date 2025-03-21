@@ -140,8 +140,57 @@ export default function ScatterTimePlot({
   factorLevels = null
 }) {
   const [filter, setFilter] = useState(timeRange);
+  const [viewMode, setViewMode] = useState('historical');
 
-  const [minValue, maxValue] = useMemo(() => getMinMaxValues(data, 'value'), [data]);
+  // Process data for seasonal view (normalize all dates to the same year)
+  const normalizedData = useMemo(() => {
+    if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
+    
+    // Use a reference year (2000 as it's a leap year)
+    const referenceYear = 2000;
+    
+    return data.map(d => {
+      const date = new Date(d.timestamp);
+      // Create a new date with the same month/day but reference year
+      const normalizedDate = new Date(
+        referenceYear,
+        date.getMonth(),
+        date.getDate(),
+        date.getHours(),
+        date.getMinutes(),
+        date.getSeconds()
+      );
+      
+      return {
+        ...d,
+        originalTimestamp: d.timestamp,
+        timestamp: normalizedDate.toISOString()
+      };
+    });
+  }, [data, viewMode]);
+  
+  // Calculate time range for the normalized data
+  const normalizedTimeRange = useMemo(() => {
+    if (viewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
+      return timeRange;
+    }
+    
+    return normalizedData.reduce(
+      (range, d) => {
+        const t = new Date(d.timestamp).getTime();
+        range[0] = Math.min(range[0], t);
+        range[1] = Math.max(range[1], t);
+        return range;
+      },
+      [Infinity, -Infinity]
+    );
+  }, [normalizedData, timeRange, viewMode]);
+
+  // Use the appropriate data and time range based on view mode
+  const displayData = viewMode === 'seasonal' ? normalizedData : data;
+  const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
+
+  const [minValue, maxValue] = useMemo(() => getMinMaxValues(displayData, 'value'), [displayData]);
 
   // Use d3.scaleQuantize to map the color range to the value domain
   const colorScale = useMemo(() =>
@@ -154,7 +203,7 @@ export default function ScatterTimePlot({
   const layers = [
     filter && new ScatterplotLayer({
       id: 'scatterplot',
-      data: data,
+      data: displayData,
       opacity: 0.8,
       radiusScale: radiusScale,
       radiusMinPixels: radiusMinPixels,
@@ -209,7 +258,7 @@ export default function ScatterTimePlot({
         controller={true}
         getTooltip={({ object }) => getTooltip(
           { object },
-          !isNaN(timeRange[0]),
+          !isNaN(displayTimeRange[0]),
           factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null
         )}
       >
@@ -217,15 +266,17 @@ export default function ScatterTimePlot({
           <Map reuseMaps mapStyle={mapStyle} />
         )}
       </DeckGL>
-      {!isNaN(timeRange[0]) && (
+      {!isNaN(displayTimeRange[0]) && (
         <RangeInput
-          min={timeRange[0]}
-          max={timeRange[1]}
+          min={displayTimeRange[0]}
+          max={displayTimeRange[1]}
           value={filter}
           animationSpeed={MS_PER_DAY * animationSpeed}
           formatLabel={formatLabel}
           onChange={setFilter}
-          data={data}
+          data={displayData}
+          onViewModeChange={(mode) => setViewMode(mode)}
+          viewMode={viewMode}
         />
       )}
       <Colorbar
