@@ -46,6 +46,7 @@ export default function RangeInput({
   // Sync localViewMode with prop
   useEffect(() => {
     setLocalViewMode(viewMode);
+    onChange([-Infinity, Infinity]);
   }, [viewMode]);
 
   const minInterval = useMemo(() => {
@@ -135,14 +136,7 @@ export default function RangeInput({
         onViewModeChange(newMode);
       }
       
-      // Set the full range for the selected mode instead of preserving the window span
-      if (newMode === 'seasonal') {
-        // Use the full seasonal range
-        onChange([normalizedTimeRange[0], normalizedTimeRange[1]]);
-      } else {
-        // Use the full historical range
-        onChange([min, max]);
-      }
+        onChange([-Infinity, Infinity]);
     }
   };
 
