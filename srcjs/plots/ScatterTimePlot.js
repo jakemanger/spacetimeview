@@ -37,6 +37,11 @@ function getTooltip({ object, layer }, hasTime, factorLevels = null) {
 
   // Check if the hovered object is from the polygon layer
   if (layer && layer.id === 'polygon-layer') {
+    // Hide the summary chart tooltip if it's currently visible
+    if (window.tooltipState?.chartContainer) {
+      window.tooltipState.chartContainer.style.display = 'none';
+    }
+    
     // Optionally return polygon info (e.g., state name if available in properties)
     const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
     return {

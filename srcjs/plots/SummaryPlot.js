@@ -26,17 +26,27 @@ const ambientLight = new AmbientLight({
 });
 
 function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factorLevels = null) {
-  // console.log('Tooltip object:', object, 'Layer:', layer);
 
-  if (!object) {
+
+  const cleanupChartTooltip = () => {
     if (window.tooltipState?.chartContainer) {
       window.tooltipState.chartContainer.style.display = 'none';
     }
+    if (window.tooltipState?.moveListener) {
+      document.removeEventListener('mousemove', window.tooltipState.moveListener);
+      window.tooltipState.moveListener = null;
+    }
+  };
+
+  if (!object) {
+    cleanupChartTooltip();
     return null;
   }
 
   // Check if the hovered object is from the polygon layer
   if (layer && layer.id === 'polygon-layer') {
+    cleanupChartTooltip(); // Hide chart tooltip when hovering polygon
+    
     // Optionally return polygon info (e.g., state name if available in properties)
     const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
     return {
@@ -47,16 +57,12 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
       `,
       style: { background: 'none', border: 'none' }
     };
-    // Or return null to disable tooltips for polygons
-    // return null;
   }
 
   // Check if the object is from an aggregation layer (GridLayer/HexagonLayer)
   if (!object.points || !object.position) {
     console.warn('Tooltip called on unexpected object:', object);
-    if (window.tooltipState?.chartContainer) {
-      window.tooltipState.chartContainer.style.display = 'none';
-    }
+    cleanupChartTooltip(); // Hide chart tooltip for unexpected objects
     return null; // Don't show tooltip for objects without expected aggregation properties
   }
 
@@ -77,7 +83,8 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
       currentObjectId: null,
       chartInstances: {},
       lastData: {},
-      chartContainer: container
+      chartContainer: container,
+      moveListener: null
     };
   }
 
@@ -397,64 +404,60 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
       });
     }
 
-    // Position the container near the mouse
+    // --- Mousemove listener management ---
+    // Define the function to move the container
     const moveContainer = (event) => {
       const container = window.tooltipState.chartContainer;
+      if (!container || container.style.display === 'none') return; // Check if container exists and is visible
+
       const padding = 20;
-      
-      // Get viewport dimensions
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      
-      // Get container dimensions
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
-      
-      // Calculate initial position (prefer right of cursor)
+
       let left = event.clientX + padding;
       let top = event.clientY + padding;
-      
+
       // Check if container would go off the right edge
       if (left + containerWidth > viewportWidth - padding) {
-        // Try positioning to the left of the cursor
         left = event.clientX - containerWidth - padding;
-        
-        // If that would go off the left edge, center horizontally
         if (left < padding) {
           left = Math.max(padding, (viewportWidth - containerWidth) / 2);
         }
       }
-      
+
       // Check if container would go off the bottom edge
       if (top + containerHeight > viewportHeight - padding) {
-        // Try positioning above the cursor
         top = event.clientY - containerHeight - padding;
-        
-        // If that would go off the top edge, center vertically
         if (top < padding) {
           top = Math.max(padding, (viewportHeight - containerHeight) / 2);
         }
       }
-      
+
       // Ensure minimum padding from edges
       left = Math.max(padding, Math.min(left, viewportWidth - containerWidth - padding));
       top = Math.max(padding, Math.min(top, viewportHeight - containerHeight - padding));
-      
-      // Apply the position
+
       container.style.left = `${left}px`;
       container.style.top = `${top}px`;
     };
 
-    // Update position on mousemove
-    document.addEventListener('mousemove', moveContainer);
-    
-    // Return minimal tooltip
+    // Ensure listener is added only once and store the reference
+    if (!window.tooltipState.moveListener) {
+      window.tooltipState.moveListener = moveContainer;
+      document.addEventListener('mousemove', window.tooltipState.moveListener);
+    }
+    // Return minimal tooltip, the chart container handles the visual
     return {
       html: '',
       style: {
         display: 'none'  // Hide the default tooltip
       }
     };
+  } else {
+    // Clean up chart tooltip state if we switch to non-time data
+    cleanupChartTooltip();
   }
 
   // For non-time data, return simple tooltip
