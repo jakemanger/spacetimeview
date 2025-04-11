@@ -25,7 +25,45 @@ const ambientLight = new AmbientLight({
   intensity: 1.0,
 });
 
-function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factorLevels = null) {
+// Function to check if a point is inside a polygon using ray casting algorithm
+function isPointInPolygon(point, polygon) {
+  // For MultiPolygon, check each polygon
+  if (polygon.geometry.type === 'MultiPolygon') {
+    return polygon.geometry.coordinates.some(coords => {
+      // Check main polygon (first coordinate array)
+      return coords.some(ring => {
+        return isPointInRing(point, ring);
+      });
+    });
+  }
+  
+  // For simple Polygon
+  if (polygon.geometry.type === 'Polygon') {
+    // Check if the point is in the outer ring
+    return isPointInRing(point, polygon.geometry.coordinates[0]);
+  }
+  
+  return false;
+}
+
+function isPointInRing(point, ring) {
+  const x = point[0], y = point[1];
+  let inside = false;
+  
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    
+    const intersect = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    
+    if (intersect) inside = !inside;
+  }
+  
+  return inside;
+}
+
+function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factorLevels = null, allData = []) {
 
 
   const cleanupChartTooltip = () => {
@@ -45,18 +83,277 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
 
   // Check if the hovered object is from the polygon layer
   if (layer && layer.id === 'polygon-layer') {
-    cleanupChartTooltip(); // Hide chart tooltip when hovering polygon
+    // Instead of just hiding, we'll repurpose the chart container for polygon data
     
-    // Optionally return polygon info (e.g., state name if available in properties)
+    // Find all points within this polygon
+    const pointsInPolygon = allData.filter(point => {
+      return isPointInPolygon([point.lng, point.lat], object);
+    });
+    
+    // Get polygon name for display
     const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
-    return {
-      html: `
-        <div style="font-family: sans-serif; background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 13px;">
-          ${name}
-        </div>
-      `,
-      style: { background: 'none', border: 'none' }
-    };
+    
+    // If we have points inside this polygon and we have time data, show a chart
+    if (pointsInPolygon.length > 0 && hasTime) {
+      // Initialize chart container if needed
+      if (!window.tooltipState) {
+        // Create a persistent container for charts
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.pointerEvents = 'none';
+        container.style.zIndex = '10000';
+        container.style.backgroundColor = 'transparent';
+        container.style.padding = '0';
+        container.style.borderRadius = '0';
+        container.style.boxShadow = 'none';
+        document.body.appendChild(container);
+
+        window.tooltipState = {
+          currentObjectId: null,
+          chartInstances: {},
+          lastData: {},
+          chartContainer: container,
+          moveListener: null
+        };
+      }
+      
+      // Create a unique identifier for this polygon
+      const objectId = `polygon-${object.properties?.id || object.id || name.replace(/\s+/g, '-').toLowerCase()}`;
+      
+      // Create time series data from points
+      const seriesData = pointsInPolygon
+        .map(d => ({
+          x: new Date(d.timestamp).getTime(),
+          y: d.value,
+        }))
+        .filter(d => d.x >= filter[0] && d.x <= filter[1]);
+      
+      // Sort by time
+      seriesData.sort((a, b) => a.x - b.x);
+      
+      // Calculate average value for display
+      const avgValue = seriesData.length > 0 
+        ? (seriesData.reduce((sum, d) => sum + d.y, 0) / seriesData.length).toFixed(2)
+        : 'N/A';
+      
+      // Check if we need to update
+      const chartNeedsUpdate = !window.tooltipState.lastData[objectId] || 
+        JSON.stringify(seriesData) !== JSON.stringify(window.tooltipState.lastData[objectId]);
+      
+      window.tooltipState.chartContainer.style.display = 'block';
+      
+      if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId) {
+        window.tooltipState.chartContainer.innerHTML = `
+          <div style="
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.4;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 16px;
+            padding-bottom: 12px;
+            max-width: 350px;
+            pointer-events: auto;
+          ">
+            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+              <div style="
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: #1DA1F2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 12px;
+                flex-shrink: 0;
+              ">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                  <path d="M11 15h2v2h-2zm0-8h2v6h-2z"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight: bold; color: #14171A; font-size: 16px;">${name}</div>
+                <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+                  Region Summary
+                </div>
+              </div>
+            </div>
+            <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+              Points in region: ${pointsInPolygon.length}
+            </div>
+            <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+              Average ${colorAggregation.toLowerCase()}: ${avgValue}
+            </div>
+            ${seriesData.length > 0 ? `
+              <div style="color: #657786; font-size: 14px; margin-bottom: 12px; padding: 0 4px;">
+                <div style="margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                    <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                  </svg>
+                  ${new Date(seriesData[0].x).toLocaleDateString()} - ${new Date(seriesData[seriesData.length - 1].x).toLocaleDateString()}
+                </div>
+              </div>
+            ` : ''}
+            <div style="
+              background: white;
+              border-radius: 12px;
+              padding: 12px;
+              margin-bottom: 12px;
+              border: 1px solid rgba(0, 0, 0, 0.1);
+            ">
+              <div style="width: 100%; height: 200px;">
+                <canvas id="${objectId}" width="300" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Clean up old chart if switching to new object
+        if (window.tooltipState.currentObjectId !== objectId && window.tooltipState.chartInstances[window.tooltipState.currentObjectId]) {
+          window.tooltipState.chartInstances[window.tooltipState.currentObjectId].destroy();
+          delete window.tooltipState.chartInstances[window.tooltipState.currentObjectId];
+        }
+        
+        window.tooltipState.currentObjectId = objectId;
+        window.tooltipState.lastData[objectId] = seriesData;
+        
+        // Create or update chart
+        window.requestAnimationFrame(() => {
+          const ctx = document.getElementById(objectId)?.getContext('2d');
+          if (!ctx) return;
+          
+          const trendLineData = calculateTrendLine(seriesData);
+          const yAxisRange = calculateYAxisRange([...seriesData, ...trendLineData]);
+          
+          if (window.tooltipState.chartInstances[objectId]) {
+            const chart = window.tooltipState.chartInstances[objectId];
+            chart.data.datasets[0].data = seriesData;
+            chart.data.datasets[1].data = trendLineData;
+            chart.options.scales.y.min = yAxisRange.min;
+            chart.options.scales.y.max = yAxisRange.max;
+            chart.options.scales.x.time.unit = determineTimeUnit(seriesData);
+            chart.update('none');
+          } else {
+            const chart = new Chart(ctx, {
+              type: 'scatter',
+              data: {
+                datasets: [
+                  {
+                    label: 'Data Points',
+                    type: 'scatter',
+                    data: seriesData,
+                    pointBackgroundColor: 'rgba(0, 0, 0, 0.6)',
+                    pointBorderColor: 'rgba(0, 0, 0, 0.8)',
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    showLine: false,
+                  },
+                  {
+                    label: 'Trend Line',
+                    type: 'line',
+                    data: trendLineData,
+                    borderColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.4,
+                  }
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1.5,
+                animation: false,
+                scales: {
+                  x: {
+                    type: 'time',
+                    time: {
+                      unit: determineTimeUnit(seriesData),
+                      displayFormats: {
+                        millisecond: 'HH:mm:ss.SSS',
+                        second: 'HH:mm:ss',
+                        minute: 'HH:mm',
+                        hour: 'HH:mm',
+                        day: 'MMM d',
+                        week: 'MMM d',
+                        month: 'MMM yyyy',
+                        quarter: 'MMM yyyy',
+                        year: 'yyyy'
+                      }
+                    },
+                    title: {
+                      display: true,
+                      text: 'Time'
+                    },
+                    ticks: {
+                      autoSkip: true,
+                      maxRotation: 45,
+                      minRotation: 0
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Values',
+                    },
+                    min: yAxisRange.min,
+                    max: yAxisRange.max,
+                    beginAtZero: false
+                  },
+                },
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const point = context.raw;
+                        return `Value: ${point.y.toFixed(2)} at ${new Date(point.x).toLocaleString()}`;
+                      }
+                    }
+                  },
+                  legend: {
+                    display: false,
+                  }
+                },
+                interaction: {
+                  intersect: false,
+                  mode: 'nearest'
+                }
+              },
+            });
+            window.tooltipState.chartInstances[objectId] = chart;
+          }
+        });
+      }
+      
+      // Set up mousemove listener for chart position
+      if (!window.tooltipState.moveListener) {
+        window.tooltipState.moveListener = moveContainer;
+        document.addEventListener('mousemove', window.tooltipState.moveListener);
+      }
+      
+      // Return minimal tooltip, the chart container handles the visual
+      return {
+        html: '',
+        style: {
+          display: 'none'  // Hide the default tooltip
+        }
+      };
+    } else {
+      // If no points or no time data, just show a simple tooltip with the polygon name
+      cleanupChartTooltip(); // Clean up any existing chart
+      
+      return {
+        html: `
+          <div style="font-family: sans-serif; background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 13px;">
+            ${name} ${pointsInPolygon.length > 0 ? `(${pointsInPolygon.length} points)` : ''}
+          </div>
+        `,
+        style: { background: 'none', border: 'none' }
+      };
+    }
   }
 
   // Check if the object is from an aggregation layer (GridLayer/HexagonLayer)
@@ -905,7 +1202,7 @@ export default function SummaryPlot({
         initialViewState={initialViewState}
         controller={true}
         getTooltip={({ object, layer }) =>
-          getTooltip({ object, layer }, colorAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels)
+          getTooltip({ object, layer }, colorAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels, displayData)
         }
       >
         {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}
