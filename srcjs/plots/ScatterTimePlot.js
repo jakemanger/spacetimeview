@@ -368,7 +368,8 @@ export default function ScatterTimePlot({
             hasTime: !isNaN(displayTimeRange[0]),
             factorLevels: relevantFactorLevels,
             allData: displayData,
-            filter
+            filter,
+            columnName: columnName
           }
         )}
       >

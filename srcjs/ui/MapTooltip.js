@@ -700,6 +700,188 @@ function handlePointTooltip(object, hasTime, factorLevels) {
   };
 }
 
+// handles factor data in tooltips with a horizontal bar chart
+function handleFactorTooltip(object, factorLevels, columnName) {
+  initTooltipState();
+  
+  const position = object.position || [object.lng, object.lat];
+  const objectId = `factor-${position[0].toFixed(6)}-${position[1].toFixed(6)}`;
+  const chartId = `chart-${objectId}`;
+  
+  // Count frequency of each factor level
+  const factorFrequencies = {};
+  const factorData = object.points || [object];
+  
+  factorData.forEach(point => {
+    const value = point.source ? point.source.value : point.value;
+    if (value !== undefined && value !== null) {
+      const levelKey = factorLevels[value] || value.toString();
+      factorFrequencies[levelKey] = (factorFrequencies[levelKey] || 0) + 1;
+    }
+  });
+  
+  // Sort by frequency (descending) and take top 20
+  const sortedFactors = Object.entries(factorFrequencies)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20);
+  
+  // Prepare data for horizontal bar chart
+  const barChartData = {
+    labels: sortedFactors.map(([label]) => label),
+    datasets: [{
+      label: 'Frequency',
+      data: sortedFactors.map(([_, count]) => count),
+      backgroundColor: 'rgba(54, 162, 235, 0.8)',
+      borderColor: 'rgba(54, 162, 235, 1)',
+      borderWidth: 1
+    }]
+  };
+  
+  const totalCount = sortedFactors.reduce((sum, [_, count]) => sum + count, 0);
+  const lat = position[1];
+  const lng = position[0];
+  
+  window.tooltipState.chartContainer.style.display = 'block';
+  
+  const chartNeedsUpdate = !window.tooltipState.lastData[objectId] || 
+    JSON.stringify(barChartData) !== JSON.stringify(window.tooltipState.lastData[objectId]);
+  
+  if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId) {
+    window.tooltipState.chartContainer.innerHTML = `
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        padding-bottom: 12px;
+        max-width: 450px;
+        pointer-events: auto;
+      ">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1DA1F2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+          ">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-weight: bold; color: #14171A; font-size: 16px;">${columnName || 'Factor Data'}</div>
+            <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
+            </div>
+          </div>
+        </div>
+        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+          </svg>
+          Total count: ${totalCount}
+        </div>
+        <div style="
+          background: white;
+          border-radius: 12px;
+          padding: 12px;
+          margin-bottom: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          height: ${Math.min(sortedFactors.length * 25 + 40, 400)}px;
+        ">
+          <canvas id="${chartId}" width="400" height="${Math.min(sortedFactors.length * 25 + 40, 400)}"></canvas>
+        </div>
+        <div style="font-size: 12px; color: #657786; text-align: center;">
+          ${sortedFactors.length < Object.keys(factorFrequencies).length ? 
+            `Showing top ${sortedFactors.length} of ${Object.keys(factorFrequencies).length} categories` : 
+            ''}
+        </div>
+      </div>
+    `;
+    
+    if (window.tooltipState.currentObjectId !== objectId && window.tooltipState.chartInstances[window.tooltipState.currentObjectId]) {
+      window.tooltipState.chartInstances[window.tooltipState.currentObjectId].destroy();
+      delete window.tooltipState.chartInstances[window.tooltipState.currentObjectId];
+    }
+    
+    window.tooltipState.currentObjectId = objectId;
+    window.tooltipState.lastData[objectId] = barChartData;
+    
+    window.requestAnimationFrame(() => {
+      const ctx = document.getElementById(chartId)?.getContext('2d');
+      if (!ctx) return;
+      
+      if (window.tooltipState.chartInstances[chartId]) {
+        window.tooltipState.chartInstances[chartId].destroy();
+      }
+      
+      window.tooltipState.chartInstances[chartId] = new Chart(ctx, {
+        type: 'bar',
+        data: barChartData,
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.raw;
+                  const percentage = (value / totalCount * 100).toFixed(1);
+                  return `${value} (${percentage}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: {
+                display: false
+              },
+              ticks: {
+                precision: 0
+              },
+              title: {
+                display: true,
+                text: 'Count'
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+    });
+  }
+  
+  createMoveListener();
+  
+  return {
+    html: '',
+    style: {
+      display: 'none'
+    }
+  };
+}
+
 // main tooltip function
 export function getTooltip({
   object,
@@ -709,7 +891,8 @@ export function getTooltip({
   filter = [0, Infinity],
   hasTime = false,
   factorLevels = null,
-  allData = []
+  allData = [],
+  columnName = null
 } = {}) {
   if (!object) {
     cleanupChartTooltip();
@@ -719,6 +902,18 @@ export function getTooltip({
   // check if polygon layer
   if (layer && layer.id === 'polygon-layer') {
     return handlePolygonTooltip(object, hasTime, allData, filter);
+  }
+
+  // Check if this is factor data that should display a factor chart
+  if (factorLevels) {
+    const value = object.points ? 
+      (object.points[0]?.source?.value !== undefined ? object.points[0].source.value : object.colorValue) : 
+      object.value;
+    
+    if (value !== undefined && value !== null && 
+        (typeof value === 'number' && Number.isInteger(value) && factorLevels[value] !== undefined)) {
+      return handleFactorTooltip(object, factorLevels, columnName);
+    }
   }
 
   // check if aggregation layer (HexagonLayer/GridLayer)

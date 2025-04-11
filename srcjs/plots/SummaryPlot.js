@@ -533,7 +533,8 @@ export default function SummaryPlot({
             filter,
             hasTime: !isNaN(timeRange[0]),
             factorLevels: relevantFactorLevels,
-            allData: displayData
+            allData: displayData,
+            columnName: legendTitle
           })
         }
       >
