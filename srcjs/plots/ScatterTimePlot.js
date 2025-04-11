@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import { MapView, _GlobeView as GlobeView, COORDINATE_SYSTEM } from '@deck.gl/core';
-import { ScatterplotLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, GeoJsonLayer } from '@deck.gl/layers';
 import { DataFilterExtension } from '@deck.gl/extensions';
 import RangeInput from '../ui/RangeInput';
 import Colorbar from '../ui/Colorbar'; // Import Colorbar
@@ -30,11 +30,28 @@ function getMinMaxValues(data, key) {
   );
 }
 
-function getTooltip({ object }, hasTime, factorLevels = null) {
+function getTooltip({ object, layer }, hasTime, factorLevels = null) {
   if (!object) {
     return;
   }
 
+  // Check if the hovered object is from the polygon layer
+  if (layer && layer.id === 'polygon-layer') {
+    // Optionally return polygon info (e.g., state name if available in properties)
+    const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
+    return {
+      html: `
+        <div style="font-family: sans-serif; background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 13px;">
+          ${name}
+        </div>
+      `,
+      style: { background: 'none', border: 'none' }
+    };
+    // Or return null to disable tooltips for polygons
+    // return null;
+  }
+
+  // Existing tooltip logic for scatter points
   let valueToShow = object.value != null ? object.value : '';
   if (factorLevels) {
     valueToShow = factorLevels[valueToShow];
@@ -137,7 +154,9 @@ export default function ScatterTimePlot({
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
   },
-  factorLevels = null
+  factorLevels = null,
+  theme = 'light',
+  polygons = null
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -200,7 +219,63 @@ export default function ScatterTimePlot({
     [minValue, maxValue, colorRange]
   );
 
+  // Parse polygon data if it's provided as a string
+  const parsedPolygons = useMemo(() => {
+    if (!polygons) {
+      console.log('No polygon data in ScatterTimePlot');
+      return null;
+    }
+    
+    console.log('ScatterTimePlot processing polygon data');
+    try {
+      const parsed = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
+      console.log('ScatterTimePlot parsed polygon data:', parsed);
+      
+      // Check if it's a valid GeoJSON object
+      if (parsed && parsed.type && parsed.features) {
+        console.log(`ScatterTimePlot: Valid GeoJSON with ${parsed.features.length} features`);
+        return parsed;
+      } else {
+        console.warn('ScatterTimePlot: Invalid GeoJSON structure', parsed);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error parsing polygon data in ScatterTimePlot:', error);
+      console.log('Raw polygon data preview:', polygons.substring(0, 200) + '...');
+      return null;
+    }
+  }, [polygons]);
+
   const layers = [
+    // Add polygon layer if we have polygons
+    parsedPolygons && new GeoJsonLayer({
+      id: 'polygon-layer',
+      data: parsedPolygons,
+      pickable: true,
+      stroked: true,
+      filled: true,
+      extruded: false,
+      lineWidthMinPixels: 2,
+      lineWidthScale: 2,
+      getLineColor: [0, 0, 0, 240],
+      getFillColor: [200, 200, 200, 40],
+      getLineWidth: 1,
+      // Additional props for better visualization
+      wireframe: true,
+      getElevation: 0,
+      // Make sure polygons are visible
+      opacity: 1,
+      parameters: {
+        depthTest: false // Ensure polygons render on top
+      },
+      updateTriggers: {
+        getLineColor: [theme], // Update based on theme
+        getFillColor: [theme],
+      },
+      onAfterUpdate: () => {
+        console.log('GeoJsonLayer updated in ScatterTimePlot');
+      }
+    }),
     filter && new ScatterplotLayer({
       id: 'scatterplot',
       data: displayData,
@@ -228,7 +303,7 @@ export default function ScatterTimePlot({
       pickable: true,
       billboard: true
     })
-  ];
+  ].filter(Boolean); // Filter out any nulls from the layers array
 
   if (projection === 'Globe') {
     let tileLayer = new TileLayer({
@@ -256,8 +331,8 @@ export default function ScatterTimePlot({
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) => getTooltip(
-          { object },
+        getTooltip={({ object, layer }) => getTooltip(
+          { object, layer },
           !isNaN(displayTimeRange[0]),
           factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null
         )}

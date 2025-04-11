@@ -31,6 +31,57 @@ You can use the plot as a static website html file to share with others
 (hostable for free on services like github pages) or as an interactive
 html widget to explore your data.
 
+## Features
+
+- Interactive map visualization for space-time data
+- Multiple visualization modes: summary (grid/hexagon) and scatter
+- Supports various aggregation methods (SUM, MEAN, COUNT, MIN, MAX, MODE)
+- Customizable color schemes, animation speed, and other visual properties
+- Responsive design for various screen sizes
+- Supports both Mercator and Globe projections
+- Time animation controls for exploring temporal patterns
+- Tooltip with detailed location information and time series charts
+- Works with sf, stars, and terra objects
+
+### New Feature: Polygon Overlays
+
+You can now add polygon overlays to your visualizations using the `polygons` parameter. This is useful for showing administrative boundaries, regions, or any other geographical divisions.
+
+#### Example with Australian States
+
+```r
+library(spacetimeview)
+library(sf)
+library(rnaturalearth)
+
+# Get Australia states
+aus_states <- rnaturalearth::ne_states(country = "australia", returnclass = "sf")
+
+# Create sample data points across Australia
+set.seed(123)
+n_points <- 500
+sample_data <- data.frame(
+  lat = runif(n_points, -39, -10),
+  lng = runif(n_points, 113, 154),
+  value = runif(n_points, 0, 100),
+  time = seq(as.POSIXct("2023-01-01"), by = "days", length.out = n_points)
+)
+
+# Create the SpaceTimeView with polygons
+view <- spacetimeview(
+  data = sample_data,
+  polygons = aus_states,
+  style = "Scatter",
+  column_to_plot = "value",
+  theme = "light",
+  projection = "Mercator",
+  header_title = "Australia Data with State Boundaries"
+)
+
+# Save the widget to an HTML file
+htmlwidgets::saveWidget(view, "australia_with_states.html")
+```
+
 ## Installation
 
 You can install the development version of spacetimeview from

@@ -65,6 +65,9 @@
 #' @param control_names Named list. Custom names for controls as displayed in 
 #'   the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and 
 #'   values to the display names.
+#' @param polygons sf or list object. Optional. Polygons to display on the map,
+#'   such as state or country boundaries. Can be an sf object with POLYGON or
+#'   MULTIPOLYGON geometry or a list with GeoJSON structure.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
 #' @export
@@ -150,6 +153,7 @@ spacetimeview <- function(
     lng_name = 'auto',
     time_column_name = 'auto',
     plottable_columns = NULL,
+    polygons = NULL,
     width = '100vw', 
     height = '100vh', 
     elementId = NULL,
@@ -390,6 +394,42 @@ spacetimeview <- function(
     summary_radius <- mean(distances) * 8 
   }
   
+  # Process polygons if provided
+  polygon_data <- NULL
+  if (!is.null(polygons)) {
+    print("Processing polygon data...")
+    if (inherits(polygons, "sf")) {
+      # Convert sf polygons to GeoJSON
+      if (!sf::st_is_longlat(polygons)) {
+        print("Transforming polygon coordinates to WGS84...")
+        polygons <- sf::st_transform(polygons, "+proj=longlat +datum=WGS84")
+      }
+      
+      print("Converting sf object to GeoJSON...")
+      
+      # Try using geojsonsf if available (recommended approach)
+      if (requireNamespace("geojsonsf", quietly = TRUE)) {
+        print("Using geojsonsf package for conversion...")
+        polygon_data <- geojsonsf::sf_geojson(polygons, atomise = FALSE)
+      } else {
+        # Fallback to sf::st_write approach
+        print("Using sf::st_write for conversion (consider installing geojsonsf package for better results)...")
+        tmp_file <- tempfile(fileext = ".geojson")
+        sf::st_write(polygons, tmp_file, driver = "GeoJSON", delete_dsn = TRUE, quiet = TRUE)
+        polygon_data <- paste(readLines(tmp_file), collapse = "\n")
+        unlink(tmp_file)
+      }
+      
+      print(paste("Polygon data length:", nchar(polygon_data), "characters"))
+    } else if (is.list(polygons)) {
+      # Assume it's already in GeoJSON format
+      print("Converting list to GeoJSON...")
+      polygon_data <- jsonlite::toJSON(polygons, auto_unbox = TRUE)
+    } else {
+      warning("Polygons must be an sf object or a list in GeoJSON format. Ignoring polygons.")
+    }
+  }
+
   # print('Reformatting data as list to be put in JS')
   data_list <- purrr::transpose(data)
   print('Starting ReactR plot')
@@ -425,6 +465,7 @@ spacetimeview <- function(
       visibleControls = visible_controls,
       controlNames = control_names,
       initialFilterColumn = filter_column,
+      polygons = polygon_data,
       ...
     )
   )

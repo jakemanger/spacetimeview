@@ -9,7 +9,7 @@ import {
   COORDINATE_SYSTEM,
 } from '@deck.gl/core';
 import { TileLayer } from '@deck.gl/geo-layers';
-import { BitmapLayer } from '@deck.gl/layers';
+import { BitmapLayer, GeoJsonLayer } from '@deck.gl/layers';
 import { HexagonLayer, GridLayer } from '@deck.gl/aggregation-layers';
 import DeckGL from '@deck.gl/react';
 import RangeInput from '../ui/RangeInput';
@@ -25,12 +25,39 @@ const ambientLight = new AmbientLight({
   intensity: 1.0,
 });
 
-function getTooltip({ object }, colorAggregation, filter, hasTime, factorLevels = null) {
+function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factorLevels = null) {
+  // console.log('Tooltip object:', object, 'Layer:', layer);
+
   if (!object) {
     if (window.tooltipState?.chartContainer) {
       window.tooltipState.chartContainer.style.display = 'none';
     }
     return null;
+  }
+
+  // Check if the hovered object is from the polygon layer
+  if (layer && layer.id === 'polygon-layer') {
+    // Optionally return polygon info (e.g., state name if available in properties)
+    const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
+    return {
+      html: `
+        <div style="font-family: sans-serif; background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 13px;">
+          ${name}
+        </div>
+      `,
+      style: { background: 'none', border: 'none' }
+    };
+    // Or return null to disable tooltips for polygons
+    // return null;
+  }
+
+  // Check if the object is from an aggregation layer (GridLayer/HexagonLayer)
+  if (!object.points || !object.position) {
+    console.warn('Tooltip called on unexpected object:', object);
+    if (window.tooltipState?.chartContainer) {
+      window.tooltipState.chartContainer.style.display = 'none';
+    }
+    return null; // Don't show tooltip for objects without expected aggregation properties
   }
 
   // Initialize global state if needed
@@ -525,7 +552,6 @@ export default function SummaryPlot({
   preserveDomains = false,
   timeRange = [Infinity, -Infinity],
   animationSpeed = 1,
-  theme = 'dark',
   isGridView = false,
   initialViewState = {
     longitude: -122.45,
@@ -559,7 +585,9 @@ export default function SummaryPlot({
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
   },
-  filterColumnValues = []
+  filterColumnValues = [],
+  theme = 'light',
+  polygons = null
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -738,7 +766,48 @@ export default function SummaryPlot({
     updateTriggers.getElevationValue = updateTriggers.getColorValue;
   }
 
+  // Parse polygon data if it's provided as a string
+  const parsedPolygons = useMemo(() => {
+    if (!polygons) return null;
+    
+    try {
+      return typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
+    } catch (error) {
+      console.error('Error parsing polygon data in SummaryPlot:', error);
+      return null;
+    }
+  }, [polygons]);
+
   const layers = [
+    // Add polygon layer if we have polygons
+    parsedPolygons && new GeoJsonLayer({
+      id: 'polygon-layer',
+      data: parsedPolygons,
+      pickable: true,
+      stroked: true,
+      filled: true,
+      extruded: false,
+      lineWidthMinPixels: 2,
+      lineWidthScale: 2,
+      getLineColor: [0, 0, 0, 240],
+      getFillColor: [200, 200, 200, 40],
+      getLineWidth: 1,
+      // Additional props for better visualization
+      wireframe: true,
+      getElevation: 0,
+      // Make sure polygons are visible
+      opacity: 1, 
+      parameters: {
+        depthTest: false // Ensure polygons render on top
+      },
+      updateTriggers: {
+        getLineColor: [theme],
+        getFillColor: [theme],
+      },
+      onAfterUpdate: () => {
+        console.log('GeoJsonLayer updated in SummaryPlot');
+      }
+    }),
     isGridView
       ? new GridLayer({
         id: 'grid-heatmap',
@@ -832,8 +901,8 @@ export default function SummaryPlot({
         effects={[lightingEffect]}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object }) =>
-          getTooltip({ object }, colorAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels)
+        getTooltip={({ object, layer }) =>
+          getTooltip({ object, layer }, colorAggregation, filter, !isNaN(timeRange[0]), relevantFactorLevels)
         }
       >
         {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}

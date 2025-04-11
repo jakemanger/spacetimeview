@@ -95,7 +95,42 @@ export default function SpaceTimeViewer({
   },
   initialFilterColumn = null,
   draggableMenu = false,
+  polygons = null,
+  ...props // Capture any other props
 }) {
+  // Log all incoming props at the very beginning
+  console.log('[SpaceTimeViewer] Received props:', { 
+    data: data ? `Data with ${data.length} rows` : 'No data', 
+    initialStyle, 
+    initialColumnToPlot, 
+    initialAggregate, 
+    initialRepeatedPointsAggregate, 
+    initialStickyRange, 
+    initialSummaryRadius, 
+    initialSummaryCoverage, 
+    initialAnimationSpeed, 
+    initialTheme, 
+    initialRadiusScale, 
+    initialRadiusMinPixels, 
+    initialSummaryStyle, 
+    initialProjection, 
+    initialSummaryHeight, 
+    initialColorScheme, 
+    initialColorScaleType, 
+    initialNumDecimals, 
+    factorLevels: factorLevels ? 'Factor levels provided' : 'No factor levels', 
+    headerLogo, 
+    headerTitle, 
+    headerWebsiteLink, 
+    socialLinks: socialLinks ? `Social links: ${Object.keys(socialLinks).join(', ')}` : 'No social links', 
+    visibleControls: visibleControls ? `Visible controls: ${visibleControls.join(', ')}` : 'No visible controls specified', 
+    controlNames: controlNames ? 'Control names provided' : 'No control names', 
+    initialFilterColumn, 
+    draggableMenu, 
+    polygons: polygons ? `Polygon data provided (length: ${polygons.length})` : 'No polygon data',
+    otherProps: props
+  });
+
   // Memoize the data transformation to prevent unnecessary re-renders
   const transformedData = useMemo(() => {
     const convertedData = HTMLWidgets.dataframeToD3(data);
@@ -469,6 +504,35 @@ export default function SpaceTimeViewer({
     }
   }, [filterColumn, factorLevels, transformedData]);
 
+  // Parse and log polygon data if available
+  useEffect(() => {
+    if (polygons) {
+      console.log('Polygon data provided to SpaceTimeViewer component:');
+      try {
+        // Log the raw data first
+        console.log('Raw polygon data type:', typeof polygons);
+        console.log('Raw polygon data length:', polygons.length);
+        
+        // Then try to parse it if it's a string
+        const parsedPolygons = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
+        console.log('Parsed polygon data:', parsedPolygons);
+        
+        // Check if it has the expected GeoJSON structure
+        if (parsedPolygons.type && parsedPolygons.features) {
+          console.log('GeoJSON type:', parsedPolygons.type);
+          console.log('Number of features:', parsedPolygons.features.length);
+          console.log('First feature:', parsedPolygons.features[0]);
+        } else {
+          console.warn('Polygon data does not appear to be in GeoJSON format');
+        }
+      } catch (error) {
+        console.error('Error parsing polygon data:', error);
+        console.log('Raw polygon data preview:', polygons.substring(0, 500) + '...');
+      }
+    } else {
+      console.log('No polygon data provided to SpaceTimeViewer component');
+    }
+  }, [polygons]);
 
   let INITIAL_VIEW_STATE = {
     longitude: transformedData.reduce((sum, d) => sum + d.lng, 0) / transformedData.length,
@@ -533,6 +597,7 @@ export default function SpaceTimeViewer({
           columnName={columnToPlot}
           themeColors={levaTheme.colors}
           factorLevels={factorLevels}
+          polygons={polygons}
         />
       );
     } else if (style === 'Summary') {
@@ -560,6 +625,7 @@ export default function SpaceTimeViewer({
           themeColors={levaTheme.colors}
           factorLevels={factorLevels}
           filterColumnValues={filterColumnValues}
+          polygons={polygons}
         />
       );
     } else {
@@ -585,6 +651,7 @@ export default function SpaceTimeViewer({
     projection,
     filterColumnValues,
     filteredData,
+    polygons,
   ]);
 
   const handleSnackbarClose = () => {
