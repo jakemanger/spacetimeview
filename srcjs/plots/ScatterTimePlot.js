@@ -3,12 +3,13 @@ import { Map } from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import { MapView, _GlobeView as GlobeView, COORDINATE_SYSTEM } from '@deck.gl/core';
 import { ScatterplotLayer, GeoJsonLayer } from '@deck.gl/layers';
+import { TileLayer } from '@deck.gl/geo-layers';
+import { BitmapLayer } from '@deck.gl/layers';
 import { DataFilterExtension } from '@deck.gl/extensions';
 import RangeInput from '../ui/RangeInput';
-import Colorbar from '../ui/Colorbar'; // Import Colorbar
+import Colorbar from '../ui/Colorbar';
 import * as d3 from 'd3';
-import Chart from 'chart.js/auto';
-import 'chartjs-adapter-date-fns';
+import { getTooltip } from '../ui/MapTooltip';
 
 const MAP_VIEW = new MapView({ repeat: true, farZMultiplier: 100 });
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -155,411 +156,6 @@ function calculateYAxisRange(data) {
   };
 }
 
-function getTooltip({ object, layer }, hasTime, factorLevels = null, allData = [], filter = [0, Infinity]) {
-  // Function to clean up chart tooltip state
-  const cleanupChartTooltip = () => {
-    if (window.tooltipState?.chartContainer) {
-      window.tooltipState.chartContainer.style.display = 'none';
-    }
-    if (window.tooltipState?.moveListener) {
-      document.removeEventListener('mousemove', window.tooltipState.moveListener);
-      window.tooltipState.moveListener = null;
-    }
-  };
-
-  if (!object) {
-    cleanupChartTooltip();
-    return null;
-  }
-
-  // Check if the hovered object is from the polygon layer
-  if (layer && layer.id === 'polygon-layer') {
-    // Find all points within this polygon
-    const pointsInPolygon = allData.filter(point => {
-      return isPointInPolygon([point.lng, point.lat], object);
-    });
-    
-    // Get polygon name for display
-    const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
-    
-    // If we have points inside this polygon and we have time data, show a chart
-    if (pointsInPolygon.length > 0 && hasTime) {
-      // Initialize chart container if needed
-      if (!window.tooltipState) {
-        // Create a persistent container for charts
-        const container = document.createElement('div');
-        container.style.position = 'fixed';
-        container.style.pointerEvents = 'none';
-        container.style.zIndex = '10000';
-        container.style.backgroundColor = 'transparent';
-        container.style.padding = '0';
-        container.style.borderRadius = '0';
-        container.style.boxShadow = 'none';
-        document.body.appendChild(container);
-
-        window.tooltipState = {
-          currentObjectId: null,
-          chartInstances: {},
-          lastData: {},
-          chartContainer: container,
-          moveListener: null
-        };
-      }
-      
-      // Create a unique identifier for this polygon
-      const objectId = `polygon-${object.properties?.id || object.id || name.replace(/\s+/g, '-').toLowerCase()}`;
-      
-      // Create time series data from points
-      const seriesData = pointsInPolygon
-        .map(d => ({
-          x: new Date(d.timestamp).getTime(),
-          y: d.value,
-        }))
-        .filter(d => d.x >= filter[0] && d.x <= filter[1]);
-      
-      // Sort by time
-      seriesData.sort((a, b) => a.x - b.x);
-      
-      // Calculate average value for display
-      const avgValue = seriesData.length > 0 
-        ? (seriesData.reduce((sum, d) => sum + d.y, 0) / seriesData.length).toFixed(2)
-        : 'N/A';
-      
-      // Check if we need to update
-      const chartNeedsUpdate = !window.tooltipState.lastData[objectId] || 
-        JSON.stringify(seriesData) !== JSON.stringify(window.tooltipState.lastData[objectId]);
-      
-      window.tooltipState.chartContainer.style.display = 'block';
-      
-      if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId) {
-        window.tooltipState.chartContainer.innerHTML = `
-          <div style="
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.4;
-            border-radius: 16px;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            padding: 16px;
-            padding-bottom: 12px;
-            max-width: 350px;
-            pointer-events: auto;
-          ">
-            <div style="display: flex; align-items: center; margin-bottom: 12px;">
-              <div style="
-                width: 48px;
-                height: 48px;
-                border-radius: 50%;
-                background: #1DA1F2;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-right: 12px;
-                flex-shrink: 0;
-              ">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                  <path d="M11 15h2v2h-2zm0-8h2v6h-2z"/>
-                </svg>
-              </div>
-              <div>
-                <div style="font-weight: bold; color: #14171A; font-size: 16px;">${name}</div>
-                <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
-                  Region Summary
-                </div>
-              </div>
-            </div>
-            <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
-              Points in region: ${pointsInPolygon.length}
-            </div>
-            <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
-              Average value: ${avgValue}
-            </div>
-            ${seriesData.length > 0 ? `
-              <div style="color: #657786; font-size: 14px; margin-bottom: 12px; padding: 0 4px;">
-                <div style="margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
-                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                    <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                  </svg>
-                  ${new Date(seriesData[0].x).toLocaleDateString()} - ${new Date(seriesData[seriesData.length - 1].x).toLocaleDateString()}
-                </div>
-              </div>
-            ` : ''}
-            <div style="
-              background: white;
-              border-radius: 12px;
-              padding: 12px;
-              margin-bottom: 12px;
-              border: 1px solid rgba(0, 0, 0, 0.1);
-            ">
-              <div style="width: 100%; height: 200px;">
-                <canvas id="${objectId}" width="300" height="200"></canvas>
-              </div>
-            </div>
-          </div>
-        `;
-        
-        // Clean up old chart if switching to new object
-        if (window.tooltipState.currentObjectId !== objectId && window.tooltipState.chartInstances[window.tooltipState.currentObjectId]) {
-          window.tooltipState.chartInstances[window.tooltipState.currentObjectId].destroy();
-          delete window.tooltipState.chartInstances[window.tooltipState.currentObjectId];
-        }
-        
-        window.tooltipState.currentObjectId = objectId;
-        window.tooltipState.lastData[objectId] = seriesData;
-        
-        // Create or update chart
-        window.requestAnimationFrame(() => {
-          const ctx = document.getElementById(objectId)?.getContext('2d');
-          if (!ctx) return;
-          
-          const trendLineData = calculateTrendLine(seriesData);
-          const yAxisRange = calculateYAxisRange([...seriesData, ...trendLineData]);
-          
-          if (window.tooltipState.chartInstances[objectId]) {
-            const chart = window.tooltipState.chartInstances[objectId];
-            chart.data.datasets[0].data = seriesData;
-            chart.data.datasets[1].data = trendLineData;
-            chart.options.scales.y.min = yAxisRange.min;
-            chart.options.scales.y.max = yAxisRange.max;
-            chart.options.scales.x.time.unit = determineTimeUnit(seriesData);
-            chart.update('none');
-          } else {
-            const chart = new Chart(ctx, {
-              type: 'scatter',
-              data: {
-                datasets: [
-                  {
-                    label: 'Data Points',
-                    type: 'scatter',
-                    data: seriesData,
-                    pointBackgroundColor: 'rgba(0, 0, 0, 0.6)',
-                    pointBorderColor: 'rgba(0, 0, 0, 0.8)',
-                    pointRadius: 2,
-                    pointHoverRadius: 4,
-                    showLine: false,
-                  },
-                  {
-                    label: 'Trend Line',
-                    type: 'line',
-                    data: trendLineData,
-                    borderColor: 'rgba(0, 0, 0, 0.8)',
-                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0.4,
-                  }
-                ],
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1.5,
-                animation: false,
-                scales: {
-                  x: {
-                    type: 'time',
-                    time: {
-                      unit: determineTimeUnit(seriesData),
-                      displayFormats: {
-                        millisecond: 'HH:mm:ss.SSS',
-                        second: 'HH:mm:ss',
-                        minute: 'HH:mm',
-                        hour: 'HH:mm',
-                        day: 'MMM d',
-                        week: 'MMM d',
-                        month: 'MMM yyyy',
-                        quarter: 'MMM yyyy',
-                        year: 'yyyy'
-                      }
-                    },
-                    title: {
-                      display: true,
-                      text: 'Time'
-                    },
-                    ticks: {
-                      autoSkip: true,
-                      maxRotation: 45,
-                      minRotation: 0
-                    }
-                  },
-                  y: {
-                    title: {
-                      display: true,
-                      text: 'Values',
-                    },
-                    min: yAxisRange.min,
-                    max: yAxisRange.max,
-                    beginAtZero: false
-                  },
-                },
-                plugins: {
-                  tooltip: {
-                    callbacks: {
-                      label: function(context) {
-                        const point = context.raw;
-                        return `Value: ${point.y.toFixed(2)} at ${new Date(point.x).toLocaleString()}`;
-                      }
-                    }
-                  },
-                  legend: {
-                    display: false,
-                  }
-                },
-                interaction: {
-                  intersect: false,
-                  mode: 'nearest'
-                }
-              },
-            });
-            window.tooltipState.chartInstances[objectId] = chart;
-          }
-        });
-      }
-      
-      // Define the function to position the chart container
-      const movePolygonContainer = (event) => {
-        const container = window.tooltipState.chartContainer;
-        if (!container || container.style.display === 'none') return;
-        
-        const padding = 20;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const containerWidth = container.offsetWidth;
-        const containerHeight = container.offsetHeight;
-        
-        let left = event.clientX + padding;
-        let top = event.clientY + padding;
-        
-        // Check if container would go off the right edge
-        if (left + containerWidth > viewportWidth - padding) {
-          left = event.clientX - containerWidth - padding;
-          if (left < padding) {
-            left = Math.max(padding, (viewportWidth - containerWidth) / 2);
-          }
-        }
-        
-        // Check if container would go off the bottom edge
-        if (top + containerHeight > viewportHeight - padding) {
-          top = event.clientY - containerHeight - padding;
-          if (top < padding) {
-            top = Math.max(padding, (viewportHeight - containerHeight) / 2);
-          }
-        }
-        
-        // Ensure minimum padding from edges
-        left = Math.max(padding, Math.min(left, viewportWidth - containerWidth - padding));
-        top = Math.max(padding, Math.min(top, viewportHeight - containerHeight - padding));
-        
-        container.style.left = `${left}px`;
-        container.style.top = `${top}px`;
-      };
-      
-      // Ensure listener is added only once and store the reference
-      if (!window.tooltipState.moveListener) {
-        window.tooltipState.moveListener = movePolygonContainer;
-        document.addEventListener('mousemove', window.tooltipState.moveListener);
-      }
-      
-      // Return minimal tooltip, the chart container handles the visual
-      return {
-        html: '',
-        style: {
-          display: 'none'  // Hide the default tooltip
-        }
-      };
-    } else {
-      // If no points or no time data, just show a simple tooltip with the polygon name
-      cleanupChartTooltip(); // Clean up any existing chart
-      
-      return {
-        html: `
-          <div style="font-family: sans-serif; background: #333; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 13px;">
-            ${name} ${pointsInPolygon.length > 0 ? `(${pointsInPolygon.length} points)` : ''}
-          </div>
-        `,
-        style: { background: 'none', border: 'none' }
-      };
-    }
-  }
-
-  // When hovering over a scatter point, hide any regional tooltip
-  cleanupChartTooltip();
-
-  // Existing tooltip logic for scatter points
-  let valueToShow = object.value != null ? object.value : '';
-  if (factorLevels) {
-    valueToShow = factorLevels[valueToShow];
-  } else {
-    if (object.value === null) {
-      valueToShow = null;
-    } else {
-      valueToShow = object.value.toFixed(2)
-    }
-  }
-
-  const html = `
-    <div style="
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.4;
-      border-radius: 16px;
-      background: white;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      padding: 16px;
-      max-width: 300px;
-    ">
-      <div style="display: flex; align-items: center; margin-bottom: 12px;">
-        <div style="
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          background: #1DA1F2;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-right: 12px;
-        ">
-
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-        </div>
-        <div>
-          <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Data</div>
-          <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-            ${object.lng.toFixed(4)}°, ${object.lat.toFixed(4)}°
-          </div>
-        </div>
-      </div>
-      ${hasTime ? `
-        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
-            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-            <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-          </svg>
-          ${new Date(object.timestamp).toUTCString()}
-        </div>
-      ` : ''}
-      <div style="color: #657786; font-size: 14px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
-        Value: ${valueToShow}
-      </div>
-    </div>
-  `;
-
-  return {
-    html,
-    style: {
-      background: 'none',
-      border: 'none',
-      padding: 0,
-      borderRadius: 0
-    }
-  };
-}
-
 export default function ScatterTimePlot({
   data = [],
   mapStyle = MAP_STYLE,
@@ -569,7 +165,7 @@ export default function ScatterTimePlot({
   radiusScale = 150,
   radiusMinPixels = 5,
   projection = 'Mercator',
-  colorRange = [ // Define a default color range
+  colorRange = [
     [1, 152, 189],
     [73, 227, 206],
     [216, 254, 181],
@@ -596,16 +192,16 @@ export default function ScatterTimePlot({
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
 
-  // Process data for seasonal view (normalize all dates to the same year)
+  // process data for seasonal view (normalize all dates to the same year)
   const normalizedData = useMemo(() => {
     if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
     
-    // Use a reference year (2000 as it's a leap year)
+    // use a reference year (2000 as it's a leap year)
     const referenceYear = 2000;
     
     return data.map(d => {
       const date = new Date(d.timestamp);
-      // Create a new date with the same month/day but reference year
+      // create a new date with the same month/day but reference year
       const normalizedDate = new Date(
         referenceYear,
         date.getMonth(),
@@ -623,7 +219,7 @@ export default function ScatterTimePlot({
     });
   }, [data, viewMode]);
   
-  // Calculate time range for the normalized data
+  // calculate time range for the normalized data
   const normalizedTimeRange = useMemo(() => {
     if (viewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
       return timeRange;
@@ -640,13 +236,13 @@ export default function ScatterTimePlot({
     );
   }, [normalizedData, timeRange, viewMode]);
 
-  // Use the appropriate data and time range based on view mode
+  // use the appropriate data and time range based on view mode
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
   const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
 
   const [minValue, maxValue] = useMemo(() => getMinMaxValues(displayData, 'value'), [displayData]);
 
-  // Use d3.scaleQuantize to map the color range to the value domain
+  // use d3.scaleQuantize to map the color range to the value domain
   const colorScale = useMemo(() =>
     d3.scaleQuantize()
       .domain([minValue, maxValue])
@@ -654,7 +250,7 @@ export default function ScatterTimePlot({
     [minValue, maxValue, colorRange]
   );
 
-  // Parse polygon data if it's provided as a string
+  // parse polygon data if it's provided as a string
   const parsedPolygons = useMemo(() => {
     if (!polygons) {
       console.log('No polygon data in ScatterTimePlot');
@@ -666,7 +262,7 @@ export default function ScatterTimePlot({
       const parsed = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
       console.log('ScatterTimePlot parsed polygon data:', parsed);
       
-      // Check if it's a valid GeoJSON object
+      // check if it's a valid GeoJSON object
       if (parsed && parsed.type && parsed.features) {
         console.log(`ScatterTimePlot: Valid GeoJSON with ${parsed.features.length} features`);
         return parsed;
@@ -682,7 +278,7 @@ export default function ScatterTimePlot({
   }, [polygons]);
 
   const layers = [
-    // Add polygon layer if we have polygons
+    // add polygon layer if we have polygons
     parsedPolygons && new GeoJsonLayer({
       id: 'polygon-layer',
       data: parsedPolygons,
@@ -695,16 +291,14 @@ export default function ScatterTimePlot({
       getLineColor: [0, 0, 0, 240],
       getFillColor: [200, 200, 200, 40],
       getLineWidth: 1,
-      // Additional props for better visualization
       wireframe: true,
       getElevation: 0,
-      // Make sure polygons are visible
       opacity: 1,
       parameters: {
-        depthTest: false // Ensure polygons render on top
+        depthTest: false // ensure polygons render on top
       },
       updateTriggers: {
-        getLineColor: [theme], // Update based on theme
+        getLineColor: [theme], // update based on theme
         getFillColor: [theme],
       },
       onAfterUpdate: () => {
@@ -726,7 +320,7 @@ export default function ScatterTimePlot({
             return color
           }
         }
-        return [0, 0, 0, 255]; // Fallback color for invalid or null values
+        return [0, 0, 0, 255]; // fallback color for invalid or null values
       },
       getFilterValue: d => new Date(d.timestamp).getTime(),
       filterRange: [filter[0], filter[1]],
@@ -738,7 +332,7 @@ export default function ScatterTimePlot({
       pickable: true,
       billboard: true
     })
-  ].filter(Boolean); // Filter out any nulls from the layers array
+  ].filter(Boolean); // filter out any nulls from the layers array
 
   if (projection === 'Globe') {
     let tileLayer = new TileLayer({
@@ -759,6 +353,8 @@ export default function ScatterTimePlot({
     layers.unshift(tileLayer);
   }
 
+  const relevantFactorLevels = factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null;
+
   return (
     <>
       <DeckGL
@@ -768,10 +364,12 @@ export default function ScatterTimePlot({
         controller={true}
         getTooltip={({ object, layer }) => getTooltip(
           { object, layer },
-          !isNaN(displayTimeRange[0]),
-          factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null,
-          displayData,
-          filter
+          {
+            hasTime: !isNaN(displayTimeRange[0]),
+            factorLevels: relevantFactorLevels,
+            allData: displayData,
+            filter
+          }
         )}
       >
         {projection === 'Mercator' && (
