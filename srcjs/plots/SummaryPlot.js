@@ -63,6 +63,91 @@ function isPointInRing(point, ring) {
   return inside;
 }
 
+// Function to determine the appropriate time unit based on the data range
+function determineTimeUnit(data) {
+  if (!data || data.length < 2) return 'day';
+  
+  // Calculate time range in milliseconds
+  const timeRange = Math.max(...data.map(d => d.x)) - Math.min(...data.map(d => d.x));
+  
+  // Determine appropriate unit based on range
+  if (timeRange < 1000 * 60) return 'millisecond'; // Less than a minute
+  if (timeRange < 1000 * 60 * 60) return 'minute'; // Less than an hour
+  if (timeRange < 1000 * 60 * 60 * 24) return 'hour'; // Less than a day
+  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day'; // Less than a week
+  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week'; // Less than a month
+  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month'; // Less than a year
+  return 'year'; // More than a year
+}
+
+// Calculate LOESS regression for trend line
+function calculateTrendLine(data, bandwidth = 0.3) {
+  if (data.length < 3) return [];
+  
+  // Simple implementation of LOESS (locally weighted regression)
+  const trendData = [];
+  const n = data.length;
+  
+  // Create x points for smooth curve
+  const numPoints = Math.min(100, n);
+  const xRange = data[n-1].x - data[0].x;
+  const step = xRange / (numPoints - 1);
+  
+  for (let i = 0; i < numPoints; i++) {
+    const x = data[0].x + i * step;
+    
+    // Calculate weighted regression at this point
+    let numerator = 0;
+    let denominator = 0;
+    
+    for (let j = 0; j < n; j++) {
+      // Calculate distance-based weight
+      const dist = Math.abs(x - data[j].x) / xRange;
+      const weight = dist <= bandwidth ? Math.pow(1 - Math.pow(dist / bandwidth, 3), 3) : 0;
+      
+      if (weight > 0) {
+        numerator += weight * data[j].y;
+        denominator += weight;
+      }
+    }
+    
+    // Only add points where we have enough data for smoothing
+    if (denominator > 0) {
+      trendData.push({
+        x: x,
+        y: numerator / denominator
+      });
+    }
+  }
+  
+  return trendData;
+}
+
+// Calculate appropriate y-axis range with padding
+function calculateYAxisRange(data) {
+  if (!data || data.length === 0) return { min: 0, max: 1 };
+  
+  const yValues = data.map(d => d.y);
+  const minY = Math.min(...yValues);
+  const maxY = Math.max(...yValues);
+  
+  // Add 10% padding above and below
+  const padding = (maxY - minY) * 0.1;
+  
+  // If min and max are very close, add some separation
+  if (Math.abs(maxY - minY) < 0.001) {
+    return { 
+      min: minY - 0.5, 
+      max: maxY + 0.5 
+    };
+  }
+  
+  return { 
+    min: minY - padding, 
+    max: maxY + padding 
+  };
+}
+
 function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factorLevels = null, allData = []) {
 
 
@@ -328,9 +413,47 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
         });
       }
       
-      // Set up mousemove listener for chart position
+      // Define the function to position the chart container
+      const movePolygonContainer = (event) => {
+        const container = window.tooltipState.chartContainer;
+        if (!container || container.style.display === 'none') return;
+        
+        const padding = 20;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        
+        let left = event.clientX + padding;
+        let top = event.clientY + padding;
+        
+        // Check if container would go off the right edge
+        if (left + containerWidth > viewportWidth - padding) {
+          left = event.clientX - containerWidth - padding;
+          if (left < padding) {
+            left = Math.max(padding, (viewportWidth - containerWidth) / 2);
+          }
+        }
+        
+        // Check if container would go off the bottom edge
+        if (top + containerHeight > viewportHeight - padding) {
+          top = event.clientY - containerHeight - padding;
+          if (top < padding) {
+            top = Math.max(padding, (viewportHeight - containerHeight) / 2);
+          }
+        }
+        
+        // Ensure minimum padding from edges
+        left = Math.max(padding, Math.min(left, viewportWidth - containerWidth - padding));
+        top = Math.max(padding, Math.min(top, viewportHeight - containerHeight - padding));
+        
+        container.style.left = `${left}px`;
+        container.style.top = `${top}px`;
+      };
+      
+      // Ensure listener is added only once and store the reference
       if (!window.tooltipState.moveListener) {
-        window.tooltipState.moveListener = moveContainer;
+        window.tooltipState.moveListener = movePolygonContainer;
         document.addEventListener('mousemove', window.tooltipState.moveListener);
       }
       
@@ -415,72 +538,10 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
   seriesData.sort((a, b) => a.x - b.x);
 
   // Calculate LOESS regression if we have enough points
-  const calculateTrendLine = (data, bandwidth = 0.3) => {
-    if (data.length < 3) return [];
-    
-    // Simple implementation of LOESS (locally weighted regression)
-    const trendData = [];
-    const n = data.length;
-    
-    // Create x points for smooth curve
-    const numPoints = Math.min(100, n);
-    const xRange = data[n-1].x - data[0].x;
-    const step = xRange / (numPoints - 1);
-    
-    for (let i = 0; i < numPoints; i++) {
-      const x = data[0].x + i * step;
-      
-      // Calculate weighted regression at this point
-      let numerator = 0;
-      let denominator = 0;
-      
-      for (let j = 0; j < n; j++) {
-        // Calculate distance-based weight
-        const dist = Math.abs(x - data[j].x) / xRange;
-        const weight = dist <= bandwidth ? Math.pow(1 - Math.pow(dist / bandwidth, 3), 3) : 0;
-        
-        if (weight > 0) {
-          numerator += weight * data[j].y;
-          denominator += weight;
-        }
-      }
-      
-      // Only add points where we have enough data for smoothing
-      if (denominator > 0) {
-        trendData.push({
-          x: x,
-          y: numerator / denominator
-        });
-      }
-    }
-    
-    return trendData;
-  };
+  const trendLineData = calculateTrendLine(seriesData);
 
   // Calculate appropriate y-axis range with a small padding
-  const calculateYAxisRange = (data) => {
-    if (!data || data.length === 0) return { min: 0, max: 1 };
-    
-    const yValues = data.map(d => d.y);
-    const minY = Math.min(...yValues);
-    const maxY = Math.max(...yValues);
-    
-    // Add 10% padding above and below
-    const padding = (maxY - minY) * 0.1;
-    
-    // If min and max are very close, add some separation
-    if (Math.abs(maxY - minY) < 0.001) {
-      return { 
-        min: minY - 0.5, 
-        max: maxY + 0.5 
-      };
-    }
-    
-    return { 
-      min: minY - padding, 
-      max: maxY + padding 
-    };
-  };
+  const yAxisRange = calculateYAxisRange([...seriesData, ...trendLineData]);
 
   // Check if we need to update the chart
   const chartNeedsUpdate = !window.tooltipState.lastData[objectId] || 
@@ -802,23 +863,6 @@ function getTooltip({ object, layer }, colorAggregation, filter, hasTime, factor
       borderRadius: 0
     }
   };
-}
-
-// Function to determine the appropriate time unit based on the data range
-function determineTimeUnit(data) {
-  if (!data || data.length < 2) return 'day';
-  
-  // Calculate time range in milliseconds
-  const timeRange = Math.max(...data.map(d => d.x)) - Math.min(...data.map(d => d.x));
-  
-  // Determine appropriate unit based on range
-  if (timeRange < 1000 * 60) return 'millisecond'; // Less than a minute
-  if (timeRange < 1000 * 60 * 60) return 'minute'; // Less than an hour
-  if (timeRange < 1000 * 60 * 60 * 24) return 'hour'; // Less than a day
-  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day'; // Less than a week
-  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week'; // Less than a month
-  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month'; // Less than a year
-  return 'year'; // More than a year
 }
 
 function findMode(arr, factorLevels = null) {

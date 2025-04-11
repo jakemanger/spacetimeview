@@ -417,8 +417,8 @@ function getTooltip({ object, layer }, hasTime, factorLevels = null, allData = [
         });
       }
       
-      // Set up mousemove listener for chart position
-      const moveContainer = (event) => {
+      // Define the function to position the chart container
+      const movePolygonContainer = (event) => {
         const container = window.tooltipState.chartContainer;
         if (!container || container.style.display === 'none') return;
         
@@ -457,7 +457,7 @@ function getTooltip({ object, layer }, hasTime, factorLevels = null, allData = [
       
       // Ensure listener is added only once and store the reference
       if (!window.tooltipState.moveListener) {
-        window.tooltipState.moveListener = moveContainer;
+        window.tooltipState.moveListener = movePolygonContainer;
         document.addEventListener('mousemove', window.tooltipState.moveListener);
       }
       
@@ -482,6 +482,9 @@ function getTooltip({ object, layer }, hasTime, factorLevels = null, allData = [
       };
     }
   }
+
+  // When hovering over a scatter point, hide any regional tooltip
+  cleanupChartTooltip();
 
   // Existing tooltip logic for scatter points
   let valueToShow = object.value != null ? object.value : '';
