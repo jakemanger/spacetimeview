@@ -47,6 +47,11 @@ function getTimeRange(data) {
   );
 }
 
+// Function to safely get nested properties
+function getNested(obj, ...args) {
+  return args.reduce((obj, level) => obj && obj[level], obj);
+}
+
 export default function SpaceTimeViewer({
   data = [],
   initialStyle = 'Summary',
@@ -96,6 +101,7 @@ export default function SpaceTimeViewer({
   initialFilterColumn = null,
   draggableMenu = false,
   polygons = null,
+  factorIcons = null,
   ...props // Capture any other props
 }) {
   // Log all incoming props at the very beginning
@@ -128,6 +134,7 @@ export default function SpaceTimeViewer({
     initialFilterColumn, 
     draggableMenu, 
     polygons: polygons ? `Polygon data provided (length: ${polygons.length})` : 'No polygon data',
+    factorIcons: factorIcons ? 'Factor icons provided' : 'No factor icons',
     otherProps: props
   });
 
@@ -374,6 +381,7 @@ export default function SpaceTimeViewer({
       controlNames,
       initialFilterColumn,
       draggableMenu,
+      factorIcons,
     ]
   );
 
@@ -426,6 +434,7 @@ export default function SpaceTimeViewer({
     controlNames,
     initialFilterColumn,
     draggableMenu,
+    factorIcons,
   ]);
 
   let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
@@ -598,6 +607,7 @@ export default function SpaceTimeViewer({
           themeColors={levaTheme.colors}
           factorLevels={factorLevels}
           polygons={polygons}
+          factorIcons={factorIcons}
         />
       );
     } else if (style === 'Summary') {
@@ -626,6 +636,7 @@ export default function SpaceTimeViewer({
           factorLevels={factorLevels}
           filterColumnValues={filterColumnValues}
           polygons={polygons}
+          factorIcons={factorIcons}
         />
       );
     } else {
@@ -652,6 +663,7 @@ export default function SpaceTimeViewer({
     filterColumnValues,
     filteredData,
     polygons,
+    factorIcons,
   ]);
 
   const handleSnackbarClose = () => {
@@ -690,6 +702,7 @@ export default function SpaceTimeViewer({
         filterColumnValues={filterColumnValues}
         setFilterColumnValues={setFilterColumnValues}
         draggableMenu={draggableMenu}
+        factorIcons={factorIcons}
       />
 
       {/* {filterColumn && ( */}

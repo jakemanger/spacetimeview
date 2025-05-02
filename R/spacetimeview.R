@@ -49,6 +49,10 @@
 #'   color legend.
 #' @param factor_levels List. Optional. Provides factor levels for categorical 
 #'   data, allowing for customized color mappings and labels.
+#' @param factor_icons List. Optional. Provides paths to images for factor levels.
+#'   Should be a named list where keys are factor column names, and values are
+#'   named lists mapping factor levels to image file paths relative to the 'public'
+#'   directory (e.g., list(my_factor_col = list(level1 = "icons/icon1.png", level2 = "icons/icon2.png"))).
 #' @param header_logo Character. Optional. URL to the logo displayed in the 
 #'   header of the visualization.
 #' @param header_title Character. Title displayed in the header, typically 
@@ -122,6 +126,7 @@ spacetimeview <- function(
     color_scale_type = 'quantize',
     num_decimals = 1,
     factor_levels = NULL,
+    factor_icons = NULL,
     header_logo = '',
     header_title = '',
     header_website_link = '',
@@ -436,6 +441,79 @@ spacetimeview <- function(
   # describe a React component to send to the browser for rendering.
   print(paste('plottable columns:', plottable_columns))
 
+  # Function to convert image path to data URI
+  image_to_data_uri <- function(file_path) {
+    if (!requireNamespace("base64enc", quietly = TRUE)) {
+      stop("Package 'base64enc' needed for embedding images. Please install it.", call. = FALSE)
+    }
+    if (!file.exists(file_path)) {
+      warning(paste("Image file not found:", file_path), call. = FALSE)
+      return(NULL)
+    }
+    # Determine MIME type based on file extension
+    ext <- tolower(tools::file_ext(file_path))
+    mime_type <- switch(ext,
+                        png = "image/png",
+                        jpg = "image/jpeg",
+                        jpeg = "image/jpeg",
+                        gif = "image/gif",
+                        svg = "image/svg+xml",
+                        webp = "image/webp",
+                        # Add more types if needed
+                        NULL)
+    if (is.null(mime_type)) {
+       warning(paste("Unsupported image file type:", file_path), call. = FALSE)
+       return(NULL)
+    }
+    base64enc::dataURI(file = file_path, mime = mime_type)
+  }
+
+  # Process factor_icons to convert paths to data URIs
+  if (!is.null(factor_icons)) {
+    print("Processing factor icons...")
+    factor_icons_uri <- list()
+    for (col_name in names(factor_icons)) {
+      if (col_name %in% names(factor_levels)) { # Check if the column is actually a factor
+        col_icons <- factor_icons[[col_name]]
+        col_icons_uri <- list()
+        if (is.list(col_icons)) {
+          for (level_name in names(col_icons)) {
+            icon_path <- col_icons[[level_name]]
+            if (is.character(icon_path) && length(icon_path) == 1) {
+               # Construct full path relative to working directory
+              full_path <- file.path(getwd(), icon_path) 
+              data_uri <- image_to_data_uri(full_path)
+              if (!is.null(data_uri)) {
+                 # Use the original factor level name from factor_levels as the key
+                # Find the original level name corresponding to the provided name
+                # This assumes names in factor_icons match names in factor_levels
+                if (level_name %in% factor_levels[[col_name]]) {
+                    col_icons_uri[[level_name]] <- data_uri
+                } else {
+                   warning(paste("Level '", level_name, "' for column '", col_name, "' in factor_icons not found in factor_levels. Skipping icon."), call. = FALSE)
+                }
+              } 
+            } else {
+               warning(paste("Invalid icon path provided for level '", level_name, "' in column '", col_name, "'. Skipping icon."), call. = FALSE)
+            }
+          }
+        } else {
+           warning(paste("factor_icons for column '", col_name, "' should be a named list. Skipping icons for this column."), call. = FALSE)
+        }
+        if (length(col_icons_uri) > 0) {
+          factor_icons_uri[[col_name]] <- col_icons_uri
+        }
+      } else {
+         warning(paste("Column '", col_name, "' provided in factor_icons is not a factor column in the data or not in factor_levels. Skipping icons."), call. = FALSE)
+      }
+    }
+    if (length(factor_icons_uri) > 0) {
+       factor_icons <- factor_icons_uri
+    } else {
+       factor_icons <- NULL # Set back to NULL if no valid icons were processed
+    }
+  } 
+  
   component <- reactR::component(
     "SpaceTimeViewer",
     list(
@@ -458,6 +536,7 @@ spacetimeview <- function(
       initialColorScaleType = color_scale_type,
       initialNumDecimals = num_decimals,
       factorLevels = factor_levels,
+      factorIcons = factor_icons,
       headerLogo = header_logo,
       headerTitle = header_title,
       headerWebsiteLink = header_website_link,

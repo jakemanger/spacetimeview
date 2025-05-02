@@ -12,6 +12,7 @@ export default function ControlsMenu({
   filterOptions,
   filterColumnValues,
   setFilterColumnValues,
+  factorIcons,
 }) {
   // Initialize position to match the default position in dockStyles
   const [position, setPosition] = useState({ x: 20, y: 80 });
@@ -133,6 +134,18 @@ export default function ControlsMenu({
     }),
   };
 
+  // Custom option formatter for react-select
+  const formatOptionLabel = (factorIcons, filterColumn) => ({ label, value }, { context }) => {
+    // context is 'menu' or 'value' (selected)
+    const iconPath = factorIcons && factorIcons[filterColumn] && factorIcons[filterColumn][label];
+    return (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {iconPath && <img src={iconPath} alt="" style={{ width: 16, height: 16, marginRight: 5 }} />} 
+        {label}
+      </div>
+    );
+  };
+
   return dockPosition === 'floating' ? (
     <Draggable 
       handle=".draggable-handle" 
@@ -212,6 +225,7 @@ export default function ControlsMenu({
                   onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
                   placeholder={`Filter ${filterColumn}...`}
                   styles={selectStyles}
+                  formatOptionLabel={formatOptionLabel(factorIcons, filterColumn)}
                 />
               </div>
             )}
@@ -282,6 +296,7 @@ export default function ControlsMenu({
                 onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
                 placeholder={`Filter ${filterColumn}...`}
                 styles={selectStyles}
+                formatOptionLabel={formatOptionLabel(factorIcons, filterColumn)}
               />
             </div>
           )}

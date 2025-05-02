@@ -21,6 +21,7 @@ export default function Colorbar({
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
   },
+  factorIcons = null,
 }) {
   // Early return if essential props are missing
   if (!colorDomain || !colorRange) {
@@ -79,38 +80,99 @@ export default function Colorbar({
 
   // Legend items generation
   const legendItems = React.useMemo(() => {
-    return reversedColorRange.map((color, index) => {
-      const colorString = `rgb(${color.join(',')})`;
-      const label = labels[index];
-      return (
-        <div
-          key={index}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '0px',
-          }}
-        >
+    // If it's factor levels, map directly without reversing labels
+    if (factorLevels && factorLevels[title]) {
+      const levels = factorLevels[title];
+      // Use reversedColorRange for colors, but original levels for labels/icons
+      return levels.map((levelLabel, index) => {
+        // Index might go out of bounds if colorRange length != levels length
+        // Use modulo or clamp index if necessary, or ensure lengths match
+        const colorIndex = reversedColorRange.length - 1 - index;
+        if (colorIndex < 0) return null; // Or handle appropriately
+        const color = reversedColorRange[colorIndex];
+        const colorString = `rgb(${color.join(',')})`;
+        const iconPath = factorIcons && factorIcons[title] && factorIcons[title][levelLabel];
+
+        return (
           <div
+            key={levelLabel} // Use label as key
             style={{
-              backgroundColor: colorString,
-              width: '20px',
-              height: '20px',
-              marginRight: '5px',
-            }}
-          />
-          <span
-            style={{
-              color: themeColors.highlight2,
-              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '0px',
             }}
           >
-            {label}
-          </span>
-        </div>
-      );
-    });
-  }, [reversedColorRange, labels, themeColors]);
+            <div
+              style={{
+                backgroundColor: colorString,
+                width: '20px',
+                height: '20px',
+                marginRight: '5px',
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                color: themeColors.highlight2,
+                fontSize: '12px',
+                display: 'flex', // Use flex to align icon and text
+                alignItems: 'center',
+              }}
+            >
+              {iconPath && (
+                <img 
+                  src={iconPath} 
+                  alt="" 
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    marginRight: '4px',
+                    verticalAlign: 'middle',
+                  }} 
+                />
+              )}
+              {levelLabel}
+            </span>
+          </div>
+        );
+      }).filter(item => item !== null); // Filter out nulls if any
+    } else {
+      // Original logic for numeric data
+      return reversedColorRange.map((color, index) => {
+        const colorString = `rgb(${color.join(',')})`;
+        const label = labels[index]; // labels are already reversed here
+        // Icons are not applicable for numeric data
+        return (
+          <div
+            key={index}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '0px',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: colorString,
+                width: '20px',
+                height: '20px',
+                marginRight: '5px',
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                color: themeColors.highlight2,
+                fontSize: '12px',
+              }}
+            >
+              {label}
+            </span>
+          </div>
+        );
+      });
+    }
+  }, [factorLevels, title, reversedColorRange, factorIcons, themeColors.highlight2, labels]);
 
   return (
     <div

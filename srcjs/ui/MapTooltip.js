@@ -627,12 +627,14 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
 }
 
 // handles point tooltips (for scatter layers)
-function handlePointTooltip(object, hasTime, factorLevels) {
+function handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnName) {
   cleanupChartTooltip();
 
   let valueToShow = object.value != null ? object.value : '';
-  if (factorLevels) {
-    valueToShow = factorLevels[valueToShow];
+  let labelForIcon = '';
+  if (factorLevels && factorLevels[columnName] && object.value !== null && object.value !== undefined) {
+    labelForIcon = factorLevels[columnName][object.value];
+    valueToShow = labelForIcon;
   } else {
     if (object.value === null) {
       valueToShow = null;
@@ -640,6 +642,8 @@ function handlePointTooltip(object, hasTime, factorLevels) {
       valueToShow = object.value.toFixed(2);
     }
   }
+
+  const iconPath = factorIcons && factorIcons[columnName] && labelForIcon ? factorIcons[columnName][labelForIcon] : null;
 
   return {
     html: `
@@ -687,6 +691,18 @@ function handlePointTooltip(object, hasTime, factorLevels) {
           </div>
         ` : ''}
         <div style="color: #657786; font-size: 14px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+          {iconPath && (
+            <img 
+              src={iconPath} 
+              alt="" 
+              style={{
+                width: '16px',
+                height: '16px',
+                marginRight: '4px',
+                verticalAlign: 'middle',
+              }} 
+            />
+          )}
           Value: ${valueToShow}
         </div>
       </div>
@@ -701,7 +717,7 @@ function handlePointTooltip(object, hasTime, factorLevels) {
 }
 
 // handles factor data in tooltips with a horizontal bar chart
-function handleFactorTooltip(object, factorLevels, columnName) {
+function handleFactorTooltip(object, factorLevels, columnName, factorIcons) {
   initTooltipState();
   
   const position = object.position || [object.lng, object.lat];
@@ -720,24 +736,31 @@ function handleFactorTooltip(object, factorLevels, columnName) {
     }
   });
   
-  // Sort by frequency (descending) and take top 20
-  const sortedFactors = Object.entries(factorFrequencies)
+  // Prepare data for chart, keeping original label for mapping
+  const chartLabels = [];
+  const chartData = [];
+  const sortedFactorsForDisplay = Object.entries(factorFrequencies)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 20);
+
+  sortedFactorsForDisplay.forEach(([label, count]) => {
+    chartLabels.push(label); // Use the plain label for the chart axis
+    chartData.push(count);
+  });
   
   // Prepare data for horizontal bar chart
   const barChartData = {
-    labels: sortedFactors.map(([label]) => label),
+    labels: chartLabels,
     datasets: [{
       label: 'Frequency',
-      data: sortedFactors.map(([_, count]) => count),
+      data: chartData,
       backgroundColor: 'rgba(54, 162, 235, 0.8)',
       borderColor: 'rgba(54, 162, 235, 1)',
       borderWidth: 1
     }]
   };
   
-  const totalCount = sortedFactors.reduce((sum, [_, count]) => sum + count, 0);
+  const totalCount = sortedFactorsForDisplay.reduce((sum, [_, count]) => sum + count, 0);
   const lat = position[1];
   const lng = position[0];
   
@@ -747,6 +770,20 @@ function handleFactorTooltip(object, factorLevels, columnName) {
     JSON.stringify(barChartData) !== JSON.stringify(window.tooltipState.lastData[objectId]);
   
   if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId) {
+    // Prepare list of factors with icons for HTML display
+    const factorListHtml = sortedFactorsForDisplay.map(([label, count]) => {
+      const iconPath = factorIcons && factorIcons[columnName] && factorIcons[columnName][label];
+      const percentage = ((count / totalCount) * 100).toFixed(1);
+      console.log(`Tooltip Debug: Col='${columnName}', Label='${label}', Icon Key Exists?`, factorIcons && factorIcons[columnName] ? (label in factorIcons[columnName]) : 'N/A', 'Icon Path Found:', iconPath ? iconPath.substring(0, 30) + '...' : 'None');
+      return `
+        <div style="display: flex; align-items: center; font-size: 13px; margin-bottom: 4px;">
+          ${iconPath ? `<img src="${iconPath}" alt="" style="width: 16px; height: 16px; margin-right: 5px; vertical-align: middle;">` : ''}
+          <span style="flex-grow: 1;">${label}:</span>
+          <span style="font-weight: bold; margin-left: 5px;">${count} (${percentage}%)</span>
+        </div>
+      `;
+    }).join('');
+
     window.tooltipState.chartContainer.innerHTML = `
       <div style="
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -770,6 +807,7 @@ function handleFactorTooltip(object, factorLevels, columnName) {
             justify-content: center;
             margin-right: 12px;
             flex-shrink: 0;
+            overflow: 'hidden'; // Ensure icon fits if provided
           ">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
               <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
@@ -792,18 +830,26 @@ function handleFactorTooltip(object, factorLevels, columnName) {
           Total count: ${totalCount}
         </div>
         <div style="
+          max-height: 150px; /* Limit height of factor list */
+          overflow-y: auto; /* Add scroll if list is long */
+          margin-bottom: 12px;
+          padding-right: 5px; /* Space for scrollbar */
+        ">
+          ${factorListHtml} /* Inject the factor list here */
+        </div>
+        <div style="
           background: white;
           border-radius: 12px;
           padding: 12px;
           margin-bottom: 12px;
           border: 1px solid rgba(0, 0, 0, 0.1);
-          height: ${Math.min(sortedFactors.length * 25 + 40, 400)}px;
+          height: ${Math.min(sortedFactorsForDisplay.length * 25 + 50, 250)}px; /* Adjusted height for chart */
         ">
-          <canvas id="${chartId}" width="400" height="${Math.min(sortedFactors.length * 25 + 40, 400)}"></canvas>
+          <canvas id="${chartId}" width="400" height="${Math.min(sortedFactorsForDisplay.length * 25 + 50, 250)}"></canvas>
         </div>
         <div style="font-size: 12px; color: #657786; text-align: center;">
-          ${sortedFactors.length < Object.keys(factorFrequencies).length ? 
-            `Showing top ${sortedFactors.length} of ${Object.keys(factorFrequencies).length} categories` : 
+          ${sortedFactorsForDisplay.length < Object.keys(factorFrequencies).length ? 
+            `Showing top ${sortedFactorsForDisplay.length} of ${Object.keys(factorFrequencies).length} categories` : 
             ''}
         </div>
       </div>
@@ -892,7 +938,8 @@ export function getTooltip({
   hasTime = false,
   factorLevels = null,
   allData = [],
-  columnName = null
+  columnName = null,
+  factorIcons = null
 } = {}) {
   if (!object) {
     cleanupChartTooltip();
@@ -912,7 +959,7 @@ export function getTooltip({
     
     if (value !== undefined && value !== null && 
         (typeof value === 'number' && Number.isInteger(value) && factorLevels[value] !== undefined)) {
-      return handleFactorTooltip(object, factorLevels, columnName);
+      return handleFactorTooltip(object, factorLevels, columnName, factorIcons);
     }
   }
 
@@ -922,7 +969,7 @@ export function getTooltip({
   }
 
   // for point data (ScatterplotLayer)
-  return handlePointTooltip(object, hasTime, factorLevels);
+  return handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnName);
 }
 
 export default {
