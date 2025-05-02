@@ -1,38 +1,213 @@
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
+// Helper function to calculate aggregated value
+function calculateAggregate(values, aggregateType = 'MEAN') {
+  if (!values || values.length === 0) return 'N/A';
+  
+  switch (aggregateType.toUpperCase()) {
+    case 'SUM':
+      return values.reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
+    case 'MEAN':
+      return values.reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0) / values.length;
+    case 'COUNT':
+      return values.length;
+    case 'MIN':
+      return Math.min(...values.filter(v => typeof v === 'number'));
+    case 'MAX':
+      return Math.max(...values.filter(v => typeof v === 'number'));
+    case 'MODE':
+      // Simple mode calculation
+      const counts = {};
+      let maxCount = 0;
+      let mode = null;
+      values.forEach(val => {
+        counts[val] = (counts[val] || 0) + 1;
+        if (counts[val] > maxCount) {
+          maxCount = counts[val];
+          mode = val;
+        }
+      });
+      return mode;
+    default:
+      return values.length > 0 ? values[0] : 'N/A';
+  }
+}
+
+// Helper function to format a number nicely
+function formatNumber(value, decimals = 2) {
+  if (value === null || value === undefined || isNaN(value)) return 'N/A';
+  if (Number.isInteger(value)) return value.toString();
+  return value.toFixed(decimals);
+}
+
+// Function to generate HTML for filter aggregates 
+function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevels, factorIcons, aggregateType = 'MEAN', columnName) {
+  // Check if we are dealing with an aggregation layer object (has points)
+  const isAggregationLayer = object.points && Array.isArray(object.points);
+
+  if (!filterColumn || !factorLevels || 
+      (!isAggregationLayer && (!allData || allData.length === 0)) || 
+      (isAggregationLayer && (!object.points || object.points.length === 0)) ) {
+    console.log("Cannot generate filter aggregates HTML - missing required data", {
+      hasFilterColumn: !!filterColumn,
+      hasFactorLevels: !!factorLevels,
+      isAggregationLayer,
+      hasObjectPoints: isAggregationLayer ? (object.points?.length > 0) : 'N/A',
+      hasAllData: !isAggregationLayer ? (!!allData && allData.length > 0) : 'N/A',
+    });
+    return '';
+  }
+  
+  console.log("Generating filter aggregates HTML", {
+    filterColumn, 
+    columnName, 
+    factorLevelsKeys: Object.keys(factorLevels),
+    dataLength: allData.length,
+    hasFactorIcons: factorIcons && factorIcons[filterColumn] ? true : false,
+    factorLevelsDetail: factorLevels[filterColumn] ? 
+      `Has '${filterColumn}' with ${factorLevels[filterColumn].length} levels` : 
+      `Missing '${filterColumn}'`
+  });
+  
+  // Get position of current point
+  const position = object.position || [object.lng, object.lat];
+  const lat = position[1];
+  const lng = position[0];
+  
+  // Use object.points if available (aggregation layer), otherwise filter allData
+  const pointsToProcess = isAggregationLayer 
+    ? object.points.map(p => p.source) // Extract original data from points
+    : allData.filter(d => // Fallback for scatter/other layers if needed
+        Math.abs(d.lat - lat) < 0.001 && Math.abs(d.lng - lng) < 0.001
+      );
+  
+  console.log(`Processing ${pointsToProcess.length} points for location [${lng.toFixed(4)}, ${lat.toFixed(4)}]`);
+  
+  if (pointsToProcess.length === 0) return '';
+  
+  // Group by filter values
+  const filterGroups = {};
+  let filterValueOccurrences = {}; // Map to count total occurrences of each filter value
+  
+  // First, count total occurrences of each filter value in the entire dataset
+  pointsToProcess.forEach(d => {
+    const filterValue = d[filterColumn];
+    if (filterValue !== undefined && filterValue !== null) {
+      filterValueOccurrences[filterValue] = (filterValueOccurrences[filterValue] || 0) + 1;
+    }
+  });
+  
+  // Then, collect values to aggregate for each filter value at this location
+  pointsToProcess.forEach(point => {
+    const filterValue = point[filterColumn];
+    const dataValue = point[columnName];
+    
+    if (filterValue !== undefined && filterValue !== null) {
+      if (!filterGroups[filterValue]) {
+        filterGroups[filterValue] = [];
+      }
+      filterGroups[filterValue].push(dataValue);
+    }
+  });
+  
+  // If we found no filter groups, don't show anything
+  if (Object.keys(filterGroups).length === 0) {
+    console.log("No filter groups found at this location");
+    return '';
+  }
+  
+  if (!factorLevels[filterColumn]) {
+    console.log(`Missing factorLevels for ${filterColumn}. Available level keys: ${Object.keys(factorLevels).join(', ')}`);
+    return '';
+  }
+  
+  const levels = factorLevels[filterColumn];
+  console.log("Factor levels:", levels);
+  
+  // Calculate aggregates and store details for sorting
+  const aggregatedDetails = Object.keys(filterGroups).map(filterValue => {
+    const values = filterGroups[filterValue];
+    const aggregateValue = calculateAggregate(values, aggregateType);
+    const formattedValue = formatNumber(aggregateValue);
+    const label = levels[filterValue] || `Value ${filterValue}`;
+    const iconPath = factorIcons && factorIcons[filterColumn] && factorIcons[filterColumn][label] 
+      ? factorIcons[filterColumn][label] 
+      : null;
+    return {
+      filterValue,
+      label,
+      iconPath,
+      aggregateValue, // Keep the raw value for sorting
+      formattedValue,
+      pointCount: values.length
+    };
+  });
+  
+  // Sort by aggregateValue (descending), placing non-numeric values last
+  aggregatedDetails.sort((a, b) => {
+    const valA = typeof a.aggregateValue === 'number' ? a.aggregateValue : -Infinity;
+    const valB = typeof b.aggregateValue === 'number' ? b.aggregateValue : -Infinity;
+    return valB - valA;
+  });
+  
+  // Limit to top 5
+  const topDetails = aggregatedDetails.slice(0, 5);
+  const hiddenCount = aggregatedDetails.length - topDetails.length;
+  
+  // Generate HTML for each filter group
+  let html = `
+    <div style="margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px;">
+      <div style="font-weight: bold; margin-bottom: 6px; color: #14171A; padding-bottom: 3px; font-size: 14px;">
+        ${columnName} by ${filterColumn} (Top 5)
+      </div>
+  `;
+  
+  // Generate HTML for the top details
+  for (const detail of topDetails) {
+    console.log(`Factor level ${detail.filterValue} -> "${detail.label}", Icon: ${detail.iconPath ? "Yes" : "No"}, Agg: ${detail.formattedValue}`);
+    html += `
+      <div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 13px;">
+        ${detail.iconPath ? `<img src="${detail.iconPath}" alt="" style="width: 16px; height: 16px; margin-right: 6px;">` : ''}
+        <span style="flex-grow: 1;">${detail.label}</span>
+        <span style="font-weight: bold; margin-left: 5px;">${detail.formattedValue}</span>
+        <span style="font-size: 11px; color: #657786; margin-left: 4px;">(${detail.pointCount} points)</span>
+      </div>
+    `;
+  }
+  
+  // Add indicator if some items were hidden
+  if (hiddenCount > 0) {
+    html += `
+      <div style="font-size: 12px; color: #657786; margin-top: 5px; text-align: center;">
+        + ${hiddenCount} more
+      </div>
+    `;
+  }
+  
+  html += `</div>`;
+  return html;
+}
+
 // checks if a point is inside a polygon using ray casting algorithm
 function isPointInPolygon(point, polygon) {
+  // For MultiPolygon, check each polygon
   if (polygon.geometry.type === 'MultiPolygon') {
     return polygon.geometry.coordinates.some(coords => {
+      // Check main polygon (first coordinate array)
       return coords.some(ring => {
         return isPointInRing(point, ring);
       });
     });
   }
   
+  // For simple Polygon
   if (polygon.geometry.type === 'Polygon') {
+    // Check if the point is in the outer ring
     return isPointInRing(point, polygon.geometry.coordinates[0]);
   }
   
   return false;
-}
-
-function isPointInRing(point, ring) {
-  const x = point[0], y = point[1];
-  let inside = false;
-  
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0], yi = ring[i][1];
-    const xj = ring[j][0], yj = ring[j][1];
-    
-    const intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    
-    if (intersect) inside = !inside;
-  }
-  
-  return inside;
 }
 
 // determines appropriate time unit based on the data range
@@ -430,7 +605,7 @@ function handlePolygonTooltip(object, hasTime, allData, filter) {
 }
 
 // handles aggregate data tooltips (for hexagon/grid layers)
-function handleAggregateTooltip(object, colorAggregation, filter, hasTime, factorLevels) {
+function handleAggregateTooltip(object, colorAggregation, filter, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData) {
   initTooltipState();
 
   const position = object.position;
@@ -566,6 +741,26 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
       window.tooltipState.lastData[objectId] = seriesData;
 
       createOrUpdateChart(chartId, seriesData);
+
+      // Add filter aggregates if applicable
+      if (filterColumn && filterColumn !== columnName && allData && allData.length > 0) {
+        console.log("Adding filter aggregates to chart tooltip");
+        const filterAggregatesHTML = generateFilterAggregatesHTML(
+          object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+        );
+        
+        if (filterAggregatesHTML) {
+          // Insert before the final div closing tag
+          const currentHTML = window.tooltipState.chartContainer.innerHTML;
+          const insertPosition = currentHTML.lastIndexOf('</div>');
+          if (insertPosition !== -1) {
+            const newHTML = currentHTML.substring(0, insertPosition) + 
+                           filterAggregatesHTML + 
+                           currentHTML.substring(insertPosition);
+            window.tooltipState.chartContainer.innerHTML = newHTML;
+          }
+        }
+      }
     }
 
     createMoveListener();
@@ -615,6 +810,9 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
         <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
           ${metricName}: ${colorValue}
         </div>
+        ${filterColumn && filterColumn !== columnName ? generateFilterAggregatesHTML(
+          object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+        ) : ''}
       </div>
     `,
     style: {
@@ -690,19 +888,8 @@ function handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnNa
             ${new Date(object.timestamp).toUTCString()}
           </div>
         ` : ''}
-        <div style="color: #657786; font-size: 14px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
-          {iconPath && (
-            <img 
-              src={iconPath} 
-              alt="" 
-              style={{
-                width: '16px',
-                height: '16px',
-                marginRight: '4px',
-                verticalAlign: 'middle',
-              }} 
-            />
-          )}
+        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+          ${iconPath ? `<img src="${iconPath}" alt="" style="width: 16px; height: 16px; margin-right: 4px; vertical-align: middle;">` : ''}
           Value: ${valueToShow}
         </div>
       </div>
@@ -939,7 +1126,8 @@ export function getTooltip({
   factorLevels = null,
   allData = [],
   columnName = null,
-  factorIcons = null
+  factorIcons = null,
+  filterColumn = null
 } = {}) {
   if (!object) {
     cleanupChartTooltip();
@@ -959,17 +1147,69 @@ export function getTooltip({
     
     if (value !== undefined && value !== null && 
         (typeof value === 'number' && Number.isInteger(value) && factorLevels[value] !== undefined)) {
-      return handleFactorTooltip(object, factorLevels, columnName, factorIcons);
+      let result = handleFactorTooltip(object, factorLevels, columnName, factorIcons);
+      
+      // Add filter aggregates if applicable
+      if (filterColumn && filterColumn !== columnName && result.html === '') {
+        const filterAggregatesHTML = generateFilterAggregatesHTML(
+          object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+        );
+        
+        if (filterAggregatesHTML && window.tooltipState.chartContainer) {
+          const currentHTML = window.tooltipState.chartContainer.innerHTML;
+          // Insert before the last closing div
+          const insertAt = currentHTML.lastIndexOf('</div>');
+          if (insertAt !== -1) {
+            window.tooltipState.chartContainer.innerHTML = 
+              currentHTML.substring(0, insertAt) + 
+              filterAggregatesHTML + 
+              currentHTML.substring(insertAt);
+          }
+        }
+      }
+      
+      return result;
     }
   }
 
   // check if aggregation layer (HexagonLayer/GridLayer)
   if (object.points && object.position) {
-    return handleAggregateTooltip(object, colorAggregation, filter, hasTime, factorLevels);
+    let result = handleAggregateTooltip(
+      object, 
+      colorAggregation, 
+      filter, 
+      hasTime, 
+      factorLevels, 
+      factorIcons, 
+      columnName, 
+      filterColumn, 
+      allData
+    );
+    
+    return result;
   }
 
   // for point data (ScatterplotLayer)
-  return handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnName);
+  let result = handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnName);
+  
+  // Add filter aggregates if applicable
+  if (filterColumn && filterColumn !== columnName) {
+    const filterAggregatesHTML = generateFilterAggregatesHTML(
+      object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+    );
+    
+    if (filterAggregatesHTML) {
+      // Be careful with the regex replacement, as HTML can contain multiple closing divs
+      const lastClosingDiv = result.html.lastIndexOf('</div>');
+      if (lastClosingDiv !== -1) {
+        result.html = result.html.substring(0, lastClosingDiv) + 
+                       filterAggregatesHTML + 
+                       result.html.substring(lastClosingDiv);
+      }
+    }
+  }
+  
+  return result;
 }
 
 export default {

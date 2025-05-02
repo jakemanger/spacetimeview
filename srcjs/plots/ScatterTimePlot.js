@@ -188,10 +188,18 @@ export default function ScatterTimePlot({
   factorLevels = null,
   theme = 'light',
   polygons = null,
-  factorIcons = null
+  factorIcons = null,
+  filterColumn = null
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
+
+  console.log("[ScatterTimePlot] Initializing with:", { 
+    filterColumn, 
+    columnName,
+    "Has factorLevels": factorLevels ? Object.keys(factorLevels).length > 0 : false,
+    "Has factorIcons": factorIcons ? Object.keys(factorIcons).length > 0 : false
+  });
 
   // process data for seasonal view (normalize all dates to the same year)
   const normalizedData = useMemo(() => {
@@ -367,12 +375,12 @@ export default function ScatterTimePlot({
           { object, layer },
           {
             hasTime: !isNaN(displayTimeRange[0]),
-            factorLevels: relevantFactorLevels,
             factorLevels: factorLevels,
             allData: displayData,
             filter,
             columnName: columnName,
-            factorIcons: factorIcons
+            factorIcons: factorIcons,
+            filterColumn: filterColumn
           }
         )}
       >

@@ -215,6 +215,7 @@ export default function SummaryPlot({
   theme = 'light',
   polygons = null,
   factorIcons = null,
+  filterColumn = null,
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -533,10 +534,11 @@ export default function SummaryPlot({
             colorAggregation,
             filter,
             hasTime: !isNaN(timeRange[0]),
-            factorLevels: relevantFactorLevels,
+            factorLevels: factorLevels,
             allData: displayData,
             columnName: legendTitle,
-            factorIcons: factorIcons
+            factorIcons: factorIcons,
+            filterColumn: filterColumn
           })
         }
       >

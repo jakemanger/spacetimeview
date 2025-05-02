@@ -437,6 +437,32 @@ export default function SpaceTimeViewer({
     factorIcons,
   ]);
 
+  // Calculate information for the selected filter display
+  const selectedFilterDisplayInfo = useMemo(() => {
+    if (filterColumn && factorLevels?.[filterColumn] && factorIcons?.[filterColumn] && filterColumnValues?.length > 0) {
+      // Limit the number of displayed filters to avoid clutter
+      const displayLimit = 3;
+      const info = filterColumnValues.slice(0, displayLimit).map(value => {
+        const label = factorLevels[filterColumn]?.[value];
+        if (!label) return null;
+        const iconPath = factorIcons[filterColumn]?.[label];
+        // Count occurrences in the *original* transformed data
+        const count = transformedData.filter(d => d[filterColumn] === value).length;
+        return { label, iconPath, count };
+      }).filter(Boolean); // Remove nulls if label wasn't found
+
+      const totalSelectedCount = transformedData.filter(d => filterColumnValues.includes(d[filterColumn])).length;
+
+      return {
+         items: info,
+         totalSelectedCount: totalSelectedCount,
+         hasMore: filterColumnValues.length > displayLimit,
+         totalFiltersApplied: filterColumnValues.length
+      };
+    }
+    return null;
+  }, [filterColumn, filterColumnValues, factorLevels, factorIcons, transformedData]);
+
   let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
 
   if (factorLevels && factorLevels[columnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
@@ -608,6 +634,7 @@ export default function SpaceTimeViewer({
           factorLevels={factorLevels}
           polygons={polygons}
           factorIcons={factorIcons}
+          filterColumn={filterColumn}
         />
       );
     } else if (style === 'Summary') {
@@ -637,6 +664,7 @@ export default function SpaceTimeViewer({
           filterColumnValues={filterColumnValues}
           polygons={polygons}
           factorIcons={factorIcons}
+          filterColumn={filterColumn}
         />
       );
     } else {
@@ -664,6 +692,7 @@ export default function SpaceTimeViewer({
     filteredData,
     polygons,
     factorIcons,
+    filterColumn,
   ]);
 
   const handleSnackbarClose = () => {
@@ -679,6 +708,27 @@ export default function SpaceTimeViewer({
   if (hasHeader) {
     topOffset = '80px';
   }
+
+  // Style for the filter display box
+  const filterDisplayBoxStyle = {
+    position: 'absolute',
+    top: hasHeader ? '80px' : '20px', // Position below header or at top
+    left: '50%', // Center horizontally
+    transform: 'translateX(-50%)',
+    zIndex: 500, // Above map, below controls/tooltips maybe
+    background: levaTheme.colors.elevation2, // Use theme color
+    padding: '8px 12px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    color: levaTheme.colors.highlight2, // Use theme text color
+    fontSize: '13px',
+    maxWidth: '80%',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap'
+  };
 
   return (
     <div className="space-time-viewer">
@@ -705,34 +755,33 @@ export default function SpaceTimeViewer({
         factorIcons={factorIcons}
       />
 
-      {/* {filterColumn && ( */}
-      {/*   <div style={{ position: 'fixed', top: topOffset, left: '20px', width: '300px', zIndex: 1000 }}> */}
-      {/*     <Select */}
-      {/*       components={makeAnimated()} */}
-      {/*       isMulti */}
-      {/*       options={filterOptions} */}
-      {/*       value={filterOptions.filter(option => filterColumnValues.includes(option.value))} */}
-      {/*       onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])} */}
-      {/*       placeholder={`Filter ${filterColumn}...`} */}
-      {/*     /> */}
-      {/*   </div> */}
-      {/* )} */}
+      {/* Display Area for Selected Filter Info */} 
+      {selectedFilterDisplayInfo && (
+        <div style={filterDisplayBoxStyle}>
+          <span style={{ fontWeight: 'bold', flexShrink: 0 }}>Filter:</span>
+          {selectedFilterDisplayInfo.items.map((item, index) => (
+            <span key={item.label} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              {item.iconPath && (
+                <img 
+                  src={item.iconPath} 
+                  alt="" 
+                  style={{ width: '18px', height: '18px', marginRight: '4px', verticalAlign: 'middle' }} 
+                />
+              )}
+              {item.label} ({item.count})
+            </span>
+          ))}
+          {selectedFilterDisplayInfo.hasMore && (
+            <span style={{ fontStyle: 'italic', flexShrink: 0 }}>
+               (+{selectedFilterDisplayInfo.totalFiltersApplied - selectedFilterDisplayInfo.items.length} more)
+            </span>
+          )}
+           <span style={{ marginLeft: 'auto', paddingLeft: '10px', fontWeight: 'bold', flexShrink: 0 }}>
+              Total: {selectedFilterDisplayInfo.totalSelectedCount}
+           </span>
+        </div>
+      )}
       {plot}
-      {/* <div style={{ position: 'fixed', top: topOffset, right: '20px' }}> */}
-      {/*   <Provider delayDuration={0}> */}
-      {/*   </Provider> */}
-      {/*     <Leva */}
-      {/*       fill */}
-      {/*       titleBar={ */}
-      {/*         { */}
-      {/*           drag: draggableMenu, */}
-      {/*           filter: false, */}
-      {/*         } */}
-      {/*       } */}
-      {/*       theme={levaTheme} */}
-      {/*       hideCopyButton */}
-      {/*     /> */}
-      {/* </div> */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
