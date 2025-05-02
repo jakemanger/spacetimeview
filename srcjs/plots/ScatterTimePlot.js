@@ -187,7 +187,8 @@ export default function ScatterTimePlot({
   },
   factorLevels = null,
   theme = 'light',
-  polygons = null
+  polygons = null,
+  factorIcons = null
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -367,9 +368,11 @@ export default function ScatterTimePlot({
           {
             hasTime: !isNaN(displayTimeRange[0]),
             factorLevels: relevantFactorLevels,
+            factorLevels: factorLevels,
             allData: displayData,
             filter,
-            columnName: columnName
+            columnName: columnName,
+            factorIcons: factorIcons
           }
         )}
       >
@@ -401,6 +404,7 @@ export default function ScatterTimePlot({
         numDecimals={2}
         themeColors={themeColors}
         factorLevels={factorLevels}
+        factorIcons={factorIcons}
       />
     </>
   );
