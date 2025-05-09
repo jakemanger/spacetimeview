@@ -33,21 +33,19 @@ function getMinMaxValues(data, key) {
   );
 }
 
-// Function to check if a point is inside a polygon using ray casting algorithm
+// check if point is inside polygon using ray casting algorithm
 function isPointInPolygon(point, polygon) {
-  // For MultiPolygon, check each polygon
+  // for MultiPolygon, check each polygon
   if (polygon.geometry.type === 'MultiPolygon') {
     return polygon.geometry.coordinates.some(coords => {
-      // Check main polygon (first coordinate array)
       return coords.some(ring => {
         return isPointInRing(point, ring);
       });
     });
   }
   
-  // For simple Polygon
+  // for simple Polygon
   if (polygon.geometry.type === 'Polygon') {
-    // Check if the point is in the outer ring
     return isPointInRing(point, polygon.geometry.coordinates[0]);
   }
   
@@ -71,32 +69,28 @@ function isPointInRing(point, ring) {
   return inside;
 }
 
-// Function to determine the appropriate time unit based on the data range
+// determine appropriate time unit based on data range
 function determineTimeUnit(data) {
   if (!data || data.length < 2) return 'day';
   
-  // Calculate time range in milliseconds
   const timeRange = Math.max(...data.map(d => d.x)) - Math.min(...data.map(d => d.x));
   
-  // Determine appropriate unit based on range
-  if (timeRange < 1000 * 60) return 'millisecond'; // Less than a minute
-  if (timeRange < 1000 * 60 * 60) return 'minute'; // Less than an hour
-  if (timeRange < 1000 * 60 * 60 * 24) return 'hour'; // Less than a day
-  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day'; // Less than a week
-  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week'; // Less than a month
-  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month'; // Less than a year
-  return 'year'; // More than a year
+  if (timeRange < 1000 * 60) return 'millisecond';
+  if (timeRange < 1000 * 60 * 60) return 'minute';
+  if (timeRange < 1000 * 60 * 60 * 24) return 'hour';
+  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day';
+  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week';
+  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month';
+  return 'year';
 }
 
-// Calculate LOESS regression for trend line
+// calculate LOESS regression for trend line
 function calculateTrendLine(data, bandwidth = 0.3) {
   if (data.length < 3) return [];
   
-  // Simple implementation of LOESS (locally weighted regression)
   const trendData = [];
   const n = data.length;
   
-  // Create x points for smooth curve
   const numPoints = Math.min(100, n);
   const xRange = data[n-1].x - data[0].x;
   const step = xRange / (numPoints - 1);
@@ -104,12 +98,10 @@ function calculateTrendLine(data, bandwidth = 0.3) {
   for (let i = 0; i < numPoints; i++) {
     const x = data[0].x + i * step;
     
-    // Calculate weighted regression at this point
     let numerator = 0;
     let denominator = 0;
     
     for (let j = 0; j < n; j++) {
-      // Calculate distance-based weight
       const dist = Math.abs(x - data[j].x) / xRange;
       const weight = dist <= bandwidth ? Math.pow(1 - Math.pow(dist / bandwidth, 3), 3) : 0;
       
@@ -119,7 +111,6 @@ function calculateTrendLine(data, bandwidth = 0.3) {
       }
     }
     
-    // Only add points where we have enough data for smoothing
     if (denominator > 0) {
       trendData.push({
         x: x,
@@ -131,7 +122,7 @@ function calculateTrendLine(data, bandwidth = 0.3) {
   return trendData;
 }
 
-// Calculate appropriate y-axis range with padding
+// calculate y-axis range with padding
 function calculateYAxisRange(data) {
   if (!data || data.length === 0) return { min: 0, max: 1 };
   
@@ -139,10 +130,8 @@ function calculateYAxisRange(data) {
   const minY = Math.min(...yValues);
   const maxY = Math.max(...yValues);
   
-  // Add 10% padding above and below
   const padding = (maxY - minY) * 0.1;
   
-  // If min and max are very close, add some separation
   if (Math.abs(maxY - minY) < 0.001) {
     return { 
       min: minY - 0.5, 
@@ -189,10 +178,13 @@ export default function ScatterTimePlot({
   theme = 'light',
   polygons = null,
   factorIcons = null,
-  filterColumn = null
+  filterColumn = null,
+  enableClickedTooltips = true
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
+  const [clickedObject, setClickedObject] = useState(null);
+  const [clickedCoordinates, setClickedCoordinates] = useState(null);
 
   console.log("[ScatterTimePlot] Initializing with:", { 
     filterColumn, 
@@ -201,16 +193,14 @@ export default function ScatterTimePlot({
     "Has factorIcons": factorIcons ? Object.keys(factorIcons).length > 0 : false
   });
 
-  // process data for seasonal view (normalize all dates to the same year)
+  // process data for seasonal view (normalize dates to the same year)
   const normalizedData = useMemo(() => {
     if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
     
-    // use a reference year (2000 as it's a leap year)
     const referenceYear = 2000;
     
     return data.map(d => {
       const date = new Date(d.timestamp);
-      // create a new date with the same month/day but reference year
       const normalizedDate = new Date(
         referenceYear,
         date.getMonth(),
@@ -228,7 +218,7 @@ export default function ScatterTimePlot({
     });
   }, [data, viewMode]);
   
-  // calculate time range for the normalized data
+  // calculate time range for normalized data
   const normalizedTimeRange = useMemo(() => {
     if (viewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
       return timeRange;
@@ -245,7 +235,7 @@ export default function ScatterTimePlot({
     );
   }, [normalizedData, timeRange, viewMode]);
 
-  // use the appropriate data and time range based on view mode
+  // use appropriate data and time range based on view mode
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
   const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
 
@@ -259,7 +249,7 @@ export default function ScatterTimePlot({
     [minValue, maxValue, colorRange]
   );
 
-  // parse polygon data if it's provided as a string
+  // parse polygon data if provided as string
   const parsedPolygons = useMemo(() => {
     if (!polygons) {
       console.log('No polygon data in ScatterTimePlot');
@@ -271,7 +261,6 @@ export default function ScatterTimePlot({
       const parsed = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
       console.log('ScatterTimePlot parsed polygon data:', parsed);
       
-      // check if it's a valid GeoJSON object
       if (parsed && parsed.type && parsed.features) {
         console.log(`ScatterTimePlot: Valid GeoJSON with ${parsed.features.length} features`);
         return parsed;
@@ -304,10 +293,10 @@ export default function ScatterTimePlot({
       getElevation: 0,
       opacity: 1,
       parameters: {
-        depthTest: false // ensure polygons render on top
+        depthTest: false
       },
       updateTriggers: {
-        getLineColor: [theme], // update based on theme
+        getLineColor: [theme],
         getFillColor: [theme],
       },
       onAfterUpdate: () => {
@@ -364,6 +353,57 @@ export default function ScatterTimePlot({
 
   const relevantFactorLevels = factorLevels && factorLevels[columnName] ? factorLevels[columnName] : null;
 
+  // handle click events on the map
+  const handleClick = (info, event) => {
+    if (!enableClickedTooltips) return;
+    
+    if (!info.object) {
+      setClickedObject(null);
+      setClickedCoordinates(null);
+      return;
+    }
+    
+    setClickedObject(info.object);
+    setClickedCoordinates(info.coordinate);
+    
+    event.stopPropagation();
+  };
+
+  // return tooltip content for hover or clicked object
+  const getTooltipContent = (pickInfo) => {
+    if (enableClickedTooltips && !clickedObject) {
+      return null;
+    }
+    
+    if (enableClickedTooltips && clickedObject) {
+      const clickedPickInfo = {
+        object: clickedObject,
+        coordinate: clickedCoordinates,
+        layer: pickInfo.layer
+      };
+      
+      return getTooltip(clickedPickInfo, {
+        hasTime: !isNaN(displayTimeRange[0]), 
+        factorLevels: factorLevels,
+        allData: displayData,
+        filter,
+        columnName: columnName,
+        factorIcons: factorIcons,
+        filterColumn: filterColumn
+      });
+    }
+
+    return getTooltip(pickInfo, {
+      hasTime: !isNaN(displayTimeRange[0]),
+      factorLevels: factorLevels,
+      allData: displayData,
+      filter,
+      columnName: columnName,
+      factorIcons: factorIcons,
+      filterColumn: filterColumn
+    });
+  };
+
   return (
     <>
       <DeckGL
@@ -371,18 +411,8 @@ export default function ScatterTimePlot({
         layers={layers}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object, layer }) => getTooltip(
-          { object, layer },
-          {
-            hasTime: !isNaN(displayTimeRange[0]),
-            factorLevels: factorLevels,
-            allData: displayData,
-            filter,
-            columnName: columnName,
-            factorIcons: factorIcons,
-            filterColumn: filterColumn
-          }
-        )}
+        getTooltip={getTooltipContent}
+        onClick={enableClickedTooltips ? handleClick : undefined}
       >
         {projection === 'Mercator' && (
           <Map reuseMaps mapStyle={mapStyle} />

@@ -24,21 +24,19 @@ const ambientLight = new AmbientLight({
   intensity: 1.0,
 });
 
-// Function to check if a point is inside a polygon using ray casting algorithm
+// check if a point is inside a polygon using ray casting algorithm
 function isPointInPolygon(point, polygon) {
-  // For MultiPolygon, check each polygon
+  // for MultiPolygon, check each polygon
   if (polygon.geometry.type === 'MultiPolygon') {
     return polygon.geometry.coordinates.some(coords => {
-      // Check main polygon (first coordinate array)
       return coords.some(ring => {
         return isPointInRing(point, ring);
       });
     });
   }
   
-  // For simple Polygon
+  // for simple Polygon
   if (polygon.geometry.type === 'Polygon') {
-    // Check if the point is in the outer ring
     return isPointInRing(point, polygon.geometry.coordinates[0]);
   }
   
@@ -62,32 +60,29 @@ function isPointInRing(point, ring) {
   return inside;
 }
 
-// Function to determine the appropriate time unit based on the data range
+// determine appropriate time unit based on data range
 function determineTimeUnit(data) {
   if (!data || data.length < 2) return 'day';
   
-  // Calculate time range in milliseconds
   const timeRange = Math.max(...data.map(d => d.x)) - Math.min(...data.map(d => d.x));
   
-  // Determine appropriate unit based on range
-  if (timeRange < 1000 * 60) return 'millisecond'; // Less than a minute
-  if (timeRange < 1000 * 60 * 60) return 'minute'; // Less than an hour
-  if (timeRange < 1000 * 60 * 60 * 24) return 'hour'; // Less than a day
-  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day'; // Less than a week
-  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week'; // Less than a month
-  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month'; // Less than a year
-  return 'year'; // More than a year
+  if (timeRange < 1000 * 60) return 'millisecond';
+  if (timeRange < 1000 * 60 * 60) return 'minute';
+  if (timeRange < 1000 * 60 * 60 * 24) return 'hour';
+  if (timeRange < 1000 * 60 * 60 * 24 * 7) return 'day';
+  if (timeRange < 1000 * 60 * 60 * 24 * 30) return 'week';
+  if (timeRange < 1000 * 60 * 60 * 24 * 365) return 'month';
+  return 'year';
 }
 
-// Calculate LOESS regression for trend line
+// calculate LOESS regression for trend line
+// uses a simple implementation of LOESS (locally weighted regression)
 function calculateTrendLine(data, bandwidth = 0.3) {
   if (data.length < 3) return [];
   
-  // Simple implementation of LOESS (locally weighted regression)
   const trendData = [];
   const n = data.length;
   
-  // Create x points for smooth curve
   const numPoints = Math.min(100, n);
   const xRange = data[n-1].x - data[0].x;
   const step = xRange / (numPoints - 1);
@@ -95,12 +90,11 @@ function calculateTrendLine(data, bandwidth = 0.3) {
   for (let i = 0; i < numPoints; i++) {
     const x = data[0].x + i * step;
     
-    // Calculate weighted regression at this point
     let numerator = 0;
     let denominator = 0;
     
+    // calculate weighted regression at this point
     for (let j = 0; j < n; j++) {
-      // Calculate distance-based weight
       const dist = Math.abs(x - data[j].x) / xRange;
       const weight = dist <= bandwidth ? Math.pow(1 - Math.pow(dist / bandwidth, 3), 3) : 0;
       
@@ -110,7 +104,6 @@ function calculateTrendLine(data, bandwidth = 0.3) {
       }
     }
     
-    // Only add points where we have enough data for smoothing
     if (denominator > 0) {
       trendData.push({
         x: x,
@@ -122,7 +115,7 @@ function calculateTrendLine(data, bandwidth = 0.3) {
   return trendData;
 }
 
-// Calculate appropriate y-axis range with padding
+// calculate y-axis range with padding
 function calculateYAxisRange(data) {
   if (!data || data.length === 0) return { min: 0, max: 1 };
   
@@ -130,10 +123,9 @@ function calculateYAxisRange(data) {
   const minY = Math.min(...yValues);
   const maxY = Math.max(...yValues);
   
-  // Add 10% padding above and below
+  // add y padding
   const padding = (maxY - minY) * 0.1;
   
-  // If min and max are very close, add some separation
   if (Math.abs(maxY - minY) < 0.001) {
     return { 
       min: minY - 0.5, 
@@ -152,11 +144,9 @@ function findMode(arr, factorLevels = null) {
   let maxCount = 0;
   let mode = null;
 
-  // Count occurrences of each element
   for (let num of arr) {
     frequency[num] = (frequency[num] || 0) + 1;
 
-    // Keep track of the mode and the maximum count
     if (frequency[num] > maxCount) {
       maxCount = frequency[num];
       mode = num;
@@ -216,23 +206,24 @@ export default function SummaryPlot({
   polygons = null,
   factorIcons = null,
   filterColumn = null,
+  enableClickedTooltips = true,
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
   const [initialColorDomain, setInitialColorDomain] = useState(null);
   const [initialElevationDomain, setInitialElevationDomain] = useState(null);
   const [colorbarDomain, setColorbarDomain] = useState(initialColorDomain);
+  const [clickedObject, setClickedObject] = useState(null);
+  const [clickedCoordinates, setClickedCoordinates] = useState(null);
 
-  // Process data for seasonal view (normalize all dates to the same year)
+  // process data for seasonal view (normalize dates to the same year)
   const normalizedData = useMemo(() => {
     if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
     
-    // Use a reference year (2000 as it's a leap year)
     const referenceYear = 2000;
     
     return data.map(d => {
       const date = new Date(d.timestamp);
-      // Create a new date with the same month/day but reference year
       const normalizedDate = new Date(
         referenceYear,
         date.getMonth(),
@@ -250,7 +241,7 @@ export default function SummaryPlot({
     });
   }, [data, viewMode]);
   
-  // Calculate time range for the normalized data
+  // calculate time range for normalized data
   const normalizedTimeRange = useMemo(() => {
     if (viewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
       return timeRange;
@@ -267,23 +258,22 @@ export default function SummaryPlot({
     );
   }, [normalizedData, timeRange, viewMode]);
 
-  // uudate colorbarDomain only when initialColorDomain is not null
+  // update colorbarDomain when initialColorDomain changes
   useEffect(() => {
     if (initialColorDomain !== null) {
       setColorbarDomain(initialColorDomain);
     }
   }, [initialColorDomain]);
 
-  // Introduce a ref to track domain initialization
+  // track domain initialization
   const domainInitializedRef = useRef(false);
 
   useEffect(() => {
-    // reset domains when the categorical variable changes
+    // reset domains when categorical variable changes
     console.log('Resetting domains due to data, time filter, filterColumnValues, or aggregation change');
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
 
-    // reset the initialization tracking
     domainInitializedRef.current = false;
   }, [data, filter, filterColumnValues, legendTitle, colorAggregation, elevationAggregation]);
 
@@ -394,7 +384,7 @@ export default function SummaryPlot({
     updateTriggers.getElevationValue = updateTriggers.getColorValue;
   }
 
-  // Parse polygon data if it's provided as a string
+  // parse polygon data if provided as string
   const parsedPolygons = useMemo(() => {
     if (!polygons) return null;
     
@@ -407,7 +397,7 @@ export default function SummaryPlot({
   }, [polygons]);
 
   const layers = [
-    // Add polygon layer if we have polygons
+    // add polygon layer if we have polygons
     parsedPolygons && new GeoJsonLayer({
       id: 'polygon-layer',
       data: parsedPolygons,
@@ -420,13 +410,11 @@ export default function SummaryPlot({
       getLineColor: [0, 0, 0, 240],
       getFillColor: [200, 200, 200, 40],
       getLineWidth: 1,
-      // Additional props for better visualization
       wireframe: true,
       getElevation: 0,
-      // Make sure polygons are visible
       opacity: 1, 
       parameters: {
-        depthTest: false // Ensure polygons render on top
+        depthTest: false
       },
       updateTriggers: {
         getLineColor: [theme],
@@ -517,9 +505,62 @@ export default function SummaryPlot({
 
   const relevantFactorLevels = (factorLevels && factorLevels[legendTitle]) || null;
 
-  // Use normalizedData when in seasonal view
+  // use normalizedData when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
   const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
+
+  // handle click events on the map
+  const handleClick = (info, event) => {
+    if (!enableClickedTooltips) return;
+    
+    if (!info.object) {
+      setClickedObject(null);
+      setClickedCoordinates(null);
+      return;
+    }
+    
+    setClickedObject(info.object);
+    setClickedCoordinates(info.coordinate);
+    
+    event.stopPropagation();
+  };
+
+  // return tooltip content for hover or clicked object
+  const getTooltipContent = (pickInfo) => {
+    if (enableClickedTooltips && !clickedObject) {
+      return null;
+    }
+
+    if (enableClickedTooltips && clickedObject) {
+      const clickedPickInfo = {
+        object: clickedObject,
+        coordinate: clickedCoordinates,
+        layer: pickInfo.layer
+      };
+      
+      return getTooltip(clickedPickInfo, {
+        colorAggregation,
+        filter,
+        hasTime: !isNaN(timeRange[0]),
+        factorLevels: factorLevels,
+        allData: displayData,
+        columnName: legendTitle,
+        factorIcons: factorIcons,
+        filterColumn: filterColumn
+      });
+    }
+    
+    return getTooltip(pickInfo, {
+      colorAggregation,
+      filter,
+      hasTime: !isNaN(timeRange[0]),
+      factorLevels: factorLevels,
+      allData: displayData,
+      columnName: legendTitle,
+      factorIcons: factorIcons,
+      filterColumn: filterColumn
+    });
+  };
 
   return (
     <>
@@ -529,18 +570,8 @@ export default function SummaryPlot({
         effects={[lightingEffect]}
         initialViewState={initialViewState}
         controller={true}
-        getTooltip={({ object, layer }) =>
-          getTooltip({ object, layer }, {
-            colorAggregation,
-            filter,
-            hasTime: !isNaN(timeRange[0]),
-            factorLevels: factorLevels,
-            allData: displayData,
-            columnName: legendTitle,
-            factorIcons: factorIcons,
-            filterColumn: filterColumn
-          })
-        }
+        getTooltip={getTooltipContent}
+        onClick={enableClickedTooltips ? handleClick : undefined}
       >
         {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}
       </DeckGL>

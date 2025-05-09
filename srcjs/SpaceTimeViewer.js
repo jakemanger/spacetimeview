@@ -86,6 +86,7 @@ export default function SpaceTimeViewer({
     'radius_min_pixels',
     'aggregate',
     'filter_column',
+    'enable_clicked_tooltips',
   ],
   controlNames = {
     'column_to_plot': 'Dataset',
@@ -96,12 +97,14 @@ export default function SpaceTimeViewer({
     'summary_height': 'Cell Height',
     'radius_min_pixels': 'Minimum Point Radius',
     'aggregate': 'Aggregate',
-    'filter_column': 'Filter Column'
+    'filter_column': 'Filter Column',
+    'enable_clicked_tooltips': 'Clickable Tooltips'
   },
   initialFilterColumn = null,
   draggableMenu = false,
   polygons = null,
   factorIcons = null,
+  enableClickedTooltips = true,
   ...props // Capture any other props
 }) {
   // Log all incoming props at the very beginning
@@ -135,6 +138,7 @@ export default function SpaceTimeViewer({
     draggableMenu, 
     polygons: polygons ? `Polygon data provided (length: ${polygons.length})` : 'No polygon data',
     factorIcons: factorIcons ? 'Factor icons provided' : 'No factor icons',
+    enableClickedTooltips,
     otherProps: props
   });
 
@@ -326,6 +330,12 @@ export default function SpaceTimeViewer({
       label: controlNames['filter_column'] || 'Filter Column',
       hint: 'Choose a column to filter the data by.',
       render: () => visibleControls.includes('filter_column'),
+    },
+    enableClickedTooltips: {
+      value: enableClickedTooltips,
+      label: controlNames['enable_clicked_tooltips'] || 'Clickable Tooltips',
+      hint: 'Enable to pin tooltips when clicking on data points.',
+      render: () => visibleControls.includes('enable_clicked_tooltips')
     }
   };
 
@@ -353,7 +363,8 @@ export default function SpaceTimeViewer({
       summaryStyle,
       radiusScale,
       radiusMinPixels,
-      filterColumn
+      filterColumn,
+      enableClickedTooltips: clickedTooltipsEnabled
     },
     set
   ] = useControls(
@@ -382,6 +393,7 @@ export default function SpaceTimeViewer({
       initialFilterColumn,
       draggableMenu,
       factorIcons,
+      enableClickedTooltips,
     ]
   );
 
@@ -408,6 +420,7 @@ export default function SpaceTimeViewer({
         radiusMinPixels: initialRadiusMinPixels,
         animationSpeed: initialAnimationSpeed,
         filterColumn: initialFilterColumn,
+        enableClickedTooltips: enableClickedTooltips,
       }
     )
   }, [
@@ -435,6 +448,7 @@ export default function SpaceTimeViewer({
     initialFilterColumn,
     draggableMenu,
     factorIcons,
+    enableClickedTooltips,
   ]);
 
   // Calculate information for the selected filter display
@@ -635,6 +649,7 @@ export default function SpaceTimeViewer({
           polygons={polygons}
           factorIcons={factorIcons}
           filterColumn={filterColumn}
+          enableClickedTooltips={clickedTooltipsEnabled}
         />
       );
     } else if (style === 'Summary') {
@@ -665,6 +680,7 @@ export default function SpaceTimeViewer({
           polygons={polygons}
           factorIcons={factorIcons}
           filterColumn={filterColumn}
+          enableClickedTooltips={clickedTooltipsEnabled}
         />
       );
     } else {
@@ -693,6 +709,7 @@ export default function SpaceTimeViewer({
     polygons,
     factorIcons,
     filterColumn,
+    clickedTooltipsEnabled,
   ]);
 
   const handleSnackbarClose = () => {

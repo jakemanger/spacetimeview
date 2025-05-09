@@ -1,7 +1,7 @@
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
-// Helper function to calculate aggregated value
+// calculate aggregated value from a list of values
 function calculateAggregate(values, aggregateType = 'MEAN') {
   if (!values || values.length === 0) return 'N/A';
   
@@ -17,7 +17,6 @@ function calculateAggregate(values, aggregateType = 'MEAN') {
     case 'MAX':
       return Math.max(...values.filter(v => typeof v === 'number'));
     case 'MODE':
-      // Simple mode calculation
       const counts = {};
       let maxCount = 0;
       let mode = null;
@@ -34,16 +33,16 @@ function calculateAggregate(values, aggregateType = 'MEAN') {
   }
 }
 
-// Helper function to format a number nicely
+// format a number with specified decimal places
 function formatNumber(value, decimals = 2) {
   if (value === null || value === undefined || isNaN(value)) return 'N/A';
   if (Number.isInteger(value)) return value.toString();
   return value.toFixed(decimals);
 }
 
-// Function to generate HTML for filter aggregates 
+// generate HTML showing filter aggregates by category 
 function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevels, factorIcons, aggregateType = 'MEAN', columnName) {
-  // Check if we are dealing with an aggregation layer object (has points)
+  // check if we are dealing with an aggregation layer object (has points)
   const isAggregationLayer = object.points && Array.isArray(object.points);
 
   if (!filterColumn || !factorLevels || 
@@ -70,12 +69,12 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
       `Missing '${filterColumn}'`
   });
   
-  // Get position of current point
+  // get position of current point
   const position = object.position || [object.lng, object.lat];
   const lat = position[1];
   const lng = position[0];
   
-  // Use object.points if available (aggregation layer), otherwise filter allData
+  // use object.points if available (aggregation layer), otherwise filter allData
   const pointsToProcess = isAggregationLayer 
     ? object.points.map(p => p.source) // Extract original data from points
     : allData.filter(d => // Fallback for scatter/other layers if needed
@@ -86,11 +85,11 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
   
   if (pointsToProcess.length === 0) return '';
   
-  // Group by filter values
+  // group by filter values
   const filterGroups = {};
-  let filterValueOccurrences = {}; // Map to count total occurrences of each filter value
+  let filterValueOccurrences = {}; // count total occurrences of each filter value
   
-  // First, count total occurrences of each filter value in the entire dataset
+  // count occurrences of each filter value
   pointsToProcess.forEach(d => {
     const filterValue = d[filterColumn];
     if (filterValue !== undefined && filterValue !== null) {
@@ -98,7 +97,7 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
     }
   });
   
-  // Then, collect values to aggregate for each filter value at this location
+  // collect values to aggregate for each filter value
   pointsToProcess.forEach(point => {
     const filterValue = point[filterColumn];
     const dataValue = point[columnName];
@@ -111,7 +110,6 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
     }
   });
   
-  // If we found no filter groups, don't show anything
   if (Object.keys(filterGroups).length === 0) {
     console.log("No filter groups found at this location");
     return '';
@@ -125,7 +123,7 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
   const levels = factorLevels[filterColumn];
   console.log("Factor levels:", levels);
   
-  // Calculate aggregates and store details for sorting
+  // calculate aggregates and prepare for display
   const aggregatedDetails = Object.keys(filterGroups).map(filterValue => {
     const values = filterGroups[filterValue];
     const aggregateValue = calculateAggregate(values, aggregateType);
@@ -138,24 +136,24 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
       filterValue,
       label,
       iconPath,
-      aggregateValue, // Keep the raw value for sorting
+      aggregateValue,
       formattedValue,
       pointCount: values.length
     };
   });
   
-  // Sort by aggregateValue (descending), placing non-numeric values last
+  // sort by aggregateValue (descending)
   aggregatedDetails.sort((a, b) => {
     const valA = typeof a.aggregateValue === 'number' ? a.aggregateValue : -Infinity;
     const valB = typeof b.aggregateValue === 'number' ? b.aggregateValue : -Infinity;
     return valB - valA;
   });
   
-  // Limit to top 5
+  // limit to top 5
   const topDetails = aggregatedDetails.slice(0, 5);
   const hiddenCount = aggregatedDetails.length - topDetails.length;
   
-  // Generate HTML for each filter group
+  // generate HTML for each filter group
   let html = `
     <div style="margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px;">
       <div style="font-weight: bold; margin-bottom: 6px; color: #14171A; padding-bottom: 3px; font-size: 14px;">
@@ -163,7 +161,7 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
       </div>
   `;
   
-  // Generate HTML for the top details
+  // generate HTML for the top details
   for (const detail of topDetails) {
     console.log(`Factor level ${detail.filterValue} -> "${detail.label}", Icon: ${detail.iconPath ? "Yes" : "No"}, Agg: ${detail.formattedValue}`);
     html += `
@@ -176,7 +174,7 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
     `;
   }
   
-  // Add indicator if some items were hidden
+  // add indicator if some items were hidden
   if (hiddenCount > 0) {
     html += `
       <div style="font-size: 12px; color: #657786; margin-top: 5px; text-align: center;">
@@ -189,28 +187,24 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
   return html;
 }
 
-// checks if a point is inside a polygon using ray casting algorithm
+// check if a point is inside a polygon using ray casting algorithm
 function isPointInPolygon(point, polygon) {
-  // For MultiPolygon, check each polygon
   if (polygon.geometry.type === 'MultiPolygon') {
     return polygon.geometry.coordinates.some(coords => {
-      // Check main polygon (first coordinate array)
       return coords.some(ring => {
         return isPointInRing(point, ring);
       });
     });
   }
   
-  // For simple Polygon
   if (polygon.geometry.type === 'Polygon') {
-    // Check if the point is in the outer ring
     return isPointInRing(point, polygon.geometry.coordinates[0]);
   }
   
   return false;
 }
 
-// determines appropriate time unit based on the data range
+// determine appropriate time unit based on data range
 function determineTimeUnit(data) {
   if (!data || data.length < 2) return 'day';
   
@@ -225,7 +219,7 @@ function determineTimeUnit(data) {
   return 'year';
 }
 
-// calculates LOESS regression for trend line
+// calculate LOESS regression for trend line
 function calculateTrendLine(data, bandwidth = 0.3) {
   if (data.length < 3) return [];
   
@@ -263,7 +257,7 @@ function calculateTrendLine(data, bandwidth = 0.3) {
   return trendData;
 }
 
-// calculates appropriate y-axis range with padding
+// calculate appropriate y-axis range with padding
 function calculateYAxisRange(data) {
   if (!data || data.length === 0) return { min: 0, max: 1 };
   
@@ -286,7 +280,7 @@ function calculateYAxisRange(data) {
   };
 }
 
-// initializes tooltip state if it doesn't exist
+// initialize tooltip state if it doesn't exist
 function initTooltipState() {
   if (!window.tooltipState) {
     const container = document.createElement('div');
@@ -310,7 +304,7 @@ function initTooltipState() {
   }
 }
 
-// cleans up chart tooltip state
+// clean up chart tooltip state
 function cleanupChartTooltip() {
   if (window.tooltipState?.chartContainer) {
     window.tooltipState.chartContainer.style.display = 'none';
@@ -320,7 +314,7 @@ function cleanupChartTooltip() {
     window.tooltipState.moveListener = null;
   }
   
-  // Also destroy all chart instances when hiding tooltip
+  // destroy all chart instances
   if (window.tooltipState?.chartInstances) {
     Object.keys(window.tooltipState.chartInstances).forEach(key => {
       if (window.tooltipState.chartInstances[key]) {
@@ -334,13 +328,12 @@ function cleanupChartTooltip() {
     });
   }
   
-  // Reset current object ID to force chart recreation when returning to same position
   if (window.tooltipState) {
     window.tooltipState.currentObjectId = null;
   }
 }
 
-// creates or updates a chart in the tooltip
+// create or update a chart in the tooltip
 function createOrUpdateChart(elementId, seriesData) {
   window.requestAnimationFrame(() => {
     const ctx = document.getElementById(elementId)?.getContext('2d');
@@ -352,7 +345,7 @@ function createOrUpdateChart(elementId, seriesData) {
     const trendLineData = calculateTrendLine(seriesData);
     const yAxisRange = calculateYAxisRange([...seriesData, ...trendLineData]);
     
-    // Always destroy existing chart instance before creating a new one
+    // destroy existing chart instance before creating a new one
     if (window.tooltipState.chartInstances[elementId]) {
       window.tooltipState.chartInstances[elementId].destroy();
       delete window.tooltipState.chartInstances[elementId];
@@ -449,7 +442,7 @@ function createOrUpdateChart(elementId, seriesData) {
   });
 }
 
-// creates move listener for tooltip positioning
+// create move listener for tooltip positioning
 function createMoveListener() {
   const moveContainer = (event) => {
     const container = window.tooltipState.chartContainer;
@@ -491,7 +484,7 @@ function createMoveListener() {
   }
 }
 
-// handles polygon tooltips
+// handle polygon tooltips
 function handlePolygonTooltip(object, hasTime, allData, filter) {
   const pointsInPolygon = allData.filter(point => {
     return isPointInPolygon([point.lng, point.lat], object);
@@ -622,7 +615,7 @@ function handlePolygonTooltip(object, hasTime, allData, filter) {
   }
 }
 
-// handles aggregate data tooltips (for hexagon/grid layers)
+// handle aggregate data tooltips (for hexagon/grid layers)
 function handleAggregateTooltip(object, colorAggregation, filter, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData) {
   initTooltipState();
 
@@ -652,14 +645,12 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
 
   seriesData.sort((a, b) => a.x - b.x);
 
-  // Always update charts when hovering on an already-visited position by adding 
-  // a forced update check that uses a timestamp
+  // check if we need to update based on time since last visit
   const currentTime = Date.now();
   const lastVisitTime = window.tooltipState.lastVisitTime?.[objectId] || 0;
   const timeSinceLastVisit = currentTime - lastVisitTime;
-  const forceUpdate = timeSinceLastVisit > 500; // Force update if last visit was over 500ms ago
+  const forceUpdate = timeSinceLastVisit > 500;
   
-  // Store current visit time
   if (!window.tooltipState.lastVisitTime) {
     window.tooltipState.lastVisitTime = {};
   }
@@ -672,7 +663,7 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
   if (hasTime) {
     window.tooltipState.chartContainer.style.display = 'block';
     
-    // Clear all existing chart instances when creating a new tooltip
+    // clear chart instances when creating a new tooltip
     if (window.tooltipState.currentObjectId !== objectId) {
       Object.keys(window.tooltipState.chartInstances).forEach(key => {
         if (window.tooltipState.chartInstances[key]) {
@@ -682,12 +673,11 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
       });
     }
     
-    // Always force recreation of chart and HTML for stability
+    // recreate chart and HTML for stability
     if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId || forceUpdate) {
-      // Clear the container before adding new content
       window.tooltipState.chartContainer.innerHTML = '';
       
-      // Prepare filter aggregates HTML before constructing the tooltip
+      // prepare filter aggregates HTML
       let filterAggregatesHTML = '';
       if (filterColumn && filterColumn !== columnName && allData && allData.length > 0) {
         console.log("Adding filter aggregates to chart tooltip");
@@ -696,7 +686,7 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
         ) || '';
       }
       
-      // Create tooltip HTML
+      // create tooltip HTML
       const tooltipHTML = `
         <div style="
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -792,7 +782,7 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
       window.tooltipState.currentObjectId = objectId;
       window.tooltipState.lastData[objectId] = seriesData;
 
-      // Wait for the DOM to update before creating the chart
+      // wait for DOM update before creating chart
       setTimeout(() => {
         createOrUpdateChart(chartId, seriesData);
       }, 50);
@@ -860,7 +850,7 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
   };
 }
 
-// handles point tooltips (for scatter layers)
+// handle point tooltips (for scatter layers)
 function handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnName) {
   cleanupChartTooltip();
 
@@ -939,7 +929,7 @@ function handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnNa
   };
 }
 
-// handles factor data in tooltips with a horizontal bar chart
+// handle factor data with a horizontal bar chart
 function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filterColumn, allData) {
   initTooltipState();
   
@@ -947,7 +937,7 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
   const objectId = `factor-${position[0].toFixed(6)}-${position[1].toFixed(6)}`;
   const chartId = `chart-${objectId}`;
   
-  // Count frequency of each factor level
+  // count frequency of each factor level
   const factorFrequencies = {};
   const factorData = object.points || [object];
   
@@ -959,7 +949,7 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
     }
   });
   
-  // Prepare data for chart, keeping original label for mapping
+  // prepare data for chart
   const chartLabels = [];
   const chartData = [];
   const sortedFactorsForDisplay = Object.entries(factorFrequencies)
@@ -967,11 +957,11 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
     .slice(0, 20);
 
   sortedFactorsForDisplay.forEach(([label, count]) => {
-    chartLabels.push(label); // Use the plain label for the chart axis
+    chartLabels.push(label);
     chartData.push(count);
   });
   
-  // Prepare data for horizontal bar chart
+  // prepare horizontal bar chart data
   const barChartData = {
     labels: chartLabels,
     datasets: [{
@@ -989,14 +979,12 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
   
   window.tooltipState.chartContainer.style.display = 'block';
   
-  // Always update charts when hovering on an already-visited position by adding 
-  // a forced update check that uses a timestamp
+  // check if update needed based on time since last visit
   const currentTime = Date.now();
   const lastVisitTime = window.tooltipState.lastVisitTime?.[objectId] || 0;
   const timeSinceLastVisit = currentTime - lastVisitTime;
-  const forceUpdate = timeSinceLastVisit > 500; // Force update if last visit was over 500ms ago
+  const forceUpdate = timeSinceLastVisit > 500;
   
-  // Store current visit time
   if (!window.tooltipState.lastVisitTime) {
     window.tooltipState.lastVisitTime = {};
   }
@@ -1006,7 +994,7 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
     JSON.stringify(barChartData) !== JSON.stringify(window.tooltipState.lastData[objectId]) ||
     forceUpdate;
   
-  // Clear all existing chart instances when creating a new tooltip
+  // clear existing chart instances for new tooltip
   if (window.tooltipState.currentObjectId !== objectId) {
     Object.keys(window.tooltipState.chartInstances).forEach(key => {
       if (window.tooltipState.chartInstances[key]) {
@@ -1017,10 +1005,9 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
   }
   
   if (chartNeedsUpdate || window.tooltipState.currentObjectId !== objectId || forceUpdate) {
-    // Clear the container before adding new content
     window.tooltipState.chartContainer.innerHTML = '';
     
-    // Prepare list of factors with icons for HTML display
+    // prepare list of factors with icons
     const factorListHtml = sortedFactorsForDisplay.map(([label, count]) => {
       const iconPath = factorIcons && factorIcons[columnName] && factorIcons[columnName][label];
       const percentage = ((count / totalCount) * 100).toFixed(1);
@@ -1034,10 +1021,10 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
       `;
     }).join('');
 
-    // Calculate height based on number of factors, with a minimum
+    // calculate height based on number of factors
     const chartHeight = Math.max(350, Math.min(sortedFactorsForDisplay.length * 30 + 50, 500));
     
-    // Prepare filter aggregates HTML before constructing the tooltip
+    // prepare filter aggregates HTML
     let filterAggregatesHTML = '';
     if (filterColumn && filterColumn !== columnName) {
       filterAggregatesHTML = generateFilterAggregatesHTML(
@@ -1069,7 +1056,7 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
             justify-content: center;
             margin-right: 12px;
             flex-shrink: 0;
-            overflow: 'hidden'; // Ensure icon fits if provided
+            overflow: 'hidden';
           ">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
               <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
@@ -1092,12 +1079,12 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
           Total count: ${totalCount}
         </div>
         <div style="
-          max-height: 150px; /* Limit height of factor list */
-          overflow-y: auto; /* Add scroll if list is long */
+          max-height: 150px;
+          overflow-y: auto;
           margin-bottom: 12px;
-          padding-right: 5px; /* Space for scrollbar */
+          padding-right: 5px;
         ">
-          ${factorListHtml} /* Inject the factor list here */
+          ${factorListHtml}
         </div>
         <div style="
           background: white;
@@ -1121,7 +1108,7 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
     window.tooltipState.currentObjectId = objectId;
     window.tooltipState.lastData[objectId] = barChartData;
     
-    // Give DOM time to update before creating chart
+    // give DOM time to update before creating chart
     setTimeout(() => {
       const ctx = document.getElementById(chartId)?.getContext('2d');
       if (!ctx) {
@@ -1129,7 +1116,6 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
         return;
       }
       
-      // Always create a new chart
       if (window.tooltipState.chartInstances[chartId]) {
         window.tooltipState.chartInstances[chartId].destroy();
       }
@@ -1215,7 +1201,7 @@ export function getTooltip({
     return handlePolygonTooltip(object, hasTime, allData, filter);
   }
 
-  // Check if this is factor data that should display a factor chart
+  // check if factor data that should display a factor chart
   if (factorLevels) {
     const value = object.points ? 
       (object.points[0]?.source?.value !== undefined ? object.points[0].source.value : object.colorValue) : 
@@ -1223,7 +1209,6 @@ export function getTooltip({
     
     if (value !== undefined && value !== null && 
         (typeof value === 'number' && Number.isInteger(value) && factorLevels[value] !== undefined)) {
-      // Pass all needed parameters to handleFactorTooltip
       return handleFactorTooltip(object, factorLevels, columnName, factorIcons, filterColumn, allData);
     }
   }
@@ -1248,14 +1233,13 @@ export function getTooltip({
   // for point data (ScatterplotLayer)
   let result = handlePointTooltip(object, hasTime, factorLevels, factorIcons, columnName);
   
-  // Add filter aggregates if applicable
+  // add filter aggregates if applicable
   if (filterColumn && filterColumn !== columnName) {
     const filterAggregatesHTML = generateFilterAggregatesHTML(
       object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
     );
     
     if (filterAggregatesHTML) {
-      // Be careful with the regex replacement, as HTML can contain multiple closing divs
       const lastClosingDiv = result.html.lastIndexOf('</div>');
       if (lastClosingDiv !== -1) {
         result.html = result.html.substring(0, lastClosingDiv) + 
