@@ -357,10 +357,8 @@ function createMoveListener() {
 
 // handle polygon tooltips
 function handlePolygonTooltip(object, hasTime, allData, filter) {
-  const pointsInPolygon = allData.filter(point => {
-    return isPointInPolygon([point.lng, point.lat], object);
-  });
-  
+  // The PolygonAggregationLayer now provides pre-aggregated data
+  const pointsInPolygon = object.points || [];
   const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
   
   if (pointsInPolygon.length > 0 && hasTime) {
@@ -377,9 +375,12 @@ function handlePolygonTooltip(object, hasTime, allData, filter) {
     
     seriesData.sort((a, b) => a.x - b.x);
     
-    const avgValue = seriesData.length > 0 
-      ? (seriesData.reduce((sum, d) => sum + d.y, 0) / seriesData.length).toFixed(2)
-      : 'N/A';
+    // Use pre-calculated average if available, otherwise calculate it
+    const avgValue = object.avg !== undefined 
+      ? object.avg.toFixed(2)
+      : seriesData.length > 0 
+        ? (seriesData.reduce((sum, d) => sum + d.y, 0) / seriesData.length).toFixed(2)
+        : 'N/A';
     
     const chartNeedsUpdate = !window.tooltipState.lastData[objectId] || 
       JSON.stringify(seriesData) !== JSON.stringify(window.tooltipState.lastData[objectId]);

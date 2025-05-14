@@ -12,6 +12,7 @@ import * as d3 from 'd3';
 import { getTooltip } from '../ui/MapTooltip';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange, getMinMaxValues, formatLabel } from '../utils/chartUtils';
 import { normalizeDataByYear } from '../utils/dataUtils';
+import PolygonAggregationLayer from '../layers/PolygonAggregationLayer';
 
 const MAP_VIEW = new MapView({ repeat: true, farZMultiplier: 100 });
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -142,9 +143,11 @@ export default function ScatterTimePlot({
 
   const layers = [
     // add polygon layer if we have polygons
-    parsedPolygons && new GeoJsonLayer({
+    parsedPolygons && new PolygonAggregationLayer({
       id: 'polygon-layer',
       data: parsedPolygons,
+      allData: displayData, // Pass all data for aggregation
+      filter: filter, // Pass time filter
       pickable: true,
       stroked: true,
       filled: true,
@@ -155,17 +158,10 @@ export default function ScatterTimePlot({
       getFillColor: [200, 200, 200, 40],
       getLineWidth: 1,
       wireframe: true,
-      getElevation: 0,
-      opacity: 1,
-      parameters: {
-        depthTest: false
-      },
       updateTriggers: {
         getLineColor: [theme],
         getFillColor: [theme],
-      },
-      onAfterUpdate: () => {
-        console.log('GeoJsonLayer updated in ScatterTimePlot');
+        filter: [filter]
       }
     }),
     filter && new ScatterplotLayer({

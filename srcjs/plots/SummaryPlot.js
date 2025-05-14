@@ -17,6 +17,7 @@ import Colorbar from '../ui/Colorbar';
 import { getTooltip } from '../ui/MapTooltip';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange, findMode } from '../utils/chartUtils';
 import { normalizeDataByYear } from '../utils/dataUtils';
+import PolygonAggregationLayer from '../layers/PolygonAggregationLayer';
 
 const MS_PER_DAY = 8.64e7;
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
@@ -249,9 +250,11 @@ export default function SummaryPlot({
 
   const layers = [
     // add polygon layer if we have polygons
-    parsedPolygons && new GeoJsonLayer({
+    parsedPolygons && new PolygonAggregationLayer({
       id: 'polygon-layer',
       data: parsedPolygons,
+      allData: normalizedData, // Pass all data for aggregation
+      filter: filter, // Pass time filter
       pickable: true,
       stroked: true,
       filled: true,
@@ -262,17 +265,10 @@ export default function SummaryPlot({
       getFillColor: [200, 200, 200, 40],
       getLineWidth: 1,
       wireframe: true,
-      getElevation: 0,
-      opacity: 1, 
-      parameters: {
-        depthTest: false
-      },
       updateTriggers: {
         getLineColor: [theme],
         getFillColor: [theme],
-      },
-      onAfterUpdate: () => {
-        console.log('GeoJsonLayer updated in SummaryPlot');
+        filter: [filter]
       }
     }),
     isGridView
