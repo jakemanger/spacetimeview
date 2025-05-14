@@ -206,7 +206,7 @@ export default function SummaryPlot({
   polygons = null,
   factorIcons = null,
   filterColumn = null,
-  enableClickedTooltips = true,
+  enableClickedTooltips = false,
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');

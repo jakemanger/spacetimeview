@@ -104,7 +104,7 @@ export default function SpaceTimeViewer({
   draggableMenu = false,
   polygons = null,
   factorIcons = null,
-  enableClickedTooltips = true,
+  enableClickedTooltips = false, // highly experimental, undocumented and not recommended
   ...props // Capture any other props
 }) {
   // Log all incoming props at the very beginning
