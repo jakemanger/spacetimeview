@@ -186,6 +186,17 @@ export default function ScatterTimePlot({
   const [clickedObject, setClickedObject] = useState(null);
   const [clickedCoordinates, setClickedCoordinates] = useState(null);
 
+  useEffect(() => {
+    // When the component mounts or the timeRange prop changes,
+    // explicitly set the filter.
+    // Using a new array instance ([...timeRange]) ensures that
+    // React treats this as a state change, triggering a re-render
+    // and providing a "fresh" filterRange to the DeckGL layer.
+    if (timeRange && timeRange.length === 2 && !isNaN(timeRange[0]) && !isNaN(timeRange[1])) {
+      setFilter([...timeRange]);
+    }
+  }, [timeRange]); // Removed setFilter from dependency array as it's a setter from useState and doesn't change
+
   console.log("[ScatterTimePlot] Initializing with:", { 
     filterColumn, 
     columnName,
