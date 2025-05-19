@@ -79,6 +79,8 @@ div[mapboxgl-children] {
   border-bottom: 1px solid #e0e0e0;
   padding: 0;
   z-index: 10;
+  position: sticky;
+  top: 0;
 }
 
 .space-time-tabs-nav {
