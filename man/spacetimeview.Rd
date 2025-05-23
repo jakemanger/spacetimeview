@@ -24,6 +24,7 @@ spacetimeview(
   color_scale_type = "quantize",
   num_decimals = 1,
   factor_levels = NULL,
+  factor_icons = NULL,
   header_logo = "",
   header_title = "",
   header_website_link = "",
@@ -40,6 +41,7 @@ spacetimeview(
   lng_name = "auto",
   time_column_name = "auto",
   plottable_columns = NULL,
+  polygons = NULL,
   width = "100vw",
   height = "100vh",
   elementId = NULL,
@@ -107,6 +109,11 @@ color legend.}
 \item{factor_levels}{List. Optional. Provides factor levels for categorical
 data, allowing for customized color mappings and labels.}
 
+\item{factor_icons}{List. Optional. Provides paths to images for factor levels.
+Should be a named list where keys are factor column names, and values are
+named lists mapping factor levels to image file paths relative to the 'public'
+directory (e.g., list(my_factor_col = list(level1 = "icons/icon1.png", level2 = "icons/icon2.png"))).}
+
 \item{header_logo}{Character. Optional. URL to the logo displayed in the
 header of the visualization.}
 
@@ -128,6 +135,10 @@ the interface. Controls include "column_to_plot", "style", "color_scheme",
 \item{control_names}{Named list. Custom names for controls as displayed in
 the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and
 values to the display names.}
+
+\item{polygons}{sf or list object. Optional. Polygons to display on the map,
+such as state or country boundaries. Can be an sf object with POLYGON or
+MULTIPOLYGON geometry or a list with GeoJSON structure.}
 }
 \value{
 An interactive space-time viewer for visualizing and exploring data.

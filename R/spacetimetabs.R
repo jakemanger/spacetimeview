@@ -10,51 +10,57 @@
 #' @import htmlwidgets
 #'
 #' @export
-spacetimetabs <- function(..., tab_titles = NULL, width = NULL, height = NULL, elementId = NULL) {
-  # Collect spacetimeview objects
+spacetimetabs <- function(
+  ...,
+  tab_titles = NULL,
+  width = '100vw',
+  height = '100vh',
+  elementId = NULL
+) {
+  # get the spacetimeview objects
   views <- list(...)
-  
-  # Check if the input is from the + operator (SpacetimeviewList)
-  if (length(views) == 1 && inherits(views[[1]], "SpacetimeviewList")) {
-    views <- views[[1]]$views
-    tab_titles <- views[[1]]$tab_titles %||% tab_titles
+  views <- views[[1]]
+  # check if the input is from the + operator (SpacetimeviewList)
+  if (length(views$views) > 1 && inherits(views, "SpacetimeviewList")) {
+    tab_titles <- views$tab_titles %||% tab_titles
+    views <- views$views
   }
-  
-  # Validate inputs
+
+  # validate
   if (length(views) == 0) {
     stop("No spacetimeview objects provided")
   }
-  
-  # Check that all objects are spacetimeview objects
-  # We need to check for class instead of name property
   if (!all(sapply(views, function(x) {
-      inherits(x, "spacetimeview") 
-    }))) {
+    inherits(x, "spacetimeview")
+  }))) {
     stop("All objects must be spacetimeview objects")
   }
-  
-  # Generate default tab titles if not provided
+
+  # generate default tab titles if not provided
   if (is.null(tab_titles)) {
     tab_titles <- paste("Tab", seq_along(views))
   } else if (length(tab_titles) != length(views)) {
-    warning("Number of tab titles does not match number of views. Using default titles.")
+    warning(
+      paste(
+        "Number of tab titles does not match number of views.",
+        "Using default titles."
+      )
+    )
     tab_titles <- paste("Tab", seq_along(views))
   }
-  
-  # Extract configuration from each spacetimeview object
+
+  # extract configuration from each spacetimeview object
   view_configs <- lapply(views, function(view) {
-    # The configuration is stored in the tag$attribs of the ReactR markup
     config <- view$x$tag$attribs
     return(config)
   })
-  
-  # Create a component to send to the browser
+
+  # then pass to the SpaceTimeTabs component
   component <- reactR::component("SpaceTimeTabs", list(
     viewConfigs = view_configs,
     titles = tab_titles
   ))
-  
-  # Create widget
+
   htmlwidgets::createWidget(
     name = 'spacetimeview',
     reactR::reactMarkup(component),
@@ -67,18 +73,18 @@ spacetimetabs <- function(..., tab_titles = NULL, width = NULL, height = NULL, e
 
 #' @export
 `+.spacetimeview` <- function(e1, e2) {
-  # Check if e2 is a spacetimeview object
+  # check if e2 is a spacetimeview object
   if (!inherits(e2, "spacetimeview")) {
     stop("Can only add spacetimeview objects together")
   }
-  
-  # Check if e1 is already a SpacetimeviewList
+
+  # check if e1 is already a SpacetimeviewList
   if (inherits(e1, "SpacetimeviewList")) {
     e1$views <- c(e1$views, list(e2))
     return(e1)
   }
-  
-  # Create a new SpacetimeviewList
+
+  # create a new SpacetimeviewList
   result <- structure(
     list(
       views = list(e1, e2),
@@ -86,32 +92,32 @@ spacetimetabs <- function(..., tab_titles = NULL, width = NULL, height = NULL, e
     ),
     class = c("SpacetimeviewList", "list")
   )
-  
+
   return(result)
 }
 
+#' Print method for SpacetimeviewList
+#'
+#' Converts a SpacetimeviewList to a spacetimetabs widget and displays it
+#'
+#' @param x A SpacetimeviewList object
+#' @param ... Additional arguments passed to print
+#' @return The SpacetimeviewList object (invisibly)
 #' @export
 print.SpacetimeviewList <- function(x, ...) {
-  cat("SpacetimeviewList with", length(x$views), "views\n")
+  result <- spacetimetabs(x)
+  print(result)
   invisible(x)
 }
 
-#' Set tab titles for a SpacetimeviewList
+#' Set tab titles for a SpacetimeviewList using names
 #'
 #' @param x A SpacetimeviewList object
-#' @param titles Character vector of tab titles
+#' @param value Character vector of tab titles
 #' @return The SpacetimeviewList with updated tab titles
 #' @export
-set_tab_titles <- function(x, titles) {
-  if (!inherits(x, "SpacetimeviewList")) {
-    stop("x must be a SpacetimeviewList object")
-  }
-  
-  if (length(titles) != length(x$views)) {
-    stop("Number of titles must match number of views")
-  }
-  
-  x$tab_titles <- titles
+`names<-.SpacetimeviewList` <- function(x, value) {
+  x$tab_titles <- value
   return(x)
 }
 
@@ -143,8 +149,18 @@ widget_html.spacetimetabs <- function(id, style, class, ...) {
 #' @name spacetimetabs-shiny
 #'
 #' @export
-spacetimetabsOutput <- function(outputId, width = '100%', height = '400px'){
-  htmlwidgets::shinyWidgetOutput(outputId, 'spacetimetabs', width, height, package = 'spacetimeview')
+spacetimetabsOutput <- function(
+  outputId,
+  width = '100%',
+  height = '100%'
+){
+  htmlwidgets::shinyWidgetOutput(
+    outputId,
+    'spacetimetabs',
+    width,
+    height,
+    package = 'spacetimeview'
+  )
 }
 
 #' @rdname spacetimetabs-shiny

@@ -1,6 +1,6 @@
 devtools::load_all()
 
-# Create sample datasets
+# make some example datasets
 data1 <- data.frame(
   lat = runif(100, min = -30, max = 30),
   lng = runif(100, min = -100, max = 100),
@@ -25,7 +25,7 @@ data3 <- data.frame(
   precipitation = runif(100, min = 0, max = 50)
 )
 
-# Create individual spacetimeview objects
+# create individual spacetimeview objects
 view1 <- spacetimeview(
   data = data1, 
   style = "Summary",
@@ -46,27 +46,22 @@ view3 <- spacetimeview(
   column_to_plot = "value"
 )
 
-# Method 1: Using the spacetimetabs function directly
+
+# now, let's combine the views into a spacetimetab
+
+# Method 1: using the spacetimetabs function directly
 tabs1 <- spacetimetabs(
   view1, view2, view3,
   tab_titles = c("Region 1", "Region 2", "Region 3"),
-  width = "100%",
-  height = "600px"
 )
-
 print(tabs1)
 
-# # Method 2: Using the + operator
-# combined_views <- view1 + view2 + view3
-# tabs2 <- spacetimetabs(combined_views)
+# Method 2 (simpler): using the + operator
+# (creates a SpacetimeviewList)
+combined_views <- view1 + view2 + view3
 
-# # Set custom tab titles for the combined views
-# combined_views_with_titles <- view1 + view2 + view3 %>%
-#   set_tab_titles(c("South Region", "North Region", "Antarctica"))
-# tabs3 <- spacetimetabs(combined_views_with_titles)
+# set tab titles
+names(combined_views) <- c("Region 1", "Region 2", "Region 3")
 
-# # Save the widget to an HTML file
-# htmlwidgets::saveWidget(tabs3, "spacetime_tabs_example.html")
-
-# # Display in R
-# tabs3 
+# print the combined views - this will create a spacetimetabs component
+print(combined_views)
