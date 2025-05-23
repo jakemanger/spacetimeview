@@ -72,6 +72,61 @@ is useful if you want to save an expression in a variable.</p></dd>
 
 </dl></div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.posit.co/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in library(shiny):</span> there is no package called ‘shiny’</span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jakemanger.github.io/spacetimeview/">spacetimeview</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>shiny.maxRequestSize <span class="op">=</span> <span class="fl">100</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="co"># increase file size limit</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">ui</span> <span class="op">&lt;-</span> <span class="fu">fluidPage</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu">titlePanel</span><span class="op">(</span><span class="st">"Interactive Space-Time Visualization"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  </span></span>
+<span class="r-in"><span>  <span class="fu">sidebarLayout</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu">sidebarPanel</span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="fu">fileInput</span><span class="op">(</span><span class="st">"file"</span>, <span class="st">"Upload CSV File"</span>, accept <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu">selectInput</span><span class="op">(</span><span class="st">"plot_type"</span>, <span class="st">"Plot Type:"</span>, choices <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Summary"</span>, <span class="st">"Scatter"</span><span class="op">)</span>, selected <span class="op">=</span> <span class="st">"Summary"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu">selectInput</span><span class="op">(</span><span class="st">"aggregate"</span>, <span class="st">"Aggregate Method:"</span>, choices <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SUM"</span>, <span class="st">"MEAN"</span>, <span class="st">"COUNT"</span><span class="op">)</span>, selected <span class="op">=</span> <span class="st">"MEAN"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu">numericInput</span><span class="op">(</span><span class="st">"radius"</span>, <span class="st">"Cell Radius:"</span>, value <span class="op">=</span> <span class="fl">50000</span>, min <span class="op">=</span> <span class="fl">1000</span>, step <span class="op">=</span> <span class="fl">5000</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu">sliderInput</span><span class="op">(</span><span class="st">"speed"</span>, <span class="st">"Animation Speed:"</span>, min <span class="op">=</span> <span class="fl">0.5</span>, max <span class="op">=</span> <span class="fl">5</span>, value <span class="op">=</span> <span class="fl">1</span>, step <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu">selectInput</span><span class="op">(</span><span class="st">"theme"</span>, <span class="st">"Theme:"</span>, choices <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"light"</span>, <span class="st">"dark"</span><span class="op">)</span>, selected <span class="op">=</span> <span class="st">"light"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu">mainPanel</span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="fu">spacetimeviewOutput</span><span class="op">(</span><span class="st">"plot"</span>, width<span class="op">=</span><span class="st">'100%'</span>, height<span class="op">=</span><span class="st">'90vh'</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in fluidPage(titlePanel("Interactive Space-Time Visualization"),     sidebarLayout(sidebarPanel(fileInput("file", "Upload CSV File",         accept = ".csv"), selectInput("plot_type", "Plot Type:",         choices = c("Summary", "Scatter"), selected = "Summary"),         selectInput("aggregate", "Aggregate Method:", choices = c("SUM",             "MEAN", "COUNT"), selected = "MEAN"), numericInput("radius",             "Cell Radius:", value = 50000, min = 1000, step = 5000),         sliderInput("speed", "Animation Speed:", min = 0.5, max = 5,             value = 1, step = 0.5), selectInput("theme", "Theme:",             choices = c("light", "dark"), selected = "light")),         mainPanel(spacetimeviewOutput("plot", width = "100%",             height = "90vh")))):</span> could not find function "fluidPage"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">server</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">input</span>, <span class="va">output</span>, <span class="va">session</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="co"># load data</span></span></span>
+<span class="r-in"><span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">reactive</span><span class="op">(</span><span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="fu">req</span><span class="op">(</span><span class="va">input</span><span class="op">$</span><span class="va">file</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">input</span><span class="op">$</span><span class="va">file</span><span class="op">$</span><span class="va">datapath</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  </span></span>
+<span class="r-in"><span>  <span class="co"># render plot</span></span></span>
+<span class="r-in"><span>  <span class="va">output</span><span class="op">$</span><span class="va">plot</span> <span class="op">&lt;-</span> <span class="fu">renderSpacetimeview</span><span class="op">(</span><span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="fu">req</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="spacetimeview.html">spacetimeview</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      style <span class="op">=</span> <span class="va">input</span><span class="op">$</span><span class="va">plot_type</span>,</span></span>
+<span class="r-in"><span>      aggregate <span class="op">=</span> <span class="va">input</span><span class="op">$</span><span class="va">aggregate</span>,</span></span>
+<span class="r-in"><span>      summary_radius <span class="op">=</span> <span class="va">input</span><span class="op">$</span><span class="va">radius</span>,</span></span>
+<span class="r-in"><span>      animation_speed <span class="op">=</span> <span class="va">input</span><span class="op">$</span><span class="va">speed</span>,</span></span>
+<span class="r-in"><span>      theme <span class="op">=</span> <span class="va">input</span><span class="op">$</span><span class="va">theme</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">shinyApp</span><span class="op">(</span><span class="va">ui</span>, <span class="va">server</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in shinyApp(ui, server):</span> could not find function "shinyApp"</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
