@@ -244,10 +244,10 @@ spacetimeview <- function(
   }
   
   if (time_column_name == 'auto') {
-    # First, try to identify columns that could be date/time based on their names
+    # first, try to identify columns that could be date/time based on their names
     possible_time_columns <- names(data)[grepl("time|date", names(data), ignore.case = TRUE)]
     
-    # Attempt to convert these columns to date/time objects
+    # attempt to convert these columns to date/time objects
     for (col in possible_time_columns) {
       if (!lubridate::is.timepoint(data[[col]])) {
         parsed_col <- try(lubridate::parse_date_time(data[[col]], orders = c("Ymd HMS", "Ymd", "HMS")), silent = TRUE)
@@ -257,13 +257,13 @@ spacetimeview <- function(
       }
     }
     
-    # Re-check which columns are now recognized as date/time objects
+    # re-check which columns are now recognized as date/time objects
     possible_time_columns <- names(data)[sapply(data, function(col) {
       lubridate::is.timepoint(col)
     })]
     
     if (length(possible_time_columns) > 0) {
-      time_column_name <- possible_time_columns[1]  # Pick the first detected time column
+      time_column_name <- possible_time_columns[1]  # pick the first detected time column
       message(paste0("Auto-detected time column: `", time_column_name, "`"))
     } else {
       stop("No time column detected automatically. Please specify `time_column_name` explicitly.")

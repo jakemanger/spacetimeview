@@ -73,40 +73,6 @@ div[mapboxgl-children] {
   overflow: hidden;
 }
 
-.space-time-tabs-header {
-  display: flex;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 0;
-  z-index: 10;
-  position: sticky;
-  top: 0;
-}
-
-.space-time-tabs-nav {
-  display: flex;
-  flex-wrap: wrap;
-  padding: 0 10px;
-}
-
-.space-time-tab {
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  border-bottom: 3px solid transparent;
-}
-
-.space-time-tab:hover {
-  background-color: #eaeaea;
-}
-
-.space-time-tab.active {
-  font-weight: 500;
-  border-bottom: 3px solid #3498db;
-  background-color: #fff;
-}
-
 .space-time-tabs-content {
   flex: 1;
   overflow: hidden;

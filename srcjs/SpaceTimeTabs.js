@@ -10,9 +10,6 @@ export default function SpaceTimeTabs({ viewConfigs, titles }) {
     if (!viewConfigs || viewConfigs.length === 0) {
         return (
             <div className="space-time-tabs-container">
-                <div className="space-time-tabs-header">
-                    <h2>No views provided</h2>
-                </div>
                 <div className="space-time-tabs-content">
                     <p>Please provide at least one SpaceTimeView to display.</p>
                 </div>
@@ -22,20 +19,6 @@ export default function SpaceTimeTabs({ viewConfigs, titles }) {
 
     return (
         <div className="space-time-tabs-container">
-            <div className="space-time-tabs-header">
-                <div className="space-time-tabs-nav">
-                    {titles.map((title, index) => (
-                        <div 
-                            key={index} 
-                            className={`space-time-tab ${activeTab === index ? 'active' : ''}`}
-                            onClick={() => setActiveTab(index)}
-                        >
-                            {title}
-                        </div>
-                    ))}
-                </div>
-            </div>
-            
             <div className="space-time-tabs-content">
                 {viewConfigs.map((config, index) => (
                     <div 
@@ -43,7 +26,12 @@ export default function SpaceTimeTabs({ viewConfigs, titles }) {
                         className={`space-time-tab-pane ${activeTab === index ? 'active' : ''}`}
                     >
                         {activeTab === index && (
-                            <SpaceTimeViewer {...config} />
+                            <SpaceTimeViewer 
+                                {...config} 
+                                tabTitles={titles}
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                            />
                         )}
                     </div>
                 ))}

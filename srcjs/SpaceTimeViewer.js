@@ -105,6 +105,9 @@ export default function SpaceTimeViewer({
   polygons = null,
   factorIcons = null,
   enableClickedTooltips = false, // highly experimental, undocumented and not recommended
+  tabTitles = [],
+  activeTab = 0,
+  onTabChange = () => {},
   ...props // Capture any other props
 }) {
   // Log all incoming props at the very beginning
@@ -139,6 +142,9 @@ export default function SpaceTimeViewer({
     polygons: polygons ? `Polygon data provided (length: ${polygons.length})` : 'No polygon data',
     factorIcons: factorIcons ? 'Factor icons provided' : 'No factor icons',
     enableClickedTooltips,
+    tabTitles: tabTitles ? 'Tab titles provided' : 'No tab titles',
+    activeTab: activeTab ? 'Active tab provided' : 'No active tab',
+    onTabChange,
     otherProps: props
   });
 
@@ -752,13 +758,16 @@ export default function SpaceTimeViewer({
       <Helmet>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Helmet>
-      {hasHeader && (
+      {(hasHeader || tabTitles.length > 0) && (
         <Header
           logo={headerLogo}
           title={headerTitle}
           websiteLink={headerWebsiteLink}
           socialLinks={socialLinks}
           themeColors={levaTheme.colors}
+          tabs={tabTitles}
+          activeTab={activeTab}
+          onTabClick={onTabChange}
         />
       )}
       <ControlsMenu

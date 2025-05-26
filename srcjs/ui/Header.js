@@ -26,7 +26,10 @@ const Header = ({
     highlight1: '#535760',
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
-  }
+  },
+  tabs = [],
+  activeTab = 0,
+  onTabClick = () => {}
 }) => {
   if (!logo && !title && Object.keys(socialLinks).length === 0) {
     return null;
@@ -34,33 +37,60 @@ const Header = ({
 
   return (
     <AppBar position="sticky" sx={{ top: 0, height: '60px', backgroundColor: themeColors.elevation2, zIndex: 100, boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)' }}>
-      <Toolbar sx={{ minHeight: '60px', display: 'flex', justifyContent: 'space-between' }}> {/* Center items vertically and distribute space */}
-        {/* Logo with optional website link */}
-        {websiteLink ? (
-          <Link href={websiteLink} target="_blank" sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center', color: 'inherit' }}>
-            {logo && (
-              <img src={logo} alt="logo" style={{ height: '40px', marginRight: '10px' }} />
-            )}
-            {title && (
-              <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', color: themeColors.highlight2 }}> {/* Center title */}
-                {title}
-              </Typography>
-            )}
-          </Link>
-        ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {logo && (
-              <IconButton edge="start" color="inherit" aria-label="menu">
-                <img src={logo} alt="logo" style={{ height: '40px', marginRight: '10px' }} /> {/* Adjust logo height */}
-              </IconButton>
-            )}
-            {title && (
-              <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', color: themeColors.highlight2 }}> {/* Center title */}
-                {title}
-              </Typography>
-            )}
-          </Box>
-        )}
+      <Toolbar sx={{ minHeight: '60px', display: 'flex', justifyContent: 'space-between' }}>
+        {/* Logo and Title section */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {websiteLink ? (
+            <Link href={websiteLink} target="_blank" sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center', color: 'inherit' }}>
+              {logo && (
+                <img src={logo} alt="logo" style={{ height: '40px', marginRight: '10px' }} />
+              )}
+              {title && (
+                <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', color: themeColors.highlight2 }}>
+                  {title}
+                </Typography>
+              )}
+            </Link>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {logo && (
+                <IconButton edge="start" color="inherit" aria-label="menu">
+                  <img src={logo} alt="logo" style={{ height: '40px', marginRight: '10px' }} />
+                </IconButton>
+              )}
+              {title && (
+                <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', color: themeColors.highlight2 }}>
+                  {title}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* Tabs section */}
+          {tabs.length > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+              {tabs.map((tabTitle, index) => (
+                <Box 
+                  key={index}
+                  onClick={() => onTabClick(index)}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    cursor: 'pointer',
+                    color: activeTab === index ? themeColors.accent2 : themeColors.highlight2,
+                    borderBottom: activeTab === index ? `2px solid ${themeColors.accent2}` : 'none',
+                    fontWeight: activeTab === index ? 500 : 400,
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                    }
+                  }}
+                >
+                  {tabTitle}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
 
         {/* Social Media Links */}
         <Box>
