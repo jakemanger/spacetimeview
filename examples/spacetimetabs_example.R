@@ -46,17 +46,7 @@ view3 <- spacetimeview(
   column_to_plot = "value"
 )
 
-
-# now, let's combine the views into a spacetimetab
-
-# Method 1: using the spacetimetabs function directly
-tabs1 <- spacetimetabs(
-  view1, view2, view3,
-  tab_titles = c("Region 1", "Region 2", "Region 3"),
-)
-print(tabs1)
-
-# Method 2 (simpler): using the + operator
+# combine views with the + operator
 # (creates a SpacetimeviewList)
 combined_views <- view1 + view2 + view3
 
