@@ -35,11 +35,12 @@ const Header = ({
     return null;
   }
 
+  const bottomPadding = '1px';
   return (
     <AppBar position="sticky" sx={{ top: 0, height: '60px', backgroundColor: themeColors.elevation2, zIndex: 100, boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)' }}>
       <Toolbar sx={{ minHeight: '60px', display: 'flex', justifyContent: 'space-between' }}>
         {/* Logo and Title section */}
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', paddingBottom: bottomPadding }}>
           {websiteLink ? (
             <Link href={websiteLink} target="_blank" sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center', color: 'inherit' }}>
               {logo && (
@@ -52,7 +53,7 @@ const Header = ({
               )}
             </Link>
           ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', paddingBottom: bottomPadding }}>
               {logo && (
                 <IconButton edge="start" color="inherit" aria-label="menu">
                   <img src={logo} alt="logo" style={{ height: '40px', marginRight: '10px' }} />
@@ -68,7 +69,7 @@ const Header = ({
 
           {/* Tabs section */}
           {tabs.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2, paddingBottom: bottomPadding }}>
               {tabs.map((tabTitle, index) => (
                 <Box 
                   key={index}
@@ -93,7 +94,7 @@ const Header = ({
         </Box>
 
         {/* Social Media Links */}
-        <Box>
+        <Box sx={{ paddingBottom: bottomPadding }}>
           {socialLinks.facebook && (
             <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.facebook} target="_blank">
               <FacebookIcon />
