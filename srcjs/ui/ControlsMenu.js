@@ -14,38 +14,33 @@ export default function ControlsMenu({
   setFilterColumnValues,
   factorIcons,
 }) {
-  // Initialize position to match the default position in dockStyles
-  const [position, setPosition] = useState({ x: 20, y: 80 });
+  // initialize position to match the default position in dockStyles
+  const [position, setPosition] = useState({ x: 20, y: 20 });
   const controlsRef = useRef(null);
-  const [bounds, setBounds] = useState({ left: 0, top: 80, right: 0, bottom: 0 });
+  const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
   const [collapsed, setCollapsed] = useState(false);
 
-  // Set initial position based on dockPosition
   useEffect(() => {
     if (dockPosition === 'floating' && controlsRef.current) {
-      // Only set initial position when in floating mode
-      const initialX = 20; // Default left position
-      const initialY = 80; // Default top position
+      const initialX = 20;
+      const initialY = 20;
       setPosition({ x: initialX, y: initialY });
     }
   }, [dockPosition]);
 
-  // Update bounds when window is resized or collapsed state changes
+  // update bounds when window is resized or collapsed state changes
   useEffect(() => {
     const updateBounds = () => {
       if (controlsRef.current) {
         const { width, height } = controlsRef.current.getBoundingClientRect();
-        // Set minimum top to header height (80px)
-        const headerHeight = 80;
         const newBounds = {
           left: 0,
-          top: headerHeight,
+          top: 0,
           right: window.innerWidth - width,
           bottom: window.innerHeight - height
         };
         setBounds(newBounds);
         
-        // Adjust position if it's outside the new bounds
         setPosition(prevPosition => ({
           x: Math.min(Math.max(prevPosition.x, newBounds.left), newBounds.right),
           y: Math.min(Math.max(prevPosition.y, newBounds.top), newBounds.bottom)
@@ -53,17 +48,13 @@ export default function ControlsMenu({
       }
     };
 
-    // Initial bounds calculation
     updateBounds();
 
-    // Add event listener for window resize
     window.addEventListener('resize', updateBounds);
 
-    // Clean up
     return () => window.removeEventListener('resize', updateBounds);
   }, [collapsed]);
 
-  // Handle drag stop to update position
   const handleDragStop = (e, data) => {
     setPosition({ x: data.x, y: data.y });
   };
@@ -72,7 +63,7 @@ export default function ControlsMenu({
     left: {
       position: 'fixed',
       left: '20px',
-      top: '80px',
+      top: '20px',
       zIndex: 1000,
       background: 'white',
       padding: '10px',
@@ -80,12 +71,12 @@ export default function ControlsMenu({
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       width: 'fit-content',
       height: 'fit-content',
-      maxWidth: '340px', // Added maxWidth
+      maxWidth: '340px',
     },
     right: {
       position: 'fixed',
       right: '20px',
-      top: '80px',
+      top: '20px',
       zIndex: 1000,
       background: 'white',
       padding: '10px',
@@ -93,7 +84,7 @@ export default function ControlsMenu({
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       width: 'fit-content',
       height: 'fit-content',
-      maxWidth: '340px', // Added maxWidth
+      maxWidth: '340px',
     },
     bottom: {
       position: 'fixed',
@@ -108,7 +99,7 @@ export default function ControlsMenu({
       width: 'fit-content',
       height: 'fit-content',
       margin: 'auto',
-      maxWidth: '500px', // Different maxWidth for bottom
+      maxWidth: '500px',
     },
     floating: {
       position: 'absolute',
@@ -119,7 +110,7 @@ export default function ControlsMenu({
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       width: 'fit-content',
       height: 'fit-content',
-      maxWidth: '340px', // Added maxWidth
+      maxWidth: '340px',
     },
   };
 
@@ -134,7 +125,6 @@ export default function ControlsMenu({
     }),
   };
 
-  // Custom option formatter for react-select
   const formatOptionLabel = (factorIcons, filterColumn) => ({ label, value }, { context }) => {
     // context is 'menu' or 'value' (selected)
     const iconPath = factorIcons && factorIcons[filterColumn] && factorIcons[filterColumn][label];
@@ -174,7 +164,7 @@ export default function ControlsMenu({
           <button 
             onClick={(e) => {
               e.preventDefault();
-              e.stopPropagation(); // Prevent dragging when clicking the button
+              e.stopPropagation(); // prevent dragging when clicking the button
               setCollapsed(!collapsed);
             }}
             onTouchEnd={(e) => {
