@@ -183,7 +183,7 @@ spacetimeview <- function(
       values
     ), coords = c("lng", "lat"), crs = terra::crs(data))
     
-    # Ensure it is in a lat/lng CRS
+    # ensure it is in a lat/lng CRS
     if (!sf::st_is_longlat(data_sf)) {
       data_sf <- sf::st_transform(data_sf, "+proj=longlat +datum=WGS84")
     }
@@ -210,7 +210,7 @@ spacetimeview <- function(
       values
     ), coords = c("lng", "lat"), crs = sf::st_crs(data))
     
-    # Ensure it is in a lat/lng CRS
+    # ensure it is in a lat/lng CRS
     if (!sf::st_is_longlat(data_sf)) {
       data_sf <- sf::st_transform(data_sf, "+proj=longlat +datum=WGS84")
     }
@@ -228,7 +228,7 @@ spacetimeview <- function(
   if (inherits(data, 'sf')) {
     print('Constructing input from sf object...')
     
-    # Ensure it is in a lat/lng CRS
+    # ensure it is in a lat/lng CRS
     if (!sf::st_is_longlat(data)) {
       data <- sf::st_transform(data, "+proj=longlat +datum=WGS84")
     }
@@ -271,8 +271,7 @@ spacetimeview <- function(
   }
   
   if (time_column_name %in% colnames(data)) {
-    # if supplied,
-    # make sure timestamp is in the correct format
+    # if supplied, make sure timestamp is in the correct format
     is_datetime <- lubridate::is.timepoint(data[,time_column_name])
     
     if (!is_datetime) {
@@ -290,9 +289,9 @@ spacetimeview <- function(
   normalize_lat_lng_names <- function(data, lat_name, lng_name) {
     if (lat_name == 'auto') {
       lat_possible_names <- c('lat', 'LAT', 'latitude', 'Latitude', 'LATITUDE', 'y', 'Y', 'decimalLatitude')
-      # Find the matching column names for latitude
+      # find the matching column names for latitude
       lat_name <- lat_possible_names[which(lat_possible_names %in% names(data))]
-      # Rename the columns if a match is found
+      # rename the columns if a match is found
       if (length(lat_name) > 0) {
         names(data)[names(data) == lat_name[1]] <- 'lat'
       }
@@ -304,7 +303,7 @@ spacetimeview <- function(
     
     if (lng_name == 'auto') {
       lng_possible_names <- c('lng', 'LNG', 'longitude', 'Longitude', 'LONGITUDE', 'long', 'LONG', 'x', 'X', 'decimalLongitude')
-      # Find the matching column names for longitude
+      # find the matching column names for longitude
       lng_name <- lng_possible_names[which(lng_possible_names %in% names(data))]
       if (length(lng_name) > 0) {
         names(data)[names(data) == lng_name[1]] <- 'lng'
@@ -384,27 +383,47 @@ spacetimeview <- function(
   data <- data[order(data$lat, data$lng),]
 
   if (summary_radius == 'auto') {
-    print('Estimating an optimal radius for summary grid cells...')
     distances <- c()
-    # sort by lat and long
-    for (i in 1:min(10000, (nrow(data) - 1))) {
-      dist <- haversine_dist(
-        data$lat[i], data$lng[i],
-        data$lat[i + 1], data$lng[i + 1]
-      )
-      distances <- c(distances, dist)
+    sample_size <- min(1000, nrow(data))
+
+    if (sample_size > 1) {
+      # take a random sample
+      sampled_indices <- sample(1:nrow(data), sample_size)
+      sampled_data <- data[sampled_indices, c("lat", "lng")]
+      
+      # find nearest neighbors with sampling approach
+      for (i in 1:sample_size) {
+        min_dist <- Inf
+        
+        # check subset of points to reduce complexity
+        check_indices <- sample(setdiff(1:sample_size, i), min(50, sample_size-1))
+        
+        for (j in check_indices) {
+          dist <- haversine_dist(
+            sampled_data$lat[i], sampled_data$lng[i],
+            sampled_data$lat[j], sampled_data$lng[j]
+          )
+          min_dist <- min(min_dist, dist)
+        }
+        
+        distances <- c(distances, min_dist)
+      }
+      
+      # average of approximated nearest neighbor distances
+      summary_radius <- mean(distances)
+    } else {
+      # fallback for single point
+      summary_radius <- 5000
     }
-    
-    # calculate as the average distance
-    summary_radius <- mean(distances) * 8 
+    print(paste("Automatically determined summary radius:", summary_radius))
   }
   
-  # Process polygons if provided
+  # process polygons if provided
   polygon_data <- NULL
   if (!is.null(polygons)) {
     print("Processing polygon data...")
     if (inherits(polygons, "sf")) {
-      # Convert sf polygons to GeoJSON
+      # convert sf polygons to GeoJSON
       if (!sf::st_is_longlat(polygons)) {
         print("Transforming polygon coordinates to WGS84...")
         polygons <- sf::st_transform(polygons, "+proj=longlat +datum=WGS84")
@@ -412,12 +431,12 @@ spacetimeview <- function(
       
       print("Converting sf object to GeoJSON...")
       
-      # Try using geojsonsf if available (recommended approach)
+      # try using geojsonsf if available
       if (requireNamespace("geojsonsf", quietly = TRUE)) {
         print("Using geojsonsf package for conversion...")
         polygon_data <- geojsonsf::sf_geojson(polygons, atomise = FALSE)
       } else {
-        # Fallback to sf::st_write approach
+        # fallback to sf::st_write approach
         print("Using sf::st_write for conversion (consider installing geojsonsf package for better results)...")
         tmp_file <- tempfile(fileext = ".geojson")
         sf::st_write(polygons, tmp_file, driver = "GeoJSON", delete_dsn = TRUE, quiet = TRUE)
@@ -427,7 +446,7 @@ spacetimeview <- function(
       
       print(paste("Polygon data length:", nchar(polygon_data), "characters"))
     } else if (is.list(polygons)) {
-      # Assume it's already in GeoJSON format
+      # assume it's already in GeoJSON format
       print("Converting list to GeoJSON...")
       polygon_data <- jsonlite::toJSON(polygons, auto_unbox = TRUE)
     } else {
@@ -441,7 +460,7 @@ spacetimeview <- function(
   # describe a React component to send to the browser for rendering.
   print(paste('plottable columns:', plottable_columns))
 
-  # Function to convert image path to data URI
+  # function to convert image path to data URI
   image_to_data_uri <- function(file_path) {
     if (!requireNamespace("base64enc", quietly = TRUE)) {
       stop("Package 'base64enc' needed for embedding images. Please install it.", call. = FALSE)
@@ -450,7 +469,7 @@ spacetimeview <- function(
       warning(paste("Image file not found:", file_path), call. = FALSE)
       return(NULL)
     }
-    # Determine MIME type based on file extension
+    # determine MIME type based on file extension
     ext <- tolower(tools::file_ext(file_path))
     mime_type <- switch(ext,
                         png = "image/png",
@@ -459,7 +478,7 @@ spacetimeview <- function(
                         gif = "image/gif",
                         svg = "image/svg+xml",
                         webp = "image/webp",
-                        # Add more types if needed
+                        # add more types if needed
                         NULL)
     if (is.null(mime_type)) {
        warning(paste("Unsupported image file type:", file_path), call. = FALSE)
@@ -468,25 +487,23 @@ spacetimeview <- function(
     base64enc::dataURI(file = file_path, mime = mime_type)
   }
 
-  # Process factor_icons to convert paths to data URIs
+  # process factor_icons to convert paths to data URIs
   if (!is.null(factor_icons)) {
     print("Processing factor icons...")
     factor_icons_uri <- list()
     for (col_name in names(factor_icons)) {
-      if (col_name %in% names(factor_levels)) { # Check if the column is actually a factor
+      if (col_name %in% names(factor_levels)) { # check if the column is actually a factor
         col_icons <- factor_icons[[col_name]]
         col_icons_uri <- list()
         if (is.list(col_icons)) {
           for (level_name in names(col_icons)) {
             icon_path <- col_icons[[level_name]]
             if (is.character(icon_path) && length(icon_path) == 1) {
-               # Construct full path relative to working directory
+              # construct full path relative to working directory
               full_path <- file.path(getwd(), icon_path) 
               data_uri <- image_to_data_uri(full_path)
               if (!is.null(data_uri)) {
-                 # Use the original factor level name from factor_levels as the key
-                # Find the original level name corresponding to the provided name
-                # This assumes names in factor_icons match names in factor_levels
+                # use the original factor level name as the key
                 if (level_name %in% factor_levels[[col_name]]) {
                     col_icons_uri[[level_name]] <- data_uri
                 } else {
@@ -510,9 +527,9 @@ spacetimeview <- function(
     if (length(factor_icons_uri) > 0) {
        factor_icons <- factor_icons_uri
     } else {
-       factor_icons <- NULL # Set back to NULL if no valid icons were processed
+       factor_icons <- NULL # set back to NULL if no valid icons were processed
     }
-  } 
+  }
   
   component <- reactR::component(
     "SpaceTimeViewer",
@@ -564,7 +581,7 @@ spacetimeview <- function(
 #' Called by HTMLWidgets to produce the widget's root element.
 #' @noRd
 widget_html.spacetimeview <- function(id, style, class, ...) {
-  # Return a single div tag directly
+  # return a single div tag
   htmltools::tags$div(
     id = id, class = class, style = style,
     reactR::html_dependency_corejs(),
@@ -651,14 +668,14 @@ renderSpacetimeview <- function(expr, env = parent.frame(), quoted = FALSE) {
 }
 
 
-# Function to convert degrees to radians
+# function to convert degrees to radians
 deg2rad <- function(deg) {
   return(deg * pi / 180)
 }
 
-# Haversine formula to calculate the distance between two points
+# haversine formula to calculate the distance between two points
 haversine_dist <- function(lat1, lng1, lat2, lng2) {
-  R <- 6371000  # Radius of the Earth in kilometers
+  R <- 6371000  # radius of the Earth in meters
   dlat <- deg2rad(lat2 - lat1)
   dlng <- deg2rad(lng2 - lng1)
   a <- sin(dlat / 2)^2 + cos(deg2rad(lat1)) * cos(deg2rad(lat2)) * sin(dlng / 2)^2
