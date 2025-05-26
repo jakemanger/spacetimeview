@@ -206,7 +206,7 @@ export default function ControlsMenu({
               />
             </Provider>
             {filterColumn && (
-              <div style={{ marginTop: '10px' }}>
+              <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
                 <Select
                   components={makeAnimated()}
                   isMulti
@@ -277,7 +277,7 @@ export default function ControlsMenu({
             />
           </Provider>
           {filterColumn && (
-            <div style={{ marginTop: '10px' }}>
+            <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
               <Select
                 components={makeAnimated()}
                 isMulti
