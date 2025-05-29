@@ -69,7 +69,7 @@ const Header = ({
 
           {/* Tabs section */}
           {tabs.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2, paddingBottom: bottomPadding }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 8, paddingBottom: bottomPadding }}>
               {tabs.map((tabTitle, index) => (
                 <Box 
                   key={index}
