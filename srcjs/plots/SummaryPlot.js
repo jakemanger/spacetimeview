@@ -78,6 +78,7 @@ export default function SummaryPlot({
   factorIcons = null,
   filterColumn = null,
   enableClickedTooltips = false,
+  observable = null,
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -393,7 +394,8 @@ export default function SummaryPlot({
         allData: displayData,
         columnName: legendTitle,
         factorIcons: factorIcons,
-        filterColumn: filterColumn
+        filterColumn: filterColumn,
+        observable: observable
       });
     }
     
@@ -405,7 +407,8 @@ export default function SummaryPlot({
       allData: displayData,
       columnName: legendTitle,
       factorIcons: factorIcons,
-      filterColumn: filterColumn
+      filterColumn: filterColumn,
+      observable: observable
     });
   };
 

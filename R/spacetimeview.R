@@ -72,6 +72,10 @@
 #' @param polygons sf or list object. Optional. Polygons to display on the map,
 #'   such as state or country boundaries. Can be an sf object with POLYGON or
 #'   MULTIPOLYGON geometry or a list with GeoJSON structure.
+#' @param observable Character. Optional. Observable Plot code to be executed
+#'   in tooltips. The code can reference column names from the dataset and will
+#'   be executed with the filtered data for the current location/time. Only
+#'   activated when this parameter is provided.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
 #' @export
@@ -162,6 +166,7 @@ spacetimeview <- function(
     width = '100vw', 
     height = '100vh', 
     elementId = NULL,
+    observable = NULL,
     ...
 ) {
   
@@ -562,6 +567,7 @@ spacetimeview <- function(
       controlNames = control_names,
       initialFilterColumn = filter_column,
       polygons = polygon_data,
+      observable = observable,
       ...
     )
   )

@@ -108,6 +108,7 @@ export default function SpaceTimeViewer({
   tabTitles = [],
   activeTab = 0,
   onTabChange = () => {},
+  observable = null,
   ...props // Capture any other props
 }) {
   // Log all incoming props at the very beginning
@@ -145,6 +146,7 @@ export default function SpaceTimeViewer({
     tabTitles: tabTitles ? 'Tab titles provided' : 'No tab titles',
     activeTab: activeTab ? 'Active tab provided' : 'No active tab',
     onTabChange,
+    observable,
     otherProps: props
   });
 
@@ -656,6 +658,7 @@ export default function SpaceTimeViewer({
           factorIcons={factorIcons}
           filterColumn={filterColumn}
           enableClickedTooltips={clickedTooltipsEnabled}
+          observable={observable}
         />
       );
     } else if (style === 'Summary') {
@@ -687,6 +690,7 @@ export default function SpaceTimeViewer({
           factorIcons={factorIcons}
           filterColumn={filterColumn}
           enableClickedTooltips={clickedTooltipsEnabled}
+          observable={observable}
         />
       );
     } else {
@@ -716,6 +720,7 @@ export default function SpaceTimeViewer({
     factorIcons,
     filterColumn,
     clickedTooltipsEnabled,
+    observable,
   ]);
 
   const handleSnackbarClose = () => {

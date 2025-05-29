@@ -1,10 +1,11 @@
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
+import * as Plot from '@observablehq/plot';
+import * as d3 from 'd3';
 import { isPointInPolygon } from '../utils/geometryUtils';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange } from '../utils/chartUtils';
 import { calculateAggregate, formatNumber } from '../utils/dataUtils';
 
-// generate HTML showing filter aggregates by category 
 function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevels, factorIcons, aggregateType = 'MEAN', columnName) {
   // check if we are dealing with an aggregation layer object (has points)
   const isAggregationLayer = object.points && Array.isArray(object.points);
@@ -51,7 +52,7 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
   
   // group by filter values
   const filterGroups = {};
-  let filterValueOccurrences = {}; // count total occurrences of each filter value
+  let filterValueOccurrences = {};
   
   // count occurrences of each filter value
   pointsToProcess.forEach(d => {
@@ -117,7 +118,6 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
   const topDetails = aggregatedDetails.slice(0, 5);
   const hiddenCount = aggregatedDetails.length - topDetails.length;
   
-  // generate HTML for each filter group
   let html = `
     <div style="margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px;">
       <div style="font-weight: bold; margin-bottom: 6px; color: #14171A; padding-bottom: 3px; font-size: 14px;">
@@ -125,7 +125,6 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
       </div>
   `;
   
-  // generate HTML for the top details
   for (const detail of topDetails) {
     console.log(`Factor level ${detail.filterValue} -> "${detail.label}", Icon: ${detail.iconPath ? "Yes" : "No"}, Agg: ${detail.formattedValue}`);
     html += `
@@ -151,7 +150,6 @@ function generateFilterAggregatesHTML(object, allData, filterColumn, factorLevel
   return html;
 }
 
-// initialize tooltip state if it doesn't exist
 function initTooltipState() {
   if (!window.tooltipState) {
     const container = document.createElement('div');
@@ -175,7 +173,6 @@ function initTooltipState() {
   }
 }
 
-// clean up chart tooltip state
 function cleanupChartTooltip() {
   if (window.tooltipState?.chartContainer) {
     window.tooltipState.chartContainer.style.display = 'none';
@@ -204,7 +201,6 @@ function cleanupChartTooltip() {
   }
 }
 
-// create or update a chart in the tooltip
 function createOrUpdateChart(elementId, seriesData) {
   window.requestAnimationFrame(() => {
     const ctx = document.getElementById(elementId)?.getContext('2d');
@@ -487,7 +483,7 @@ function handlePolygonTooltip(object, hasTime, allData, filter) {
   }
 }
 
-// handle aggregate data tooltips (for hexagon/grid layers)
+// handle tooltips for aggregate hexagon/grid layers
 function handleAggregateTooltip(object, colorAggregation, filter, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData) {
   initTooltipState();
 
@@ -1049,6 +1045,283 @@ function handleFactorTooltip(object, factorLevels, columnName, factorIcons, filt
   };
 }
 
+// handle Observable plot tooltips
+function handleObservablePlotTooltip(object, observableCode, allData, filter, hasTime, columnName) {
+  if (!observableCode || !allData || allData.length === 0) {
+    return null;
+  }
+
+  initTooltipState();
+  
+  const objectId = `observable-${object.position ? `${object.position[0]}-${object.position[1]}` : `${object.lng}-${object.lat}`}`;
+  const plotId = `observable-plot-${objectId}`;
+  
+  // get position of current point
+  const position = object.position || [object.lng, object.lat];
+  const lat = position[1];
+  const lng = position[0];
+  
+  // filter data for this location
+  let filteredData = [];
+  
+  if (object.points && object.points.length > 0) {
+    // for aggregation layers, use the points data
+    filteredData = object.points.map(p => p.source);
+  } else {
+    // for scatter plots, find nearby points
+    filteredData = allData.filter(d => 
+      Math.abs(d.lat - lat) < 0.001 && Math.abs(d.lng - lng) < 0.001
+    );
+  }
+  
+  // apply time filter if applicable
+  if (hasTime && filter && filter.length === 2) {
+    filteredData = filteredData.filter(d => {
+      const timestamp = new Date(d.timestamp).getTime();
+      return timestamp >= filter[0] && timestamp <= filter[1];
+    });
+  }
+  
+  if (filteredData.length === 0) {
+    return null;
+  }
+  
+  const plotWidth = 400;
+  const plotHeight = 300;
+  
+  // clean up any existing chart instances
+  if (window.tooltipState.currentObjectId !== objectId) {
+    Object.keys(window.tooltipState.chartInstances || {}).forEach(key => {
+      if (window.tooltipState.chartInstances[key] && window.tooltipState.chartInstances[key].destroy) {
+        window.tooltipState.chartInstances[key].destroy();
+        delete window.tooltipState.chartInstances[key];
+      }
+    });
+  }
+  
+  // create the tooltip container
+  const tooltipContainer = document.createElement('div');
+  tooltipContainer.style.cssText = `
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    max-width: ${plotWidth + 40}px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  // create header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 12px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  `;
+  
+  header.innerHTML = `
+    <div style="
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+    ">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+      </svg>
+    </div>
+    <div>
+      <div style="font-weight: bold; color: white; font-size: 16px;">${columnName || 'Observable Plot'}</div>
+      <div style="color: rgba(255,255,255,0.8); font-size: 14px; display: flex; align-items: center; gap: 4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.8)">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+        ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
+      </div>
+    </div>
+  `;
+  
+  // create plot container wrapper
+  const plotWrapper = document.createElement('div');
+  plotWrapper.style.cssText = `
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  `;
+  
+  // create the actual plot container
+  const plotContainer = document.createElement('div');
+  plotContainer.id = plotId;
+  plotContainer.style.cssText = `
+    width: ${plotWidth}px;
+    height: ${plotHeight}px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+  `;
+  
+  // create footer
+  const footer = document.createElement('div');
+  footer.style.cssText = `
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    text-align: center;
+    padding: 0 16px 16px 16px;
+  `;
+  footer.textContent = `${filteredData.length} data point${filteredData.length !== 1 ? 's' : ''}`;
+  
+  // assemble the tooltip
+  plotWrapper.appendChild(plotContainer);
+  tooltipContainer.appendChild(header);
+  tooltipContainer.appendChild(plotWrapper);
+  tooltipContainer.appendChild(footer);
+  
+  // clear and set the tooltip container
+  window.tooltipState.chartContainer.innerHTML = '';
+  window.tooltipState.chartContainer.appendChild(tooltipContainer);
+  window.tooltipState.chartContainer.style.display = 'block';
+  window.tooltipState.currentObjectId = objectId;
+  
+  // create the Observable plot
+  const createPlot = () => {
+    try {
+      console.log('Creating Observable plot with data:', filteredData.length, 'points');
+      console.log('Observable code:', observableCode);
+      console.log('Data sample:', filteredData.slice(0, 2));
+      
+      // create a safe execution context with the data and Plot library
+      const executeCode = new Function(
+        'data', 'Plot', 'd3', 'Math', 'console',
+        `
+        try {
+          console.log('Executing Observable code with data:', data.length, 'points');
+          console.log('Plot library available:', typeof Plot);
+          console.log('d3 library available:', typeof d3);
+          const result = ${observableCode};
+          console.log('Observable code executed successfully, result:', result);
+          return result;
+        } catch (error) {
+          console.error('Error executing Observable code:', error);
+          console.error('Error stack:', error.stack);
+          return Plot.plot({
+            marks: [
+              Plot.text([["Error executing Observable code: " + error.message]], {
+                x: 0.5,
+                y: 0.5,
+                text: d => d,
+                fontSize: 12,
+                fill: "red",
+                textAnchor: "middle"
+              })
+            ],
+            width: ${plotWidth},
+            height: ${plotHeight},
+            x: {domain: [0, 1]},
+            y: {domain: [0, 1]}
+          });
+        }
+        `
+      );
+
+      // execute the code with the filtered data
+      console.log('About to execute Observable code...');
+      const plot = executeCode(
+        filteredData,
+        Plot,
+        d3,
+        Math,
+        console
+      );
+      console.log('Observable code execution completed, plot:', plot);
+
+      if (plot && plotContainer) {
+        // clear any existing content
+        plotContainer.innerHTML = '';
+        
+        // ensure the plot has the correct dimensions
+        if (plot.setAttribute) {
+          plot.setAttribute('width', plotWidth);
+          plot.setAttribute('height', plotHeight);
+        }
+        
+        plotContainer.appendChild(plot);
+        
+        console.log('Observable plot created successfully');
+        
+        // store the plot for cleanup
+        if (!window.tooltipState.chartInstances) {
+          window.tooltipState.chartInstances = {};
+        }
+        window.tooltipState.chartInstances[plotId] = {
+          destroy: () => {
+            if (plot && plot.remove) {
+              plot.remove();
+            }
+          }
+        };
+      } else {
+        console.error('Failed to create Observable plot - plot:', plot, 'container:', plotContainer);
+        plotContainer.innerHTML = '<div style="color: red; text-align: center; padding: 20px;">Error: Failed to create plot</div>';
+      }
+    } catch (error) {
+      console.error('Error creating Observable plot:', error);
+      console.error('Error stack:', error.stack);
+      
+      // create an error plot using Plot
+      try {
+        const errorPlot = Plot.plot({
+          marks: [
+            Plot.text([["Error creating plot: " + error.message]], {
+              x: 0.5,
+              y: 0.5,
+              text: d => d,
+              fontSize: 12,
+              fill: "red",
+              textAnchor: "middle"
+            })
+          ],
+          width: plotWidth,
+          height: plotHeight,
+          x: {domain: [0, 1]},
+          y: {domain: [0, 1]}
+        });
+        
+        if (plotContainer) {
+          plotContainer.innerHTML = '';
+          plotContainer.appendChild(errorPlot);
+        }
+      } catch (plotError) {
+        console.error('Error creating error plot:', plotError);
+        if (plotContainer) {
+          plotContainer.innerHTML = '<div style="color: red; text-align: center; padding: 20px;">Error: Could not create plot</div>';
+        }
+      }
+    }
+  };
+  
+  // use setTimeout to ensure DOM is ready
+  setTimeout(createPlot, 10);
+  
+  createMoveListener();
+  
+  return {
+    html: '',
+    style: {
+      display: 'none'
+    }
+  };
+}
+
 // main tooltip function
 export function getTooltip({
   object,
@@ -1061,11 +1334,17 @@ export function getTooltip({
   allData = [],
   columnName = null,
   factorIcons = null,
-  filterColumn = null
+  filterColumn = null,
+  observable = null
 } = {}) {
   if (!object) {
     cleanupChartTooltip();
     return null;
+  }
+
+  // check if Observable plot should be used
+  if (observable) {
+    return handleObservablePlotTooltip(object, observable, allData, filter, hasTime, columnName);
   }
 
   // check if polygon layer

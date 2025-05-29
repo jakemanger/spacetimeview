@@ -53,7 +53,8 @@ export default function ScatterTimePlot({
   polygons = null,
   factorIcons = null,
   filterColumn = null,
-  enableClickedTooltips = false
+  enableClickedTooltips = false,
+  observable = null
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -250,7 +251,8 @@ export default function ScatterTimePlot({
         filter,
         columnName: columnName,
         factorIcons: factorIcons,
-        filterColumn: filterColumn
+        filterColumn: filterColumn,
+        observable: observable
       });
     }
 
@@ -261,7 +263,8 @@ export default function ScatterTimePlot({
       filter,
       columnName: columnName,
       factorIcons: factorIcons,
-      filterColumn: filterColumn
+      filterColumn: filterColumn,
+      observable: observable
     });
   };
 
