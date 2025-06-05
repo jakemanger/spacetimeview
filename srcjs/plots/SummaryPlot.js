@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Map, useControl } from 'react-map-gl/maplibre';
+import { 
+  Map, 
+  useControl, 
+  GeolocateControl, 
+  FullscreenControl, 
+  NavigationControl, 
+  ScaleControl, 
+  Popup 
+} from 'react-map-gl/maplibre';
 import {
   AmbientLight,
   DirectionalLight,
@@ -19,6 +27,7 @@ import { getTooltip } from '../ui/MapTooltip';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange, findMode } from '../utils/chartUtils';
 import { normalizeDataByYear } from '../utils/dataUtils';
 import PolygonAggregationLayer from '../layers/PolygonAggregationLayer';
+import "maplibre-gl/dist/maplibre-gl.css";
 
 function DeckGLOverlay(props) {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -424,6 +433,11 @@ export default function SummaryPlot({
     <>
       <div style={{ width: '100%', height: '100vh' }}>
         <Map reuseMaps mapStyle={mapStyle} style={{ width: '100%', height: '100%' }}>
+          <GeolocateControl position="top-left" />
+          <FullscreenControl position="top-left" />
+          <NavigationControl position="top-left" />
+          <ScaleControl />
+
           <DeckGLOverlay
             views={projection === 'Globe' ? new GlobeView() : new MapView()}
             layers={layers}
@@ -434,6 +448,26 @@ export default function SummaryPlot({
             onClick={enableClickedTooltips ? handleClick : undefined}
             interleaved={true}
           />
+
+          {enableClickedTooltips && clickedObject && clickedCoordinates && (
+            <Popup
+              anchor="top"
+              longitude={clickedCoordinates[0]}
+              latitude={clickedCoordinates[1]}
+              onClose={() => {
+                setClickedObject(null);
+                setClickedCoordinates(null);
+              }}
+            >
+              <div>
+                <p>Hello!</p>
+                <p>Position: {clickedCoordinates[1].toFixed(6)}, {clickedCoordinates[0].toFixed(6)}</p>
+                {clickedObject.colorValue !== undefined && (
+                  <p>Value: {clickedObject.colorValue.toFixed(2)}</p>
+                )}
+              </div>
+            </Popup>
+          )}
         </Map>
       </div>
       {!isNaN(timeRange[0]) && (

@@ -104,7 +104,7 @@ export default function SpaceTimeViewer({
   draggableMenu = false,
   polygons = null,
   factorIcons = null,
-  enableClickedTooltips = false, // highly experimental, undocumented and not recommended
+  enableClickedTooltips = true, // highly experimental, undocumented and not recommended
   tabTitles = [],
   activeTab = 0,
   onTabChange = () => {},
