@@ -1,4 +1,4 @@
-library(spacetimeview)
+devtools::load_all()
 
 set.seed(123)
 n_points <- 200

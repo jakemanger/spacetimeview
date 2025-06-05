@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Map } from 'react-map-gl/maplibre';
+import { Map, useControl } from 'react-map-gl/maplibre';
 import {
   AmbientLight,
   DirectionalLight,
@@ -11,13 +11,21 @@ import {
 import { TileLayer } from '@deck.gl/geo-layers';
 import { BitmapLayer, GeoJsonLayer } from '@deck.gl/layers';
 import { HexagonLayer, GridLayer } from '@deck.gl/aggregation-layers';
-import DeckGL from '@deck.gl/react';
+// import DeckGL from '@deck.gl/react';
+import { MapboxOverlay } from '@deck.gl/mapbox';
 import RangeInput from '../ui/RangeInput';
 import Colorbar from '../ui/Colorbar';
 import { getTooltip } from '../ui/MapTooltip';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange, findMode } from '../utils/chartUtils';
 import { normalizeDataByYear } from '../utils/dataUtils';
 import PolygonAggregationLayer from '../layers/PolygonAggregationLayer';
+
+function DeckGLOverlay(props) {
+  const overlay = useControl(() => new MapboxOverlay(props));
+  overlay.setProps(props);
+  return null;
+}
+
 
 const MS_PER_DAY = 8.64e7;
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
@@ -414,17 +422,18 @@ export default function SummaryPlot({
 
   return (
     <>
-      <DeckGL
-        views={projection === 'Globe' ? new GlobeView() : new MapView()}
-        layers={layers}
-        effects={[lightingEffect]}
-        initialViewState={initialViewState}
-        controller={true}
-        getTooltip={getTooltipContent}
-        onClick={enableClickedTooltips ? handleClick : undefined}
-      >
-        {projection === 'Mercator' && <Map reuseMaps mapStyle={mapStyle} />}
-      </DeckGL>
+      <Map reuseMaps mapStyle={mapStyle} >
+        <DeckGLOverlay
+          views={projection === 'Globe' ? new GlobeView() : new MapView()}
+          layers={layers}
+          effects={[lightingEffect]}
+          initialViewState={initialViewState}
+          controller={true}
+          getTooltip={getTooltipContent}
+          onClick={enableClickedTooltips ? handleClick : undefined}
+          interleaved={true}
+        />
+      </Map>
       {!isNaN(timeRange[0]) && (
         <RangeInput
           min={displayTimeRange[0]}
