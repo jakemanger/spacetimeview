@@ -422,18 +422,20 @@ export default function SummaryPlot({
 
   return (
     <>
-      <Map reuseMaps mapStyle={mapStyle} >
-        <DeckGLOverlay
-          views={projection === 'Globe' ? new GlobeView() : new MapView()}
-          layers={layers}
-          effects={[lightingEffect]}
-          initialViewState={initialViewState}
-          controller={true}
-          getTooltip={getTooltipContent}
-          onClick={enableClickedTooltips ? handleClick : undefined}
-          interleaved={true}
-        />
-      </Map>
+      <div style={{ width: '100%', height: '100vh' }}>
+        <Map reuseMaps mapStyle={mapStyle} style={{ width: '100%', height: '100%' }}>
+          <DeckGLOverlay
+            views={projection === 'Globe' ? new GlobeView() : new MapView()}
+            layers={layers}
+            effects={[lightingEffect]}
+            initialViewState={initialViewState}
+            controller={true}
+            getTooltip={getTooltipContent}
+            onClick={enableClickedTooltips ? handleClick : undefined}
+            interleaved={true}
+          />
+        </Map>
+      </div>
       {!isNaN(timeRange[0]) && (
         <RangeInput
           min={displayTimeRange[0]}
