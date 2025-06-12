@@ -692,7 +692,7 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
             margin-right: 12px;
           ">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
               <path d="M12 17l-5-5h10z"/>
             </svg>
           </div>
@@ -704,9 +704,7 @@ function handleAggregateTooltip(object, colorAggregation, filter, hasTime, facto
         <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
           ${metricName}: ${colorValue}
         </div>
-        ${filterColumn && filterColumn !== columnName ? generateFilterAggregatesHTML(
-          object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
-        ) : ''}
+        ${filterAggregatesHTML}
       </div>
     `,
     style: {
@@ -1419,7 +1417,750 @@ export function getTooltip({
   return result;
 }
 
+// unified HTML generation functions
+function generateTooltipHTML({
+  object,
+  layer,
+  options,
+  isStaticMode = false
+}) {
+  const {
+    colorAggregation = 'SUM',
+    filter = [0, Infinity],
+    hasTime = false,
+    factorLevels = null,
+    allData = [],
+    columnName = null,
+    factorIcons = null,
+    filterColumn = null,
+    observable = null
+  } = options;
+
+  if (!object) return null;
+
+  // check if Observable plot should be used
+  if (observable) {
+    return generateObservablePlotHTML(object, colorAggregation, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, observable, isStaticMode);
+  }
+
+  // check if polygon layer
+  if (layer && layer.id === 'polygon-layer') {
+    return generatePolygonHTML(object, hasTime, allData, filter, isStaticMode);
+  }
+
+  // check if factor data that should display a factor chart
+  if (factorLevels) {
+    const value = object.points ? 
+      (object.points[0]?.source?.value !== undefined ? object.points[0].source.value : object.colorValue) : 
+      object.value;
+    
+    if (value !== undefined && value !== null && 
+        (typeof value === 'number' && Number.isInteger(value) && factorLevels[value] !== undefined)) {
+      return generateFactorHTML(object, factorLevels, columnName, factorIcons, filterColumn, allData, isStaticMode);
+    }
+  }
+
+  // check if aggregation layer (HexagonLayer/GridLayer)
+  if (object.points && object.position) {
+    return generateAggregateHTML(
+      object, 
+      colorAggregation, 
+      filter, 
+      hasTime, 
+      factorLevels, 
+      factorIcons, 
+      columnName, 
+      filterColumn, 
+      allData,
+      isStaticMode
+    );
+  }
+
+  // for point data (ScatterplotLayer)
+  return generatePointHTML(object, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, colorAggregation, isStaticMode);
+}
+
+function generatePointHTML(object, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, colorAggregation, isStaticMode) {
+  const position = [object.lng, object.lat];
+  const lat = position[1];
+  const lng = position[0];
+
+  let valueToShow = object.value != null ? object.value : '';
+  let labelForIcon = '';
+  
+  if (factorLevels && factorLevels[columnName] && object.value !== null && object.value !== undefined) {
+    labelForIcon = factorLevels[columnName][object.value];
+    valueToShow = labelForIcon;
+  } else {
+    if (object.value === null) {
+      valueToShow = 'null';
+    } else {
+      valueToShow = object.value.toFixed(2);
+    }
+  }
+
+  const iconPath = factorIcons && factorIcons[columnName] && labelForIcon ? factorIcons[columnName][labelForIcon] : null;
+
+  // generate filter aggregates if applicable
+  let filterAggregatesHTML = '';
+  if (filterColumn && filterColumn !== columnName) {
+    filterAggregatesHTML = generateFilterAggregatesHTML(
+      object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+    ) || '';
+  }
+
+  const html = `
+    <div style="
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.4;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 16px;
+      max-width: 300px;
+    ">
+      <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        <div style="
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #1DA1F2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 12px;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Data</div>
+          <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
+          </div>
+        </div>
+      </div>
+      ${hasTime ? `
+        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+            <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+          </svg>
+          ${new Date(object.timestamp).toUTCString()}
+        </div>
+      ` : ''}
+      <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+        ${iconPath ? `<img src="${iconPath}" alt="" style="width: 16px; height: 16px; margin-right: 4px; vertical-align: middle;">` : ''}
+        Value: ${valueToShow}
+      </div>
+      ${filterAggregatesHTML}
+    </div>
+  `;
+
+  return {
+    html,
+    style: {
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      borderRadius: 0
+    }
+  };
+}
+
+function generateAggregateHTML(object, colorAggregation, filter, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, isStaticMode) {
+  const position = object.position;
+  const lat = position[1];
+  const lng = position[0];
+  
+  let { points, colorValue } = object;
+  if (factorLevels && factorLevels[colorValue]) {
+    colorValue = factorLevels[colorValue];
+  } else {
+    colorValue = colorValue.toFixed(2);
+  }
+
+  const metricName = colorAggregation.charAt(0).toUpperCase() + colorAggregation.slice(1).toLowerCase();
+
+  // generate filter aggregates if applicable
+  let filterAggregatesHTML = '';
+  if (filterColumn && filterColumn !== columnName && allData && allData.length > 0) {
+    filterAggregatesHTML = generateFilterAggregatesHTML(
+      object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+    ) || '';
+  }
+
+  if (hasTime && points && points.length > 0) {
+    let seriesData = points
+      .map(d => ({
+        x: new Date(d.source.timestamp).getTime(),
+        y: d.source.value,
+      }))
+      .filter(d => d.x >= filter[0] && d.x <= filter[1]);
+
+    seriesData.sort((a, b) => a.x - b.x);
+
+    if (isStaticMode) {
+      // for static mode, generate the same rich content but without dynamic DOM manipulation
+      const chartId = `static-chart-${position[0].toFixed(6)}-${position[1].toFixed(6)}-${Date.now()}`;
+      
+      const html = `
+        <div style="
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          line-height: 1.4;
+          border-radius: 16px;
+          background: white;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          padding: 16px;
+          padding-bottom: 12px;
+          max-width: 350px;
+          min-height: 450px;
+          pointer-events: auto;
+        ">
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <div style="
+              width: 48px;
+              height: 48px;
+              border-radius: 50%;
+              background: #1DA1F2;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-right: 12px;
+              flex-shrink: 0;
+            ">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Summary</div>
+              <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
+              </div>
+            </div>
+          </div>
+          <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+            ${metricName}: ${colorValue}
+          </div>
+          ${seriesData.length > 0 ? `
+            <div style="color: #657786; font-size: 14px; margin-bottom: 12px; padding: 0 4px;">
+              <div style="margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                  <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                </svg>
+                ${new Date(seriesData[0].x).toLocaleDateString()} - ${new Date(seriesData[seriesData.length - 1].x).toLocaleDateString()}
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                  <path d="M7 12h2v5H7zm4-3h2v8h-2zm4-3h2v11h-2z"/>
+                </svg>
+                ${seriesData.length} data points
+              </div>
+            </div>
+          ` : ''}
+          <div style="
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+          ">
+            <canvas id="${chartId}" width="300" height="250"></canvas>
+          </div>
+          <div style="
+            text-align: center;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #657786;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+          ">
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold; font-size: 16px;">●</span>
+              Data Points
+            </span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: rgba(0, 0, 0, 0.8); font-weight: bold;">—</span>
+              Trend Line
+            </span>
+          </div>
+          ${filterAggregatesHTML}
+        </div>
+      `;
+
+      // for static mode, we need to create the chart after the HTML is inserted into the DOM
+      return {
+        html,
+        style: {
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          borderRadius: 0
+        },
+        postRender: () => {
+          // use setTimeout to ensure the DOM element exists
+          setTimeout(() => {
+            createOrUpdateChart(chartId, seriesData);
+          }, 100);
+        }
+      };
+    } else {
+      // for dynamic mode, use the existing complex tooltip logic
+      return handleAggregateTooltip(object, colorAggregation, filter, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData);
+    }
+  }
+
+  // for non-time series data (same for both modes)
+  const html = `
+    <div style="
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.4;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 16px;
+      max-width: 300px;
+    ">
+      <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        <div style="
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #1DA1F2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 12px;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+            <path d="M12 17l-5-5h10z"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Data</div>
+          <div style="color: #657786; font-size: 14px;">📍 ${lat.toFixed(4)}°, ${lng.toFixed(4)}°</div>
+        </div>
+      </div>
+      <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+        ${metricName}: ${colorValue}
+      </div>
+      ${filterAggregatesHTML}
+    </div>
+  `;
+
+  return {
+    html,
+    style: {
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      borderRadius: 0
+    }
+  };
+}
+
+function generatePolygonHTML(object, hasTime, allData, filter, isStaticMode) {
+  const pointsInPolygon = object.points || [];
+  const name = object.properties?.name || object.properties?.NAME || 'Polygon Area';
+  
+  if (isStaticMode) {
+    // for static mode, show summary without charts
+    const avgValue = object.avg !== undefined 
+      ? object.avg.toFixed(2)
+      : pointsInPolygon.length > 0 
+        ? (pointsInPolygon.reduce((sum, d) => sum + d.value, 0) / pointsInPolygon.length).toFixed(2)
+        : 'N/A';
+
+    const html = `
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        max-width: 350px;
+      ">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1DA1F2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+          ">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+              <path d="M11 15h2v2h-2zm0-8h2v6h-2z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-weight: bold; color: #14171A; font-size: 16px;">${name}</div>
+            <div style="color: #657786; font-size: 14px;">Region Summary</div>
+          </div>
+        </div>
+        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px;">
+          Points in region: ${pointsInPolygon.length}
+        </div>
+        <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px;">
+          Average value: ${avgValue}
+        </div>
+        ${hasTime && pointsInPolygon.length > 0 ? `
+          <div style="color: #657786; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 8px; margin-top: 8px;">
+            💡 For detailed charts and analysis, disable "Click for Tooltips" mode to see interactive hover tooltips
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    return {
+      html,
+      style: {
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        borderRadius: 0
+      }
+    };
+  } else {
+    // for dynamic mode, use the existing complex tooltip logic
+    return handlePolygonTooltip(object, hasTime, allData, filter);
+  }
+}
+
+function generateFactorHTML(object, factorLevels, columnName, factorIcons, filterColumn, allData, isStaticMode) {
+  if (isStaticMode) {
+    // for static mode, show summary without charts
+    const position = object.position || [object.lng, object.lat];
+    const lat = position[1];
+    const lng = position[0];
+    
+    const factorData = object.points || [object];
+    const factorFrequencies = {};
+    
+    factorData.forEach(point => {
+      const value = point.source ? point.source.value : point.value;
+      if (value !== undefined && value !== null) {
+        const levelKey = factorLevels[value] || value.toString();
+        factorFrequencies[levelKey] = (factorFrequencies[levelKey] || 0) + 1;
+      }
+    });
+
+    const totalCount = Object.values(factorFrequencies).reduce((sum, count) => sum + count, 0);
+    const topFactors = Object.entries(factorFrequencies)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    const factorListHtml = topFactors.map(([label, count]) => {
+      const iconPath = factorIcons && factorIcons[columnName] && factorIcons[columnName][label];
+      const percentage = ((count / totalCount) * 100).toFixed(1);
+      return `
+        <div style="display: flex; align-items: center; font-size: 13px; margin-bottom: 4px;">
+          ${iconPath ? `<img src="${iconPath}" alt="" style="width: 16px; height: 16px; margin-right: 5px; vertical-align: middle;">` : ''}
+          <span style="flex-grow: 1;">${label}:</span>
+          <span style="font-weight: bold; margin-left: 5px;">${count} (${percentage}%)</span>
+        </div>
+      `;
+    }).join('');
+
+    const html = `
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        max-width: 350px;
+      ">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1DA1F2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+          ">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+            </svg>
+          </div>
+                     <div>
+             <div style="font-weight: bold; color: #14171A; font-size: 16px;">${columnName || 'Factor Data'}</div>
+             <div style="color: #657786; font-size: 14px;">📍 ${lat.toFixed(4)}°, ${lng.toFixed(4)}°</div>
+           </div>
+         </div>
+      <div style="color: #657786; font-size: 14px; margin-bottom: 8px; padding: 0 4px;">
+        Total count: ${totalCount}
+      </div>
+      <div style="margin-bottom: 12px;">
+        ${factorListHtml}
+      </div>
+      <div style="color: #657786; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 8px;">
+        💡 For detailed charts and analysis, disable "Click for Tooltips" mode to see interactive hover tooltips
+      </div>
+    </div>
+  `;
+
+    return {
+      html,
+      style: {
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        borderRadius: 0
+      }
+    };
+  } else {
+    // for dynamic mode, use the existing complex tooltip logic
+    return handleFactorTooltip(object, factorLevels, columnName, factorIcons, filterColumn, allData);
+  }
+}
+
+function generateObservablePlotHTML(object, colorAggregation, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, observable, isStaticMode) {
+  const position = object.position;
+  const lat = position[1];
+  const lng = position[0];
+  
+  let { points, colorValue } = object;
+  if (factorLevels && factorLevels[colorValue]) {
+    colorValue = factorLevels[colorValue];
+  } else {
+    colorValue = colorValue.toFixed(2);
+  }
+
+  const metricName = colorAggregation.charAt(0).toUpperCase() + colorAggregation.slice(1).toLowerCase();
+
+  // generate filter aggregates if applicable
+  let filterAggregatesHTML = '';
+  if (filterColumn && filterColumn !== columnName && allData && allData.length > 0) {
+    filterAggregatesHTML = generateFilterAggregatesHTML(
+      object, allData, filterColumn, factorLevels, factorIcons, colorAggregation, columnName
+    ) || '';
+  }
+
+  if (isStaticMode) {
+    // for static mode, generate the same rich content
+    const chartId = `static-observable-${position[0].toFixed(6)}-${position[1].toFixed(6)}-${Date.now()}`;
+    
+    const html = `
+      <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        padding-bottom: 12px;
+        max-width: 350px;
+        min-height: 450px;
+        pointer-events: auto;
+      ">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1DA1F2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+          ">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-weight: bold; color: #14171A; font-size: 16px;">Location Summary</div>
+            <div style="color: #657786; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              ${lat.toFixed(4)}°, ${lng.toFixed(4)}°
+            </div>
+          </div>
+        </div>
+        <div style="color: #657786; font-size: 14px; margin-bottom: 4px; padding: 0 4px; display: flex; align-items: center; gap: 4px;">
+          ${metricName}: ${colorValue}
+        </div>
+        ${hasTime && points && points.length > 0 ? `
+          <div style="color: #657786; font-size: 14px; margin-bottom: 12px; padding: 0 4px;">
+            <div style="margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+              </svg>
+              ${new Date(points[0].source.timestamp).toLocaleDateString()} - ${new Date(points[points.length - 1].source.timestamp).toLocaleDateString()}
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#657786">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                <path d="M7 12h2v5H7zm4-3h2v8h-2zm4-3h2v11h-2z"/>
+              </svg>
+              ${points.length} data points
+            </div>
+          </div>
+        ` : ''}
+        <div style="
+          background: white;
+          border-radius: 12px;
+          padding: 12px;
+          margin-bottom: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+        ">
+          <div id="${chartId}" style="width: 300px; height: 250px;"></div>
+        </div>
+        <div style="
+          text-align: center;
+          margin-top: 8px;
+          font-size: 13px;
+          color: #657786;
+        ">
+          Observable Plot Visualization
+        </div>
+        ${filterAggregatesHTML}
+      </div>
+    `;
+
+    return {
+      html,
+      style: {
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        borderRadius: 0
+      },
+      postRender: () => {
+        // use setTimeout to ensure the DOM element exists
+        setTimeout(() => {
+          if (observable && points && points.length > 0) {
+            createObservablePlot(chartId, object, observable);
+          }
+        }, 100);
+      }
+    };
+  } else {
+    // for dynamic mode, use the existing Observable Plot logic
+    return handleObservablePlot(object, colorAggregation, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, observable);
+  }
+}
+
+// static tooltip function for popups
+export function getStaticTooltip(pickInfo, options) {
+  const result = generateTooltipHTML({
+    object: pickInfo.object,
+    layer: pickInfo.layer,
+    options,
+    isStaticMode: true
+  });
+  
+  if (!result) return null;
+  
+  // if there's a postRender callback, execute it after returning the HTML
+  if (result.postRender) {
+    // execute the postRender callback asynchronously
+    setTimeout(result.postRender, 0);
+  }
+  
+  return result.html;
+}
+
+// create Observable plot for static mode (popup)
+function createObservablePlot(chartId, object, observableCode) {
+  const plotContainer = document.getElementById(chartId);
+  if (!plotContainer) {
+    console.error('Plot container not found:', chartId);
+    return;
+  }
+
+  // get position and data
+  const position = object.position;
+  const lat = position[1];
+  const lng = position[0];
+  
+  let filteredData = [];
+  if (object.points && object.points.length > 0) {
+    filteredData = object.points.map(p => p.source);
+  }
+  
+  if (filteredData.length === 0) {
+    plotContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">No data available</div>';
+    return;
+  }
+
+  try {
+    // create a safe execution context with the data and Plot library
+    const executeCode = new Function(
+      'data', 'Plot', 'd3', 'Math', 'console',
+      `
+      try {
+        const result = ${observableCode};
+        return result;
+      } catch (error) {
+        console.error('Error executing Observable code:', error);
+        return Plot.plot({
+          marks: [
+            Plot.text([["Error: " + error.message]], {
+              x: 0.5,
+              y: 0.5,
+              text: d => d,
+              fontSize: 12,
+              fill: "red",
+              textAnchor: "middle"
+            })
+          ]
+        });
+      }
+      `
+    );
+
+    // execute the Observable code using the imported Plot library
+    const plotResult = executeCode(
+      filteredData,
+      Plot,
+      window.d3 || {},
+      Math,
+      console
+    );
+
+    // clear container and append the plot
+    plotContainer.innerHTML = '';
+    if (plotResult && plotResult.appendChild) {
+      plotContainer.appendChild(plotResult);
+    } else if (plotResult) {
+      // if it's not a DOM element, try to render it as a plot
+      plotContainer.appendChild(plotResult);
+    } else {
+      plotContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Unable to create plot</div>';
+    }
+  } catch (error) {
+    console.error('Error creating Observable plot:', error);
+    plotContainer.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Error: ${error.message}</div>`;
+  }
+}
+
 export default {
   getTooltip,
+  getStaticTooltip,
   cleanupChartTooltip
 }; 
