@@ -137,6 +137,7 @@ export default function SummaryPlot({
     }
   }, [initialColorDomain]);
 
+  useEffect(() => {
     if (enableClickedTooltips) {
       cleanupChartTooltip();
     }
