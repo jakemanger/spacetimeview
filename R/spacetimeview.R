@@ -271,7 +271,8 @@ spacetimeview <- function(
       time_column_name <- possible_time_columns[1]  # pick the first detected time column
       message(paste0("Auto-detected time column: `", time_column_name, "`"))
     } else {
-      stop("No time column detected automatically. Please specify `time_column_name` explicitly.")
+      time_column_name <- NA
+      warning("No time column detected automatically. Assuming no time column. Please specify `time_column_name` if you require a time slider.")
     }
   }
   
