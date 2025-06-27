@@ -261,11 +261,8 @@ export default function SummaryPlot({
 
   let updateTriggers = {
     getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
+    getElevationValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
     getPosition: [data, legendTitle, radius, coverage],
-  }
-
-  if (summaryHeight > 0) {
-    updateTriggers.getElevationValue = updateTriggers.getColorValue;
   }
 
   // parse polygon data if provided as string
