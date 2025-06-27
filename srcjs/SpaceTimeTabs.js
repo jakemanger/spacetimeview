@@ -27,7 +27,8 @@ export default function SpaceTimeTabs({ viewConfigs, titles }) {
                     >
                         {activeTab === index && (
                             <SpaceTimeViewer 
-                                {...config} 
+                                {...config}
+                                headerTitle={config.headerTitle || (titles && titles[index])}
                                 tabTitles={titles}
                                 activeTab={activeTab}
                                 onTabChange={setActiveTab}
