@@ -169,6 +169,18 @@ spacetimeview <- function(
     observable = NULL,
     ...
 ) {
+
+  # if style is all lowercase, convert to title case
+  if (tolower(style) == 'scatter') {
+    style = 'Scatter'
+  } else if (tolower(style) == 'summary') {
+    style = 'Summary'
+  }
+  
+  # ensure style is either "Scatter" or "Summary"
+  if (!style %in% c('Scatter', 'Summary')) {
+    stop("style must be either 'Scatter' or 'Summary'")
+  }
   
   # columns we need to make for the js widget to work
   required_cols = c(
