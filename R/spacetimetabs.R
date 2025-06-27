@@ -105,6 +105,7 @@ spacetimetabs <- function(
 #' @return The SpacetimeviewList object (invisibly)
 #' @export
 print.SpacetimeviewList <- function(x, ...) {
+  print(paste('Making SpacetimeTabs widget with', length(x$views), 'views'))
   result <- spacetimetabs(x)
   print(result)
   invisible(x)
