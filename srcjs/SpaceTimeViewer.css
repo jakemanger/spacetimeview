@@ -40,6 +40,15 @@ body {
 	display: none;
 }
 
+/* Override MapLibre popup max-width for larger Observable plots */
+.maplibregl-popup {
+  max-width: 1000px !important;
+}
+
+.maplibregl-popup-content {
+  max-width: 1000px !important;
+}
+
 div[mapboxgl-children] {
   display: none;
 }
