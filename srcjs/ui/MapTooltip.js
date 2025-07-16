@@ -85,28 +85,47 @@ function generateTooltipHTML({ object, layer, options, isStaticMode = false }) {
 // --- Data Processing for Observable Plots ---
 
 export function getTooltipData(object, allData, hasTime, filter) {
-  if (!object || !allData) return [];
+  console.log('--- getTooltipData DEBUG ---');
+  console.log('Input object:', object);
+  console.log('Object has points:', !!object.points);
+  console.log('Object has position:', !!object.position);
+  console.log('Has time data:', hasTime);
+  console.log('Filter:', filter);
+  
+  if (!object || !allData) {
+    console.log('Early return: missing object or allData');
+    return [];
+  }
   
   // If it's an aggregated object (hexagon/grid), extract points from that cell
   if (object.points && object.position) {
     let points = object.points;
+    console.log('Processing aggregated object with', points.length, 'points');
     
     // Extract the source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
     let sourceData = points.map(point => point.source || point);
+    console.log('Extracted source data:', sourceData);
+    console.log('Source data length:', sourceData.length);
     
     // Apply time filter if we have time data
     if (hasTime && filter) {
+      const beforeFilter = sourceData.length;
       sourceData = sourceData.filter(d => {
         const timestamp = new Date(d.timestamp).getTime();
         return timestamp >= filter[0] && timestamp <= filter[1];
       });
+      console.log('Applied time filter: from', beforeFilter, 'to', sourceData.length, 'items');
     }
     
+    console.log('Final source data for aggregated:', sourceData);
     return sourceData;
   }
   
   // For individual points, return the object as an array
-  return [object];
+  console.log('Processing individual point');
+  const result = [object];
+  console.log('Returning single object as array:', result);
+  return result;
 }
 
 // --- Main Exported Functions for Use by Components ---

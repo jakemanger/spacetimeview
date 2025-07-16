@@ -1,55 +1,104 @@
 import React, { useEffect, useRef } from 'react';
 import * as Plot from '@observablehq/plot';
-
-// These functions will be exported from MapTooltip.js
-import { getTooltipData, createObservablePlot } from './MapTooltip';
+import { getTooltipData } from './MapTooltip';
 
 export default function ObservablePlotTooltip({ object, options }) {
   const containerRef = useRef(null);
-  // Use a ref to ensure the ID is stable across re-renders and unique
-  const chartId = useRef(`static-observable-${Date.now()}-${Math.random()}`).current;
 
   useEffect(() => {
-    if (containerRef.current && options.observable) {
-      // Wait for the DOM to be fully rendered before creating the plot
-      const timer = setTimeout(() => {
-        const plotFunction = (Plot) => { // Accept Plot as parameter
-          try {
-            const data = getTooltipData(object, options.allData, !isNaN(options.filter[0]), options.filter);
-            const factorIcons = options.factorIcons;
-            
-            // Debug logging
-            console.log('Observable plot debugging:');
-            console.log('- object:', object);
-            console.log('- data:', data);
-            console.log('- data length:', data ? data.length : 'undefined');
-            console.log('- factorIcons:', factorIcons);
-            console.log('- observable code:', options.observable);
-            
-            // The 'observable' variable from R is a string of code to be evaluated
-            // Make Plot available in the evaluation context
-            // Treat the code as a return expression to get the plot object
-            const result = eval(`(function(Plot, data, factorIcons) { return (${options.observable}); })`)(Plot, data, factorIcons);
-            console.log('- eval result:', result);
-            
-            return result;
-          } catch (e) {
-            console.error("Error executing Observable plot code in static tooltip:", e);
-            // Return null to allow createObservablePlot to handle the error message
-            return null; 
-          }
-        };
+    if (!containerRef.current || !options.observable) return;
 
-        createObservablePlot(chartId, plotFunction, Plot); // Pass Plot object
-      }, 100); // Small delay to ensure DOM is ready
+    console.log('=== OBSERVABLE PLOT DEBUG START ===');
+    console.log('1. Input object:', object);
+    console.log('2. Options received:', options);
+    console.log('3. Observable code:', options.observable);
 
-      return () => clearTimeout(timer); // Cleanup timer
+    try {
+      // Get the data for this tooltip
+      const data = getTooltipData(object, options.allData, !isNaN(options.filter[0]), options.filter);
+      
+      console.log('4. Raw data from getTooltipData:', data);
+      console.log('5. Data type:', typeof data);
+      console.log('6. Data length:', data ? data.length : 'N/A');
+      
+      if (data && data.length > 0) {
+        console.log('7. First data item:', data[0]);
+        console.log('8. Data item keys:', Object.keys(data[0]));
+        console.log('9. Sample of first 3 items:', data.slice(0, 3));
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('10. No data available - showing message');
+        containerRef.current.innerHTML = '<div style="padding: 20px; color: #666;">No data available for this area</div>';
+        return;
+      }
+
+      console.log('11. About to execute Observable code...');
+      console.log('12. Plot object available:', !!Plot);
+      console.log('13. Plot methods:', Object.getOwnPropertyNames(Plot));
+
+      // Create a simple function context and execute the Observable code
+      const plotFunction = new Function('Plot', 'data', `
+        console.log('INSIDE OBSERVABLE FUNCTION:');
+        console.log('- Plot object:', Plot);
+        console.log('- Data received:', data);
+        console.log('- Data length:', data.length);
+        console.log('- First item:', data[0]);
+        
+        const result = ${options.observable};
+        
+        console.log('- Observable result:', result);
+        console.log('- Result type:', typeof result);
+        console.log('- Result constructor:', result ? result.constructor.name : 'null');
+        
+        return result;
+      `);
+      
+      console.log('14. Executing Observable function...');
+      const chart = plotFunction(Plot, data);
+      
+      console.log('15. Chart result:', chart);
+      console.log('16. Chart type:', typeof chart);
+      console.log('17. Chart is DOM element:', chart instanceof Element);
+      console.log('18. Chart tagName:', chart ? chart.tagName : 'N/A');
+      
+      // Clear and append the chart
+      containerRef.current.innerHTML = '';
+      if (chart) {
+        console.log('19. Appending chart to container...');
+        containerRef.current.appendChild(chart);
+        console.log('20. Chart successfully appended');
+      } else {
+        console.log('19. No chart produced - showing error message');
+        containerRef.current.innerHTML = '<div style="padding: 20px; color: #666;">Could not generate chart</div>';
+      }
+      
+    } catch (error) {
+      console.error('=== OBSERVABLE PLOT ERROR ===');
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Error at line:', error.lineNumber);
+      containerRef.current.innerHTML = `<div style="padding: 20px; color: #cc0000;">
+        <strong>Error:</strong> ${error.message}<br>
+        <small>Check browser console for details</small>
+      </div>`;
     }
-  }, [object, options, chartId]); // Rerun effect if these change
+    
+    console.log('=== OBSERVABLE PLOT DEBUG END ===');
+  }, [object, options.observable, options.allData, options.filter]);
 
   return (
-    <div ref={containerRef} id={chartId} style={{ minWidth: '500px', minHeight: '300px', background: 'white', padding: '1rem' }}>
-      <i className="fas fa-spinner fa-spin fa-2x"></i>
+    <div 
+      ref={containerRef} 
+      style={{ 
+        minWidth: '400px', 
+        minHeight: '250px', 
+        background: 'white', 
+        padding: '10px',
+        borderRadius: '4px'
+      }}
+    >
+      <div style={{ padding: '20px', color: '#666' }}>Loading chart...</div>
     </div>
   );
 } 
