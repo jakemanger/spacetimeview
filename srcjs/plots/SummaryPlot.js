@@ -23,13 +23,12 @@ import { HexagonLayer, GridLayer } from '@deck.gl/aggregation-layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import RangeInput from '../ui/RangeInput';
 import Colorbar from '../ui/Colorbar';
-import MapTooltipModule, { getTooltip } from '../ui/MapTooltip';
+import { getTooltip, getStaticTooltip } from '../ui/MapTooltip';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange, findMode } from '../utils/chartUtils';
 import { normalizeDataByYear } from '../utils/dataUtils';
 import PolygonAggregationLayer from '../layers/PolygonAggregationLayer';
+import ObservablePlotTooltip from '../ui/ObservablePlotTooltip';
 import "maplibre-gl/dist/maplibre-gl.css";
-
-const { cleanupChartTooltip, getStaticTooltip } = MapTooltipModule;
 
 function DeckGLOverlay(props) {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -80,6 +79,7 @@ export default function SummaryPlot({
   colorScaleType = 'quantize',
   numDecimals = 1,
   factorLevels = null,
+  factorColors = null,
   themeColors = {
     elevation1: '#292d39',
     elevation2: '#181C20',
@@ -136,18 +136,6 @@ export default function SummaryPlot({
       setColorbarDomain(initialColorDomain);
     }
   }, [initialColorDomain]);
-
-  useEffect(() => {
-    if (enableClickedTooltips) {
-      cleanupChartTooltip();
-    }
-  }, [enableClickedTooltips]);
-
-  useEffect(() => {
-    return () => {
-      cleanupChartTooltip();
-    };
-  }, []);
 
   // track domain initialization
   const domainInitializedRef = useRef(false);
@@ -389,8 +377,6 @@ export default function SummaryPlot({
   const handleClick = (info, event) => {
     if (!enableClickedTooltips) return;
     
-    cleanupChartTooltip();
-    
     if (!info.object) {
       setClickedObject(null);
       setClickedCoordinates(null);
@@ -451,10 +437,24 @@ export default function SummaryPlot({
               onClose={() => {
                 setClickedObject(null);
                 setClickedCoordinates(null);
-                cleanupChartTooltip();
               }}
             >
-              {(() => {
+              {observable ? (
+                <ObservablePlotTooltip 
+                   object={clickedObject}
+                   options={{
+                      observable,
+                      allData: displayData,
+                      filter,
+                      hasTime: !isNaN(timeRange[0]),
+                      factorLevels,
+                      factorIcons,
+                      columnName: legendTitle,
+                      colorAggregation,
+                      filterColumn,
+                   }}
+                />
+              ) : (() => {
                 const tooltipContent = getStaticTooltip(
                   { object: clickedObject, layer: null },
                   {
@@ -466,7 +466,7 @@ export default function SummaryPlot({
                     columnName: legendTitle,
                     factorIcons: factorIcons,
                     filterColumn: filterColumn,
-                    observable: observable
+                    observable: null // Explicitly null for non-observable path
                   }
                 );
                 
@@ -500,7 +500,7 @@ export default function SummaryPlot({
           viewMode={viewMode}
         />
       )}
-      <Colorbar colorRange={colorRange} colorDomain={colorbarDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels} />
+      <Colorbar colorRange={colorRange} colorDomain={colorbarDomain} title={legendTitle} numDecimals={numDecimals} themeColors={themeColors} factorLevels={factorLevels} factorColors={factorColors} />
     </>
   );
 }

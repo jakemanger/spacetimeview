@@ -25,6 +25,7 @@ spacetimeview(
   num_decimals = 1,
   factor_levels = NULL,
   factor_icons = NULL,
+  factor_colors = NULL,
   header_logo = "",
   header_title = "",
   header_website_link = "",
@@ -37,6 +38,7 @@ spacetimeview(
     summary_height = "Cell Height", radius_min_pixels = "Minimum Point Radius", aggregate
     = "Aggregate", filter_column = "Filter"),
   filter_column = NULL,
+  default_filter_value = NULL,
   lat_name = "auto",
   lng_name = "auto",
   time_column_name = "auto",
@@ -45,6 +47,7 @@ spacetimeview(
   width = "100vw",
   height = "100vh",
   elementId = NULL,
+  observable = NULL,
   ...
 )
 }
@@ -136,9 +139,18 @@ the interface. Controls include "column_to_plot", "style", "color_scheme",
 the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and
 values to the display names.}
 
+\item{default_filter_value}{Character or numeric vector. Optional. Default
+values to apply as filters when the visualization loads. Should correspond
+to factor level names or numeric values in the filter column.}
+
 \item{polygons}{sf or list object. Optional. Polygons to display on the map,
 such as state or country boundaries. Can be an sf object with POLYGON or
 MULTIPOLYGON geometry or a list with GeoJSON structure.}
+
+\item{observable}{Character. Optional. Observable Plot code to be executed
+in tooltips. The code can reference column names from the dataset and will
+be executed with the filtered data for the current location/time. Only
+activated when this parameter is provided.}
 }
 \value{
 An interactive space-time viewer for visualizing and exploring data.

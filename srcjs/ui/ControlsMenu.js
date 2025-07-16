@@ -12,7 +12,13 @@ export default function ControlsMenu({
   filterOptions,
   filterColumnValues,
   setFilterColumnValues,
+  columnsToPlotOptions,
+  columnsToPlotValues,
+  setColumnsToPlotValues,
   factorIcons,
+  visibleControls = [],
+  controlNames = {},
+  draggableMenu = false,
 }) {
   // initialize position to match the default position in dockStyles
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -136,6 +142,21 @@ export default function ControlsMenu({
     );
   };
 
+  const formatColumnsToPlotOptionLabel = (factorIcons) => ({ label, value }, { context }) => {
+    // context is 'menu' or 'value' (selected)
+    // For columns to plot, use the column name directly as the icon key
+    // This matches how filter columns work: factorIcons[columnName][iconKey]
+    // But for column selection, we want: factorIcons[columnName] = iconPath
+    const iconPath = factorIcons && factorIcons[value];
+    
+    return (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {iconPath && <img src={iconPath} alt="" style={{ width: 16, height: 16, marginRight: 5 }} />} 
+        {label}
+      </div>
+    );
+  };
+
   return dockPosition === 'floating' ? (
     <Draggable 
       handle=".draggable-handle" 
@@ -205,6 +226,20 @@ export default function ControlsMenu({
                 hideCopyButton
               />
             </Provider>
+            {visibleControls.includes('column_to_plot') && (
+              <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
+                <Select
+                  components={makeAnimated()}
+                  isMulti={false}
+                  options={columnsToPlotOptions}
+                  value={columnsToPlotOptions.find(option => columnsToPlotValues.includes(option.value)) || null}
+                  onChange={selectedOption => setColumnsToPlotValues(selectedOption ? [selectedOption.value] : [])}
+                  placeholder={controlNames['column_to_plot'] || 'Select columns to plot...'}
+                  styles={selectStyles}
+                  formatOptionLabel={formatColumnsToPlotOptionLabel(factorIcons)}
+                />
+              </div>
+            )}
             {filterColumn && (
               <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
                 <Select
@@ -276,6 +311,20 @@ export default function ControlsMenu({
               hideCopyButton
             />
           </Provider>
+          {visibleControls.includes('column_to_plot') && (
+            <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
+              <Select
+                components={makeAnimated()}
+                isMulti={false}
+                options={columnsToPlotOptions}
+                value={columnsToPlotOptions.find(option => columnsToPlotValues.includes(option.value)) || null}
+                onChange={selectedOption => setColumnsToPlotValues(selectedOption ? [selectedOption.value] : [])}
+                placeholder={controlNames['column_to_plot'] || 'Select columns to plot...'}
+                styles={selectStyles}
+                formatOptionLabel={formatColumnsToPlotOptionLabel(factorIcons)}
+              />
+            </div>
+          )}
           {filterColumn && (
             <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
               <Select

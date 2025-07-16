@@ -10,6 +10,7 @@ export default function Colorbar({
   title,
   numDecimals = 3,
   factorLevels = null,
+  factorColors = null,
   themeColors = {
     elevation1: '#292d39',
     elevation2: '#181C20',

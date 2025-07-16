@@ -111,6 +111,37 @@ print.SpacetimeviewList <- function(x, ...) {
   invisible(x)
 }
 
+#' Plot method for SpacetimeviewList
+#'
+#' Converts a SpacetimeviewList to a spacetimetabs widget and displays it
+#'
+#' @param x A SpacetimeviewList object
+#' @param ... Additional arguments passed to print
+#' @return The SpacetimeviewList object (invisibly)
+#' @export
+plot.SpacetimeviewList <- function(x, ...) {
+  print(paste('Making SpacetimeTabs widget with', length(x$views), 'views'))
+  result <- spacetimetabs(x)
+  print(result)
+  invisible(x)
+}
+
+#' Save method for SpacetimeviewList
+#'
+#' Converts a SpacetimeviewList to a spacetimetabs widget and displays it
+#'
+#' @param x A SpacetimeviewList object
+#' @param file The file path to save the HTML file to
+#' @param ... Additional arguments passed to print
+#' @return The SpacetimeviewList object (invisibly)
+#' @export
+save.SpacetimeviewList <- function(x, file, ...) {
+  print(paste('Saving SpacetimeTabs widget with', length(x$views), 'views'))
+  result <- spacetimetabs(x)
+  htmlwidgets::saveWidget(result, file)
+  invisible(x)
+}
+
 #' Set tab titles for a SpacetimeviewList using names
 #'
 #' @param x A SpacetimeviewList object

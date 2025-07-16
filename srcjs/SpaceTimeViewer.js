@@ -72,6 +72,7 @@ export default function SpaceTimeViewer({
   initialColorScaleType = 'quantize',
   initialNumDecimals = 1,
   factorLevels = null,
+  factorColors = null,
   headerLogo = '',
   headerTitle = '',
   headerWebsiteLink = '',
@@ -101,6 +102,7 @@ export default function SpaceTimeViewer({
     'enable_clicked_tooltips': 'Clickable Tooltips'
   },
   initialFilterColumn = null,
+  defaultFilterValue = null,
   draggableMenu = false,
   polygons = null,
   factorIcons = null,
@@ -111,45 +113,6 @@ export default function SpaceTimeViewer({
   observable = null,
   ...props // Capture any other props
 }) {
-  // Log all incoming props at the very beginning
-  console.log('[SpaceTimeViewer] Received props:', { 
-    data: data ? `Data with ${data.length} rows` : 'No data', 
-    initialStyle, 
-    initialColumnToPlot, 
-    initialAggregate, 
-    initialRepeatedPointsAggregate, 
-    initialStickyRange, 
-    initialSummaryRadius, 
-    initialSummaryCoverage, 
-    initialAnimationSpeed, 
-    initialTheme, 
-    initialRadiusScale, 
-    initialRadiusMinPixels, 
-    initialSummaryStyle, 
-    initialProjection, 
-    initialSummaryHeight, 
-    initialColorScheme, 
-    initialColorScaleType, 
-    initialNumDecimals, 
-    factorLevels: factorLevels ? 'Factor levels provided' : 'No factor levels', 
-    headerLogo, 
-    headerTitle, 
-    headerWebsiteLink, 
-    socialLinks: socialLinks ? `Social links: ${Object.keys(socialLinks).join(', ')}` : 'No social links', 
-    visibleControls: visibleControls ? `Visible controls: ${visibleControls.join(', ')}` : 'No visible controls specified', 
-    controlNames: controlNames ? 'Control names provided' : 'No control names', 
-    initialFilterColumn, 
-    draggableMenu, 
-    polygons: polygons ? `Polygon data provided (length: ${polygons.length})` : 'No polygon data',
-    factorIcons: factorIcons ? 'Factor icons provided' : 'No factor icons',
-    enableClickedTooltips,
-    tabTitles: tabTitles ? 'Tab titles provided' : 'No tab titles',
-    activeTab: activeTab ? 'Active tab provided' : 'No active tab',
-    onTabChange,
-    observable,
-    otherProps: props
-  });
-
   // Memoize the data transformation to prevent unnecessary re-renders
   const transformedData = useMemo(() => {
     const convertedData = HTMLWidgets.dataframeToD3(data);
@@ -186,6 +149,10 @@ export default function SpaceTimeViewer({
   const [filterColumnValues, setFilterColumnValues] = useState([]);
   const [filterOptions, setFilterOptions] = useState([]);
 
+  // Add new state for columns to plot selection
+  const [columnsToPlotValues, setColumnsToPlotValues] = useState([]);
+  const [columnsToPlotOptions, setColumnsToPlotOptions] = useState([]);
+
   const columnNames = useMemo(() => {
     if (transformedData.length === 0) return [];
     return Object.keys(transformedData[0]).filter(
@@ -214,13 +181,6 @@ export default function SpaceTimeViewer({
       label: controlNames['style'] || 'Plot Type',
       hint: 'Select whether to display a Summary or Scatter plot.',
       render: () => visibleControls.includes('style')
-    },
-    columnToPlot: {
-      value: initialColumnToPlot,
-      options: columnNames,
-      label: controlNames['column_to_plot'] || 'Dataset',
-      hint: 'Choose the data column to visualize on the map.',
-      render: () => visibleControls.includes('column_to_plot')
     },
     projection: {
       value: initialProjection,
@@ -347,14 +307,10 @@ export default function SpaceTimeViewer({
     }
   };
 
-  if (!columnNames.includes(initialColumnToPlot)) {
-    delete controlsConfig.columnToPlot;
-  }
 
   const [
     {
       style,
-      columnToPlot,
       animationSpeed,
       theme,
       projection,
@@ -410,7 +366,6 @@ export default function SpaceTimeViewer({
     set(
       {
         style: initialStyle,
-        columnToPlot: initialColumnToPlot,
         projection: initialProjection,
         colorScheme: initialColorScheme,
         theme: initialTheme,
@@ -434,7 +389,6 @@ export default function SpaceTimeViewer({
   }, [
     data,
     initialStyle,
-    initialColumnToPlot,
     initialAggregate,
     initialRepeatedPointsAggregate,
     initialStickyRange,
@@ -454,6 +408,7 @@ export default function SpaceTimeViewer({
     visibleControls,
     controlNames,
     initialFilterColumn,
+    defaultFilterValue,
     draggableMenu,
     factorIcons,
     enableClickedTooltips,
@@ -485,20 +440,72 @@ export default function SpaceTimeViewer({
     return null;
   }, [filterColumn, filterColumnValues, factorLevels, factorIcons, transformedData]);
 
-  let aggregateToUse = factorLevels && factorLevels[columnToPlot] ? factorAggregate : aggregate;
+  // Calculate effective column to plot for aggregate logic and legend title
+  const effectiveColumnToPlot = columnsToPlotValues.length > 0 ? 
+    (columnsToPlotValues.length === 1 ? columnsToPlotValues[0] : 'Combined') :
+    (columnNames.length > 0 ? columnNames[0] : 'value');
 
-  if (factorLevels && factorLevels[columnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
+  const legendTitle = columnsToPlotValues.length > 1 ? 
+    `${columnsToPlotValues.join(' + ')}` : effectiveColumnToPlot;
+
+  let aggregateToUse = factorLevels && factorLevels[effectiveColumnToPlot] ? factorAggregate : aggregate;
+
+  if (factorLevels && factorLevels[effectiveColumnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
     aggregateToUse = factorAggregateOptions[0]
   }
 
   useEffect(() => {
-    if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
+    if (factorLevels && factorLevels[effectiveColumnToPlot] && factorColors && factorColors[effectiveColumnToPlot]) {
+      console.log('Using custom factor colors for column:', effectiveColumnToPlot);
+      const customColors = factorColors[effectiveColumnToPlot];
+      const factorLevelNames = factorLevels[effectiveColumnToPlot];
+      const numLevels = factorLevelNames.length;
+      
+      // Convert hex colors to RGB arrays
+      let colorRange = [];
+      
+      // Check if customColors is an object (named colors) or array (indexed colors)
+      const isNamedColors = customColors && typeof customColors === 'object' && !Array.isArray(customColors);
+      
+      for (let i = 0; i < numLevels; i++) {
+        let hexColor;
+        
+        if (isNamedColors) {
+          // Use factor level name to look up color
+          const levelName = factorLevelNames[i];
+          hexColor = customColors[levelName];
+          if (!hexColor) {
+            console.warn(`No color found for factor level "${levelName}". Available colors:`, Object.keys(customColors));
+            hexColor = Object.values(customColors)[0] || '#888888';
+          }
+        } else {
+          const colorsArray = Array.isArray(customColors) ? customColors : Object.values(customColors);
+          if (i < colorsArray.length) {
+            hexColor = colorsArray[i];
+          } else {
+            // If not enough colors provided, cycle through the provided ones
+            hexColor = colorsArray[i % colorsArray.length];
+          }
+        }
+        
+        if (hexColor) {
+          const rgb = hexToRgb(hexColor);
+          colorRange.push(rgb);
+        } else {
+          console.warn(`No valid color found for index ${i}, using default gray`);
+          colorRange.push([136, 136, 136]); // Default gray
+        }
+      }
+      
+      setColorRange(colorRange);
+    } else if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
+      // Fall back to colorbrewer interpolation
       // Convert baseColorRange from arrays to "rgb(r, g, b)" strings for interpolation
       let baseColorRange = colorbrewer[colorScheme]['6']
         .map(hexToRgb)
         .map(rgbArray => `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`);
 
-      const numClasses = factorLevels && factorLevels[columnToPlot] ? factorLevels[columnToPlot].length : baseColorRange.length;
+      const numClasses = factorLevels && factorLevels[effectiveColumnToPlot] ? factorLevels[effectiveColumnToPlot].length : baseColorRange.length;
 
       // Generate interpolated colors between the start and end of baseColorRange
       let interpolatedColorRange = [];
@@ -513,7 +520,7 @@ export default function SpaceTimeViewer({
       console.error(`Color scheme ${colorScheme} does not have 6 classes`);
       setColorRange([]);
     }
-  }, [colorScheme, factorLevels, columnToPlot]);
+  }, [colorScheme, factorLevels, effectiveColumnToPlot, factorColors]);
 
   useEffect(() => {
     const newLevaThemeColors = theme === 'dark' ? {
@@ -555,11 +562,45 @@ export default function SpaceTimeViewer({
         label: String(value), // Use the factor level as the label
       }));
       setFilterOptions(options);
+      
+      if (defaultFilterValue !== null && Array.isArray(defaultFilterValue)) {
+        const defaultIndices = defaultFilterValue
+          .map(value => factorLevels[filterColumn].indexOf(value))
+          .filter(index => index !== -1); // Only include valid indices
+        setFilterColumnValues(defaultIndices);
+      } else if (defaultFilterValue !== null) {
+        const defaultIndex = factorLevels[filterColumn].indexOf(defaultFilterValue);
+        if (defaultIndex !== -1) {
+          setFilterColumnValues([defaultIndex]);
+        }
+      }
     } else {
       setFilterOptions([]);
       setFilterColumnValues([]);
     }
-  }, [filterColumn, factorLevels, transformedData]);
+  }, [filterColumn, factorLevels, transformedData, defaultFilterValue]);
+
+  useEffect(() => {
+    if (columnNames.length > 0) {
+      const options = columnNames.map(column => ({
+        value: column,
+        label: column
+      }));
+      setColumnsToPlotOptions(options);
+      
+      // Set initial value if not already set or if it needs to be updated
+      if (columnsToPlotValues.length === 0) {
+        if (columnNames.includes(initialColumnToPlot)) {
+          setColumnsToPlotValues([initialColumnToPlot]);
+        } else if (columnNames.length > 0) {
+          setColumnsToPlotValues([columnNames[0]]);
+        }
+      }
+    } else {
+      setColumnsToPlotOptions([]);
+      setColumnsToPlotValues([]);
+    }
+  }, [columnNames, initialColumnToPlot]);
 
   // Parse and log polygon data if available
   useEffect(() => {
@@ -609,17 +650,43 @@ export default function SpaceTimeViewer({
       dat = dat.filter(d => filterColumnValues.includes(d[filterColumn]));
     }
 
-    // remove rows where d[columnToPlot] is undefined or null
-    dat = dat.filter(d => d[columnToPlot] !== undefined && d[columnToPlot] !== null);
+    // Handle multiple columns to plot - if no columns selected, use the first available column
+    const effectiveColumnsToPlot = columnsToPlotValues.length > 0 ? columnsToPlotValues : 
+      (columnNames.length > 0 ? [columnNames[0]] : []);
 
-    // add 'value' property with the value from columnToPlot
-    dat = dat.map(d => ({
+    // remove rows where all selected columns are undefined or null
+    if (effectiveColumnsToPlot.length > 0) {
+      dat = dat.filter(d => effectiveColumnsToPlot.some(col => d[col] !== undefined && d[col] !== null));
+    }
+
+    // add 'value' property by summing the values from all selected columns
+    dat = dat.map(d => {
+      let totalValue = 0;
+      let validColumns = 0;
+      
+      effectiveColumnsToPlot.forEach(col => {
+        const colValue = d[col];
+        if (colValue !== undefined && colValue !== null && !isNaN(colValue)) {
+          totalValue += Number(colValue);
+          validColumns++;
+        }
+      });
+      
+      // Use the sum if we have multiple columns, otherwise use the single value
+      const finalValue = effectiveColumnsToPlot.length > 1 ? totalValue : 
+        (validColumns > 0 ? totalValue : undefined);
+      
+      return {
       ...d,
-      value: d[columnToPlot]
-    }));
+        value: finalValue
+      };
+    });
+
+    // Remove rows with undefined values after processing
+    dat = dat.filter(d => d.value !== undefined && d.value !== null);
 
     return dat;
-  }, [transformedData, columnToPlot, filterColumn, filterColumnValues]);
+  }, [transformedData, columnsToPlotValues, columnNames, filterColumn, filterColumnValues]);
 
   const plot = useMemo(() => {
     console.log('replotting plot');
@@ -651,9 +718,10 @@ export default function SpaceTimeViewer({
           animationSpeed={animationSpeed}
           projection={projection}
           colorRange={colorRange}
-          columnName={columnToPlot}
+          columnName={legendTitle}
           themeColors={levaTheme.colors}
           factorLevels={factorLevels}
+          factorColors={factorColors}
           polygons={polygons}
           factorIcons={factorIcons}
           filterColumn={filterColumn}
@@ -680,11 +748,12 @@ export default function SpaceTimeViewer({
           projection={projection}
           summaryHeight={summaryHeight}
           colorRange={colorRange}
-          legendTitle={columnToPlot}
+          legendTitle={legendTitle}
           colorScaleType={colorScaleType}
           numDecimals={numDecimals}
           themeColors={levaTheme.colors}
           factorLevels={factorLevels}
+          factorColors={factorColors}
           filterColumnValues={filterColumnValues}
           polygons={polygons}
           factorIcons={factorIcons}
@@ -721,6 +790,7 @@ export default function SpaceTimeViewer({
     filterColumn,
     clickedTooltipsEnabled,
     observable,
+    legendTitle,
   ]);
 
   const handleSnackbarClose = () => {
@@ -782,8 +852,13 @@ export default function SpaceTimeViewer({
         filterOptions={filterOptions}
         filterColumnValues={filterColumnValues}
         setFilterColumnValues={setFilterColumnValues}
+        columnsToPlotOptions={columnsToPlotOptions}
+        columnsToPlotValues={columnsToPlotValues}
+        setColumnsToPlotValues={setColumnsToPlotValues}
         draggableMenu={draggableMenu}
         factorIcons={factorIcons}
+        visibleControls={visibleControls}
+        controlNames={controlNames}
       />
 
       {/* Display Area for Selected Filter Info */} 

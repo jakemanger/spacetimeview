@@ -53,6 +53,10 @@
 #'   Should be a named list where keys are factor column names, and values are
 #'   named lists mapping factor levels to image file paths relative to the 'public'
 #'   directory (e.g., list(my_factor_col = list(level1 = "icons/icon1.png", level2 = "icons/icon2.png"))).
+#' @param factor_colors List. Optional. Provides custom colors for factor levels.
+#'   Should be a named list where keys are factor column names, and values are
+#'   character vectors of hex colors (e.g., list(my_factor_col = c("#FF0000", "#00FF00", "#0000FF"))).
+#'   The number of colors should match the number of factor levels for that column.
 #' @param header_logo Character. Optional. URL to the logo displayed in the 
 #'   header of the visualization.
 #' @param header_title Character. Title displayed in the header, typically 
@@ -69,6 +73,9 @@
 #' @param control_names Named list. Custom names for controls as displayed in 
 #'   the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and 
 #'   values to the display names.
+#' @param default_filter_value Character or numeric vector. Optional. Default 
+#'   values to apply as filters when the visualization loads. Should correspond 
+#'   to factor level names or numeric values in the filter column.
 #' @param polygons sf or list object. Optional. Polygons to display on the map,
 #'   such as state or country boundaries. Can be an sf object with POLYGON or
 #'   MULTIPOLYGON geometry or a list with GeoJSON structure.
@@ -131,6 +138,7 @@ spacetimeview <- function(
     num_decimals = 1,
     factor_levels = NULL,
     factor_icons = NULL,
+    factor_colors = NULL,
     header_logo = '',
     header_title = '',
     header_website_link = '',
@@ -158,6 +166,7 @@ spacetimeview <- function(
       'filter_column' = 'Filter'
     ),
     filter_column = NULL,
+    default_filter_value = NULL,
     lat_name = 'auto',
     lng_name = 'auto',
     time_column_name = 'auto',
@@ -510,10 +519,25 @@ spacetimeview <- function(
     print("Processing factor icons...")
     factor_icons_uri <- list()
     for (col_name in names(factor_icons)) {
-      if (col_name %in% names(factor_levels)) { # check if the column is actually a factor
-        col_icons <- factor_icons[[col_name]]
-        col_icons_uri <- list()
-        if (is.list(col_icons)) {
+      col_icons <- factor_icons[[col_name]]
+      
+      # Handle two formats:
+      # 1. Simple format: factor_icons = list("column_name" = "icon_path") 
+      # 2. Complex format: factor_icons = list("column_name" = list("level1" = "path1", "level2" = "path2"))
+      
+      if (is.character(col_icons) && length(col_icons) == 1) {
+        # Simple format: column name directly maps to icon path
+        # This is for column selection dropdowns where we want one icon per column
+        full_path <- file.path(getwd(), col_icons) 
+        data_uri <- image_to_data_uri(full_path)
+        if (!is.null(data_uri)) {
+          factor_icons_uri[[col_name]] <- data_uri
+        }
+      } else if (is.list(col_icons)) {
+        # Complex format: for factor levels (filter dropdowns)
+        # Only process if the column is actually a factor
+        if (col_name %in% names(factor_levels)) {
+          col_icons_uri <- list()
           for (level_name in names(col_icons)) {
             icon_path <- col_icons[[level_name]]
             if (is.character(icon_path) && length(icon_path) == 1) {
@@ -532,14 +556,14 @@ spacetimeview <- function(
                warning(paste("Invalid icon path provided for level '", level_name, "' in column '", col_name, "'. Skipping icon."), call. = FALSE)
             }
           }
+          if (length(col_icons_uri) > 0) {
+            factor_icons_uri[[col_name]] <- col_icons_uri
+          }
         } else {
-           warning(paste("factor_icons for column '", col_name, "' should be a named list. Skipping icons for this column."), call. = FALSE)
-        }
-        if (length(col_icons_uri) > 0) {
-          factor_icons_uri[[col_name]] <- col_icons_uri
+           warning(paste("Column '", col_name, "' provided in factor_icons is not a factor column in the data or not in factor_levels. Skipping icons for factor levels."), call. = FALSE)
         }
       } else {
-         warning(paste("Column '", col_name, "' provided in factor_icons is not a factor column in the data or not in factor_levels. Skipping icons."), call. = FALSE)
+         warning(paste("factor_icons for column '", col_name, "' should be either a character string (simple format) or a named list (complex format). Skipping icons for this column."), call. = FALSE)
       }
     }
     if (length(factor_icons_uri) > 0) {
@@ -572,6 +596,7 @@ spacetimeview <- function(
       initialNumDecimals = num_decimals,
       factorLevels = factor_levels,
       factorIcons = factor_icons,
+      factorColors = factor_colors,
       headerLogo = header_logo,
       headerTitle = header_title,
       headerWebsiteLink = header_website_link,
@@ -579,6 +604,7 @@ spacetimeview <- function(
       visibleControls = visible_controls,
       controlNames = control_names,
       initialFilterColumn = filter_column,
+      defaultFilterValue = default_filter_value,
       polygons = polygon_data,
       observable = observable,
       ...

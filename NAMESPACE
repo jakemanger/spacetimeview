@@ -2,9 +2,11 @@
 
 S3method("+",spacetimeview)
 S3method("names<-",SpacetimeviewList)
+S3method(plot,SpacetimeviewList)
 S3method(print,SpacetimeviewList)
 export(renderSpacetimetabs)
 export(renderSpacetimeview)
+export(save.SpacetimeviewList)
 export(spacetimetabs)
 export(spacetimetabsOutput)
 export(spacetimeview)

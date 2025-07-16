@@ -49,6 +49,7 @@ export default function ScatterTimePlot({
     highlight3: '#FEFEFE',
   },
   factorLevels = null,
+  factorColors = null,
   theme = 'light',
   polygons = null,
   factorIcons = null,
@@ -306,6 +307,7 @@ export default function ScatterTimePlot({
         numDecimals={2}
         themeColors={themeColors}
         factorLevels={factorLevels}
+        factorColors={factorColors}
         factorIcons={factorIcons}
       />
     </>
