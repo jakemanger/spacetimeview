@@ -75,6 +75,7 @@ or via a scatter plot to visualize individual data points.</p>
 <span>  num_decimals <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  factor_levels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  factor_icons <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  factor_colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  header_logo <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  header_title <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  header_website_link <span class="op">=</span> <span class="st">""</span>,</span>
@@ -87,6 +88,7 @@ or via a scatter plot to visualize individual data points.</p>
 <span>    summary_height <span class="op">=</span> <span class="st">"Cell Height"</span>, radius_min_pixels <span class="op">=</span> <span class="st">"Minimum Point Radius"</span>, aggregate</span>
 <span>    <span class="op">=</span> <span class="st">"Aggregate"</span>, filter_column <span class="op">=</span> <span class="st">"Filter"</span><span class="op">)</span>,</span>
 <span>  filter_column <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  default_filter_value <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  lat_name <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  lng_name <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  time_column_name <span class="op">=</span> <span class="st">"auto"</span>,</span>
@@ -95,6 +97,7 @@ or via a scatter plot to visualize individual data points.</p>
 <span>  width <span class="op">=</span> <span class="st">"100vw"</span>,</span>
 <span>  height <span class="op">=</span> <span class="st">"100vh"</span>,</span>
 <span>  elementId <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  observable <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -242,10 +245,23 @@ the UI. Keys correspond to control identifiers (e.g., "column_to_plot") and
 values to the display names.</p></dd>
 
 
+<dt id="arg-default-filter-value">default_filter_value<a class="anchor" aria-label="anchor" href="#arg-default-filter-value"></a></dt>
+<dd><p>Character or numeric vector. Optional. Default
+values to apply as filters when the visualization loads. Should correspond
+to factor level names or numeric values in the filter column.</p></dd>
+
+
 <dt id="arg-polygons">polygons<a class="anchor" aria-label="anchor" href="#arg-polygons"></a></dt>
 <dd><p>sf or list object. Optional. Polygons to display on the map,
 such as state or country boundaries. Can be an sf object with POLYGON or
 MULTIPOLYGON geometry or a list with GeoJSON structure.</p></dd>
+
+
+<dt id="arg-observable">observable<a class="anchor" aria-label="anchor" href="#arg-observable"></a></dt>
+<dd><p>Character. Optional. Observable Plot code to be executed
+in tooltips. The code can reference column names from the dataset and will
+be executed with the filtered data for the current location/time. Only
+activated when this parameter is provided.</p></dd>
 
 </dl></div>
     <div class="section level2">
