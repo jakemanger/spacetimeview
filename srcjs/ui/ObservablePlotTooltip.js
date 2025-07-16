@@ -131,11 +131,11 @@ export default function ObservablePlotTooltip({ object, options }) {
     <div 
       ref={containerRef} 
       style={{ 
-        minWidth: '400px', 
-        minHeight: '250px', 
+        minWidth: '40px', 
+        minHeight: '40px', 
         background: 'white', 
-        padding: '10px',
-        borderRadius: '4px'
+        padding: '4px',
+        borderRadius: '8px'
       }}
     >
       <div style={{ padding: '20px', color: '#666' }}>Loading chart...</div>
