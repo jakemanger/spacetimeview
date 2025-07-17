@@ -23,12 +23,14 @@ import { HexagonLayer, GridLayer } from '@deck.gl/aggregation-layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import RangeInput from '../ui/RangeInput';
 import Colorbar from '../ui/Colorbar';
+import GeocoderControl from '../ui/GeocoderControl';
 import { getTooltip, getStaticTooltip } from '../ui/MapTooltip';
 import { determineTimeUnit, calculateTrendLine, calculateYAxisRange, findMode } from '../utils/chartUtils';
 import { normalizeDataByYear } from '../utils/dataUtils';
 import PolygonAggregationLayer from '../layers/PolygonAggregationLayer';
 import ObservablePlotTooltip from '../ui/ObservablePlotTooltip';
 import "maplibre-gl/dist/maplibre-gl.css";
+import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 
 function DeckGLOverlay(props) {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -413,6 +415,7 @@ export default function SummaryPlot({
     <>
       <div style={{ width: '100%', height: '100vh' }}>
         <Map reuseMaps mapStyle={mapStyle} style={{ width: '100%', height: '100%' }}>
+          <GeocoderControl position="top-left" />
           <GeolocateControl position="top-left" />
           <FullscreenControl position="top-left" />
           <NavigationControl position="top-left" />

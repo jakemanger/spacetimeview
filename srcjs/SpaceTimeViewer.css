@@ -27,13 +27,38 @@ body {
 }
 
 /* Fix up the maplibre attribution, as it seems it is broken when used with deckgl */
-.maplibregl-control-container {
-	position: fixed;
-	bottom: 2px;
-	right: 2px;
+  .maplibregl-control-container .maplibregl-ctrl-attrib {
+  /* old */
+  position: fixed;
+  bottom: 2px;
+  right: 2px;
+  pointer-events: none;
+
 	z-index: 9999;
-	pointer-events: none;
+  /* new */
+	/* position: absolute; */
   font-size: 12px;
+}
+
+/* Make sure controls are positioned correctly */
+.maplibregl-ctrl-top-left {
+  top: 10px;
+  left: 10px;
+}
+
+.maplibregl-ctrl-top-right {
+  top: 10px;
+  right: 10px;
+}
+
+.maplibregl-ctrl-bottom-left {
+  bottom: 10px;
+  left: 10px;
+}
+
+.maplibregl-ctrl-bottom-right {
+  bottom: 10px;
+  right: 10px;
 }
 
 .maplibregl-ctrl-attrib-button {
