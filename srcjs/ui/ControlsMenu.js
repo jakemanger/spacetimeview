@@ -28,7 +28,8 @@ export default function ControlsMenu({
 
   useEffect(() => {
     if (dockPosition === 'floating' && controlsRef.current) {
-      const initialX = 20;
+      const { width } = controlsRef.current.getBoundingClientRect();
+      const initialX = window.innerWidth - width - 20; // 20px from the right
       const initialY = 20;
       setPosition({ x: initialX, y: initialY });
     }

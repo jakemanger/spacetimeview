@@ -81,16 +81,14 @@ export default function Colorbar({
 
   // Legend items generation
   const legendItems = React.useMemo(() => {
-    // If it's factor levels, map directly without reversing labels
+    // If it's factor levels, map directly without reversing
     if (factorLevels && factorLevels[title]) {
       const levels = factorLevels[title];
-      // Use reversedColorRange for colors, but original levels for labels/icons
+      // Use original colorRange for factor levels, display in provided order
       return levels.map((levelLabel, index) => {
-        // Index might go out of bounds if colorRange length != levels length
-        // Use modulo or clamp index if necessary, or ensure lengths match
-        const colorIndex = reversedColorRange.length - 1 - index;
-        if (colorIndex < 0) return null; // Or handle appropriately
-        const color = reversedColorRange[colorIndex];
+        // Use direct index mapping to maintain order
+        if (index >= colorRange.length) return null; // Handle bounds
+        const color = colorRange[index];
         const colorString = `rgb(${color.join(',')})`;
         const iconPath = factorIcons && factorIcons[title] && factorIcons[title][levelLabel];
 
@@ -138,7 +136,7 @@ export default function Colorbar({
         );
       }).filter(item => item !== null); // Filter out nulls if any
     } else {
-      // Original logic for numeric data
+      // Original logic for numeric data (still uses reversed colors)
       return reversedColorRange.map((color, index) => {
         const colorString = `rgb(${color.join(',')})`;
         const label = labels[index]; // labels are already reversed here
@@ -173,7 +171,7 @@ export default function Colorbar({
         );
       });
     }
-  }, [factorLevels, title, reversedColorRange, factorIcons, themeColors.highlight2, labels]);
+  }, [factorLevels, title, colorRange, reversedColorRange, factorIcons, themeColors.highlight2, labels]);
 
   return (
     <div

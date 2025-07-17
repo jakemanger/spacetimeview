@@ -111,6 +111,7 @@ export default function SpaceTimeViewer({
   activeTab = 0,
   onTabChange = () => {},
   observable = null,
+  countryCodes = null,
   ...props // Capture any other props
 }) {
   // Memoize the data transformation to prevent unnecessary re-renders
@@ -760,6 +761,7 @@ export default function SpaceTimeViewer({
           filterColumn={filterColumn}
           enableClickedTooltips={clickedTooltipsEnabled}
           observable={observable}
+          countryCodes={countryCodes}
         />
       );
     } else {
@@ -791,6 +793,7 @@ export default function SpaceTimeViewer({
     clickedTooltipsEnabled,
     observable,
     legendTitle,
+    countryCodes,
   ]);
 
   const handleSnackbarClose = () => {

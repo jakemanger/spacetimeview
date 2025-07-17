@@ -100,6 +100,7 @@ export default function SummaryPlot({
   filterColumn = null,
   enableClickedTooltips = false,
   observable = null,
+  countryCodes = null,
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -415,7 +416,10 @@ export default function SummaryPlot({
     <>
       <div style={{ width: '100%', height: '100vh' }}>
         <Map reuseMaps mapStyle={mapStyle} style={{ width: '100%', height: '100%' }}>
-          <GeocoderControl position="top-left" />
+          <GeocoderControl 
+            position="top-left" 
+            countryCodes={countryCodes}
+          />
           <GeolocateControl position="top-left" />
           <FullscreenControl position="top-left" />
           <NavigationControl position="top-left" />

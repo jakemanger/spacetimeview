@@ -83,6 +83,11 @@
 #'   in tooltips. The code can reference column names from the dataset and will
 #'   be executed with the filtered data for the current location/time. Only
 #'   activated when this parameter is provided.
+#' @param country_codes Character. Optional. Country codes to filter geocoder 
+#'   search results. Use ISO 3166-1 alpha-2 country codes (e.g., "AU" for 
+#'   Australia, "US" for United States). Multiple countries can be specified 
+#'   separated by commas (e.g., "AU,NZ" for Australia and New Zealand). If NULL, 
+#'   searches worldwide.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
 #' @export
@@ -176,6 +181,7 @@ spacetimeview <- function(
     height = '100vh', 
     elementId = NULL,
     observable = NULL,
+    country_codes = NULL,
     ...
 ) {
 
@@ -607,6 +613,7 @@ spacetimeview <- function(
       defaultFilterValue = default_filter_value,
       polygons = polygon_data,
       observable = observable,
+      countryCodes = country_codes,
       ...
     )
   )
