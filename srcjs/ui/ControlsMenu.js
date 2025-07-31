@@ -277,7 +277,7 @@ export default function ControlsMenu({
           <>
             {menuText && (
               <div style={{ 
-                padding: '14px 10px', 
+                padding: '0 10px 10px 10px', 
                 fontSize: '13px', 
                 lineHeight: '1.4',
                 color: levaTheme?.colors?.highlight2 || '#323F4B',

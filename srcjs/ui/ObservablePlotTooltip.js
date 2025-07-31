@@ -200,10 +200,11 @@ export default function ObservablePlotTooltip({ object, options }) {
           minWidth: '40px', 
           minHeight: '40px',
           maxWidth: '100%',
-          width: '100%',
           background: 'white', 
           padding: '0px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
         <div style={{ padding: '20px', color: '#666' }}>Loading chart...</div>

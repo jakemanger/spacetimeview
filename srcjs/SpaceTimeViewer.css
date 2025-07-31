@@ -55,8 +55,16 @@ body {
 }
 
 .maplibregl-ctrl-bottom-left {
-  bottom: 10px;
+  bottom: 38px;
   right: 10px;
+  left: auto;
+}
+/* if mobile, make left 10px */
+@media screen and (max-width: 768px) {
+  .maplibregl-ctrl-bottom-left {
+    left: 10px;
+    right: auto;
+  }
 }
 
 .maplibregl-ctrl-attrib-button {
@@ -74,8 +82,25 @@ body {
 
 .maplibregl-popup-content {
   max-width: 1000px !important;
-  border-radius: 4px !important;
+  border-radius: 5px !important;
+  padding: 5px !important;
+}
+
+/* Override Observable Plot figure max-width to prevent unwanted margins */
+figure[class*="plot-"][class*="-figure"] {
+  max-width: 100% !important;
+  margin: 0 !important;
+  width: 100% !important;
   padding: 4px !important;
+}
+
+/* Make h2 elements smaller within Observable Plot figures */
+figure[class*="plot-"][class*="-figure"] h2 {
+  font-size: 14px !important;
+  margin: 0 8px 0 8px !important;
+  padding-top: 8px !important;
+  max-width: 70% !important;
+  text-align: left !important;
 }
 
 div[mapboxgl-children] {

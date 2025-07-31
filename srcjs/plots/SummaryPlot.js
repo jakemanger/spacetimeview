@@ -3,7 +3,6 @@ import {
   Map, 
   useControl, 
   GeolocateControl, 
-  FullscreenControl, 
   NavigationControl, 
   ScaleControl, 
   Popup 
@@ -591,7 +590,6 @@ export default function SummaryPlot({
             countryCodes={countryCodes}
           />
           <GeolocateControl position="top-left" />
-          <FullscreenControl position="top-left" />
           <NavigationControl position="top-left" />
           <ScaleControl />
 
