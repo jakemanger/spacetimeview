@@ -88,18 +88,24 @@
 #'   Australia, "US" for United States). Multiple countries can be specified 
 #'   separated by commas (e.g., "AU,NZ" for Australia and New Zealand). If NULL, 
 #'   searches worldwide.
-#' @param legend_order Numeric vector. Optional. Custom ordering of legend items 
-#'   using 0-based indices. For example, c(5, 4, 3, 2, 1, 0) would reverse a 
-#'   6-item legend. If NULL, items are displayed in their default order.
+#' @param legend_order List or numeric vector. Optional. Custom ordering of legend items.
+#'   Can be either: 1) A simple numeric vector using 0-based indices for the current
+#'   column (e.g., c(5, 4, 3, 2, 1, 0) to reverse a 6-item legend), or 2) A named
+#'   list where keys are column names and values are numeric vectors of indices:
+#'   list(species = c(2, 1, 0), temperature = c(5, 4, 3, 2, 1, 0)). If a column
+#'   is not specified in the list, the default order is used.
 #' @param legend_labels List. Optional. Custom labels for legend items. Supports 
 #'   two formats: 1) Named list with character vectors in factor level order:
 #'   list(species = c("Red Fox", "Gray Wolf", "Brown Bear")), or 2) Named list
 #'   with named vectors for direct mapping: list(species = c("red_fox" = "Red Fox", 
 #'   "gray_wolf" = "Gray Wolf", "brown_bear" = "Brown Bear")). Empty strings will 
 #'   show only the color swatch without text labels.
-#' @param legend_direction_text Character. Optional. Text to display with an upward 
-#'   arrow (→) indicating the direction of increasing values in the legend. For example, 
-#'   "High" will display as "High →" above the legend items.
+#' @param legend_direction_text List or character. Optional. Text to display with an upward 
+#'   arrow (→) indicating the direction of increasing values in the legend. Can be either:
+#'   1) A simple character string for the current column (e.g., "High"), or 2) A named
+#'   list where keys are column names and values are character strings:
+#'   list(species = "More Rare", temperature = "Hotter"). If a column is not specified
+#'   in the list, no direction text is shown for that column.
 #' @param menu_text Character. Optional. Text to display at the top of the 
 #'   controls menu. Can be used to provide instructions or context about the 
 #'   visualization controls.
@@ -176,6 +182,35 @@
 #' 
 #' # Save the plot as an HTML file
 #' htmlwidgets::saveWidget(plot4, "spacetime_plot_custom_legend.html")
+#' 
+#' # Example with custom legend ordering for multiple columns
+#' multi_column_data <- data.frame(
+#'   lat = runif(100, min = -30, max = 30),
+#'   lng = runif(100, min = -100, max = 100),
+#'   time = seq(as.POSIXct("2023-01-01"), by = "days", length.out = 100),
+#'   species = sample(c("red_fox", "gray_wolf", "brown_bear"), 100, replace = TRUE),
+#'   temperature = runif(100, min = -10, max = 40)
+#' )
+#' 
+#' plot5 <- spacetimeview(
+#'   data = multi_column_data,
+#'   column_to_plot = "species",
+#'   legend_order = list(
+#'     species = c(2, 0, 1),  # Custom order: brown_bear, red_fox, gray_wolf
+#'     temperature = c(4, 3, 2, 1, 0)  # Reverse order for temperature if switched to that column
+#'   ),
+#'   legend_labels = list(
+#'     species = c("red_fox" = "Red Fox", "gray_wolf" = "Gray Wolf", "brown_bear" = "Brown Bear")
+#'   ),
+#'   legend_direction_text = list(
+#'     species = "More Rare",
+#'     temperature = "Hotter"
+#'   ),
+#'   header_title = 'Wildlife Data with Custom Legend Order and Direction'
+#' )
+#' 
+#' # Save the plot as an HTML file
+#' htmlwidgets::saveWidget(plot5, "spacetime_plot_custom_order.html")
 spacetimeview <- function(
     data,
     style = 'Summary',

@@ -245,14 +245,26 @@ export default function Colorbar({
     }
 
     // Apply custom ordering if legendOrder is provided
-    if (legendOrder && Array.isArray(legendOrder)) {
-      const orderedItems = [];
-      legendOrder.forEach(index => {
-        if (index >= 0 && index < legendItems.length) {
-          orderedItems.push(legendItems[index]);
-        }
-      });
-      legendItems = orderedItems;
+    if (legendOrder) {
+      let orderToUse = null;
+      
+      if (Array.isArray(legendOrder)) {
+        // Simple array format for backward compatibility
+        orderToUse = legendOrder;
+      } else if (typeof legendOrder === 'object' && legendOrder[title]) {
+        // Object format with column-specific ordering
+        orderToUse = legendOrder[title];
+      }
+      
+      if (orderToUse && Array.isArray(orderToUse)) {
+        const orderedItems = [];
+        orderToUse.forEach(index => {
+          if (index >= 0 && index < legendItems.length) {
+            orderedItems.push(legendItems[index]);
+          }
+        });
+        legendItems = orderedItems;
+      }
     }
   }
 
@@ -372,24 +384,36 @@ export default function Colorbar({
       ) : (
         <div>
           {/* Direction indicator */}
-          {legendDirectionText && (
-            <div
-              style={{
-                marginBottom: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: '11px',
-                color: highlight2,
-                opacity: 0.8,
-              }}
-            >
-              <span style={{ marginRight: '4px' }}>{legendDirectionText}</span>
-              <span style={{ fontSize: '10px', transform: 'rotate(-90deg)', transformOrigin: 'center' }}>→</span>
-            </div>
-          )}
+          {(() => {
+            let directionTextToUse = null;
+            
+            if (typeof legendDirectionText === 'string') {
+              // Simple string format for backward compatibility
+              directionTextToUse = legendDirectionText;
+            } else if (typeof legendDirectionText === 'object' && legendDirectionText && legendDirectionText[title]) {
+              // Object format with column-specific direction text
+              directionTextToUse = legendDirectionText[title];
+            }
+            
+            return directionTextToUse && (
+              <div
+                style={{
+                  marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  color: highlight2,
+                  opacity: 0.8,
+                }}
+              >
+                <span style={{ marginRight: '4px' }}>{directionTextToUse}</span>
+                <span style={{ fontSize: '10px', transform: 'rotate(-90deg)', transformOrigin: 'center' }}>→</span>
+              </div>
+            );
+          })()}
           <div
             style={{
-              maxHeight: '30vh',
+              maxHeight: '40vh',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
