@@ -41,6 +41,9 @@
 #'   or "globe". Adjusts the map display style.
 #' @param summary_height Numeric. Sets the height for 3D representation 
 #'   of cells in summary plots, adding dimensionality to data.
+#' @param summary_opacity Numeric. Controls the transparency of hexagon 
+#'   and grid cells in summary plots. Value between 0 (fully transparent) 
+#'   and 1 (fully opaque). Default is 0.8 for semi-transparency.
 #' @param color_scheme Character. Color scheme for representing data 
 #'   visually. Options align with `colorbrewer` color schemes.
 #' @param color_scale_type Character. Type of color scale, either 
@@ -227,6 +230,7 @@ spacetimeview <- function(
     summary_style = 'Hexagon',
     projection = 'Mercator',
     summary_height = 0,
+    summary_opacity = 0.8,
     color_scheme = 'YlOrRd',
     color_scale_type = 'quantize',
     num_decimals = 1,
@@ -693,6 +697,7 @@ spacetimeview <- function(
       initialSummaryStyle = summary_style,
       initialProjection = projection,
       initialSummaryHeight = summary_height,
+      initialSummaryOpacity = summary_opacity,
       initialColorScheme = color_scheme,
       initialColorScaleType = color_scale_type,
       initialNumDecimals = num_decimals,

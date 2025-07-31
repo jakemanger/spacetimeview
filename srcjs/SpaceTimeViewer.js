@@ -68,6 +68,7 @@ export default function SpaceTimeViewer({
   initialSummaryStyle = 'Hexagon',
   initialProjection = 'Mercator',
   initialSummaryHeight = 0,
+  initialSummaryOpacity = 0.8,
   initialColorScheme = 'YlOrRd',
   initialColorScaleType = 'quantize',
   initialNumDecimals = 1,
@@ -239,6 +240,15 @@ export default function SpaceTimeViewer({
       hint: 'Sets the 3D height of grid cells or hexagons in the summary plot.',
       render: get => visibleControls.includes('summary_height') && get('style') === 'Summary'
     },
+    summaryOpacity: {
+      value: initialSummaryOpacity,
+      label: controlNames['summary_opacity'] || 'Cell Opacity',
+      step: 0.1,
+      min: 0,
+      max: 1,
+      hint: 'Controls the transparency of grid cells or hexagons. 0 is fully transparent, 1 is fully opaque.',
+      render: get => visibleControls.includes('summary_opacity') && get('style') === 'Summary'
+    },
     preserveDomains: {
       value: initialStickyRange,
       label: controlNames['preserve_domains'] || 'Sticky Range',
@@ -332,6 +342,7 @@ export default function SpaceTimeViewer({
       summaryRadius,
       summaryCoverage,
       summaryHeight,
+      summaryOpacity,
       summaryStyle,
       radiusScale,
       radiusMinPixels,
@@ -739,6 +750,7 @@ export default function SpaceTimeViewer({
         initialViewState={INITIAL_VIEW_STATE}
         projection={projection}
         summaryHeight={style === 'Summary' ? summaryHeight : 0}
+        summaryOpacity={style === 'Summary' ? summaryOpacity : 0.8}
         colorRange={colorRange}
         legendTitle={legendTitle}
         colorScaleType={colorScaleType}

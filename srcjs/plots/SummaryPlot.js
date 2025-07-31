@@ -75,6 +75,7 @@ export default function SummaryPlot({
   },
   projection = 'Mercator',
   summaryHeight = 25,
+  summaryOpacity = 0.8,
   colorRange = [
     [1, 152, 189],
     [73, 227, 206],
@@ -456,6 +457,7 @@ export default function SummaryPlot({
         getPosition: (d) => [d.lng, d.lat],
         pickable: true,
         cellSize: radius,
+        opacity: summaryOpacity,
         getElevationValue: elevationFunction,
         getColorValue: colorFunction,
         upperPercentile,
@@ -482,6 +484,7 @@ export default function SummaryPlot({
         getPosition: (d) => [d.lng, d.lat],
         pickable: true,
         radius,
+        opacity: summaryOpacity,
         getElevationValue: elevationFunction,
         getColorValue: colorFunction,
         upperPercentile,
