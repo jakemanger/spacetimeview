@@ -112,6 +112,8 @@
 #' @param menu_text Character. Optional. Text to display at the top of the 
 #'   controls menu. Can be used to provide instructions or context about the 
 #'   visualization controls.
+#' @param about_text Character. Optional. If provided, adds an "About" tab to the header 
+#'   that displays this text when clicked. Can include HTML markup for formatting.
 #' @param initial_longitude Numeric. Optional. Starting longitude for the map view. 
 #'   If NULL, automatically centers on the data.
 #' @param initial_latitude Numeric. Optional. Starting latitude for the map view. 
@@ -279,6 +281,7 @@ spacetimeview <- function(
     legend_labels = NULL,
     legend_direction_text = NULL,
     menu_text = NULL,
+    about_text = NULL,
     initial_longitude = NULL,
     initial_latitude = NULL,
     initial_zoom = NULL,
@@ -719,6 +722,7 @@ spacetimeview <- function(
       legendLabels = legend_labels,
       legendDirectionText = legend_direction_text,
       menuText = menu_text,
+      aboutText = about_text,
       initialLongitude = initial_longitude,
       initialLatitude = initial_latitude,
       initialZoom = initial_zoom,
@@ -727,7 +731,7 @@ spacetimeview <- function(
   )
   
   # create widget
-  htmlwidgets::createWidget(
+  widget <- htmlwidgets::createWidget(
     name = 'spacetimeview',
     reactR::reactMarkup(component),
     width = width,
@@ -735,8 +739,89 @@ spacetimeview <- function(
     package = 'spacetimeview',
     elementId = elementId
   )
+  
+  # Add SEO improvements if about_text is provided
+  if (!is.null(about_text) && about_text != "") {
+    clean_description <- strip_html_tags(about_text)
+    
+    # Create SEO content
+    seo_content <- htmltools::tagList(
+      # Hidden content for search crawlers (visible to bots, hidden from users)
+      htmltools::tags$div(
+        style = "position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden;",
+        id = "seo-about-content",
+        htmltools::HTML(about_text)
+      ),
+      
+      # Structured data (JSON-LD) for search engines
+      htmltools::tags$script(
+        type = "application/ld+json",
+        htmltools::HTML(paste0('{
+          "@context": "https://schema.org",
+          "@type": "Dataset",
+          "name": "', ifelse(header_title != "", header_title, "Interactive Visualization"), '",
+          "description": "', gsub('"', '\\"', substr(clean_description, 1, 300)), '",
+          "url": "', ifelse(header_website_link != "", header_website_link, ""), '",
+          "creator": {
+            "@type": "Organization",
+            "name": "', ifelse(header_title != "", header_title, "Data Visualization"), '"
+          },
+          "interactionStatistic": {
+            "@type": "InteractionCounter",
+            "interactionType": "https://schema.org/ViewAction"
+          }
+        }'))
+      ),
+      
+      # Open Graph meta tags for social sharing
+      htmltools::tags$meta(property = "og:type", content = "website"),
+      htmltools::tags$meta(property = "og:title", content = ifelse(header_title != "", header_title, "Interactive Data Visualization")),
+      htmltools::tags$meta(property = "og:description", content = substr(clean_description, 1, 160)),
+      if (header_website_link != "") htmltools::tags$meta(property = "og:url", content = header_website_link),
+      
+      # Twitter Card meta tags
+      htmltools::tags$meta(name = "twitter:card", content = "summary_large_image"),
+      htmltools::tags$meta(name = "twitter:title", content = ifelse(header_title != "", header_title, "Interactive Data Visualization")),
+      htmltools::tags$meta(name = "twitter:description", content = substr(clean_description, 1, 160)),
+      
+      # Standard meta description for search engines
+      htmltools::tags$meta(name = "description", content = substr(clean_description, 1, 160)),
+      
+      # Keywords meta tag (derived from about text)
+      if (nchar(clean_description) > 20) {
+        htmltools::tags$meta(name = "keywords", content = paste(
+          "data visualization", "interactive", "analysis", "dashboard", 
+          ifelse(grepl("map", clean_description, ignore.case = TRUE), "mapping,", ""),
+          ifelse(grepl("time", clean_description, ignore.case = TRUE), "temporal,", ""),
+          ifelse(grepl("spatial|geographic", clean_description, ignore.case = TRUE), "spatial,", ""),
+          sep = " "
+        ))
+      }
+    )
+    
+    # Prepend SEO content to the widget
+    widget <- htmlwidgets::prependContent(widget, seo_content)
+  }
+  
+  return(widget)
 }
 
+# Helper function to strip HTML tags for SEO
+strip_html_tags <- function(html_text) {
+  if (is.null(html_text) || html_text == "") return("")
+  # Remove HTML tags and decode entities
+  clean_text <- gsub("<[^>]*>", "", html_text)
+  clean_text <- gsub("&nbsp;", " ", clean_text)
+  clean_text <- gsub("&amp;", "&", clean_text)
+  clean_text <- gsub("&lt;", "<", clean_text)
+  clean_text <- gsub("&gt;", ">", clean_text)
+  clean_text <- gsub("&quot;", '"', clean_text)
+  clean_text <- gsub("&#39;", "'", clean_text)
+  # Remove extra whitespace
+  clean_text <- gsub("\\s+", " ", clean_text)
+  clean_text <- trimws(clean_text)
+  return(clean_text)
+}
 
 #' Called by HTMLWidgets to produce the widget's root element.
 #' @noRd

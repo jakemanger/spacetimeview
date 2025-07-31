@@ -117,6 +117,7 @@ export default function SpaceTimeViewer({
   legendLabels = null,
   legendDirectionText = null,
   menuText = null,
+  aboutText = null,
   initialLongitude = null,
   initialLatitude = null,
   initialZoom = null,
@@ -899,6 +900,7 @@ export default function SpaceTimeViewer({
           tabs={tabTitles}
           activeTab={activeTab}
           onTabClick={onTabChange}
+          aboutText={aboutText}
           isMobile={isMobile}
         />
       )}

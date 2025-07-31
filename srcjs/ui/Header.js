@@ -7,6 +7,7 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
+import AboutModal from './AboutModal';
 
 // Font family constant for consistent usage
 const fontFamily = "'DM Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
@@ -30,13 +31,19 @@ const Header = ({
   tabs = [],
   activeTab = 0,
   onTabClick = () => {},
+  aboutText = null,
   isMobile = false
 }) => {
   const [tabMenuAnchor, setTabMenuAnchor] = useState(null);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
   
-  if (!logo && !title && Object.keys(socialLinks).length === 0) {
+  if (!logo && !title && Object.keys(socialLinks).length === 0 && !aboutText) {
     return null;
   }
+
+  // Create enhanced tabs array that includes About tab when aboutText is provided
+  const enhancedTabs = aboutText ? [...tabs, 'About'] : tabs;
+  const isAboutTab = (index) => aboutText && index === enhancedTabs.length - 1;
 
   const handleTabMenuOpen = (event) => {
     setTabMenuAnchor(event.currentTarget);
@@ -46,8 +53,16 @@ const Header = ({
     setTabMenuAnchor(null);
   };
   
+  const handleTabClick = (index) => {
+    if (isAboutTab(index)) {
+      setAboutModalOpen(true);
+    } else {
+      onTabClick(index);
+    }
+  };
+  
   const handleTabMenuClick = (index) => {
-    onTabClick(index);
+    handleTabClick(index);
     handleTabMenuClose();
   };
   return (
@@ -115,31 +130,34 @@ const Header = ({
         )}
 
         {/* Desktop tabs section */}
-        {tabs.length > 0 && !isMobile && (
+        {enhancedTabs.length > 0 && !isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: '32px' }}>
-            {tabs.map((tabTitle, index) => (
-              <div 
-                key={index}
-                onClick={() => onTabClick(index)}
-                style={{
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  color: activeTab === index ? themeColors.accent2 : themeColors.highlight2,
-                  borderBottom: activeTab === index ? `2px solid ${themeColors.accent2}` : 'none',
-                  fontWeight: activeTab === index ? 500 : 400,
-                  fontFamily,
-                  transition: 'background-color 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                }}
-              >
-                {tabTitle}
-              </div>
-            ))}
+            {enhancedTabs.map((tabTitle, index) => {
+              const isActive = isAboutTab(index) ? false : activeTab === index;
+              return (
+                <div 
+                  key={index}
+                  onClick={() => handleTabClick(index)}
+                  style={{
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    color: isActive ? themeColors.accent2 : themeColors.highlight2,
+                    borderBottom: isActive ? `2px solid ${themeColors.accent2}` : 'none',
+                    fontWeight: isActive ? 500 : 400,
+                    fontFamily,
+                    transition: 'background-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  {tabTitle}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -147,7 +165,7 @@ const Header = ({
       {/* Social Media Links and Mobile Menu */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         {/* Mobile hamburger menu for tabs */}
-        {tabs.length > 0 && isMobile && (
+        {enhancedTabs.length > 0 && isMobile && (
           <div style={{ marginRight: '8px' }}>
             <IconButton
               onClick={handleTabMenuOpen}
@@ -167,23 +185,26 @@ const Header = ({
                 },
               }}
             >
-              {tabs.map((tabTitle, index) => (
-                <MenuItem
-                  key={index}
-                  onClick={() => handleTabMenuClick(index)}
-                  sx={{
-                    color: activeTab === index ? themeColors.accent2 : themeColors.highlight2,
-                    fontWeight: activeTab === index ? 500 : 400,
-                    fontFamily,
-                    backgroundColor: activeTab === index ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                    }
-                  }}
-                >
-                  {tabTitle}
-                </MenuItem>
-              ))}
+              {enhancedTabs.map((tabTitle, index) => {
+                const isActive = isAboutTab(index) ? false : activeTab === index;
+                return (
+                  <MenuItem
+                    key={index}
+                    onClick={() => handleTabMenuClick(index)}
+                    sx={{
+                      color: isActive ? themeColors.accent2 : themeColors.highlight2,
+                      fontWeight: isActive ? 500 : 400,
+                      fontFamily,
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                      }
+                    }}
+                  >
+                    {tabTitle}
+                  </MenuItem>
+                );
+              })}
             </Menu>
           </div>
         )}
@@ -215,6 +236,14 @@ const Header = ({
           </IconButton>
         )}
       </div>
+      
+      {/* About Modal */}
+      <AboutModal
+        open={aboutModalOpen}
+        onClose={() => setAboutModalOpen(false)}
+        aboutText={aboutText}
+        themeColors={themeColors}
+      />
     </header>
   );
 };
