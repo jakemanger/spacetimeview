@@ -44,6 +44,8 @@ export default function Colorbar({
   },
   factorIcons = null,
   legendOrder = null, // Array of indices to customize legend item order
+  legendLabels = null, // Custom labels for legend items
+  legendDirectionText = null, // Text to show with direction arrow
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -105,8 +107,22 @@ export default function Colorbar({
   // Labels generation
   let labels = [];
   if (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) {
-    // Use factor levels, reversing to match color range
-    labels = [...factorLevels[title]].reverse();
+    // Use custom labels if provided, otherwise use factor levels
+    if (legendLabels && legendLabels[title]) {
+      if (Array.isArray(legendLabels[title])) {
+        // Array format: direct index mapping
+        labels = [...legendLabels[title]].reverse();
+      } else if (typeof legendLabels[title] === 'object') {
+        // Object format: name-based mapping (including empty strings)
+        labels = factorLevels[title].map(level => 
+          legendLabels[title].hasOwnProperty(level) ? legendLabels[title][level] : level
+        ).reverse();
+      } else {
+        labels = [...factorLevels[title]].reverse();
+      }
+    } else {
+      labels = [...factorLevels[title]].reverse();
+    }
   } else if (Array.isArray(reversedColorRange) && Array.isArray(sampledDomain)) {
     // Generate labels from sampled domain for numeric data
     labels = reversedColorRange.map((_, index) => {
@@ -123,6 +139,7 @@ export default function Colorbar({
     // If it's factor levels, map directly without reversing
     if (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) {
       const levels = factorLevels[title];
+      
       // Use original colorRange for factor levels, display in provided order
       legendItems = levels.map((levelLabel, index) => {
         // Use direct index mapping to maintain order
@@ -132,10 +149,22 @@ export default function Colorbar({
         
         const colorString = `rgb(${color.join(',')})`;
         const iconPath = factorIcons && factorIcons[title] && factorIcons[title][levelLabel];
+        
+        // Determine display label based on legendLabels format
+        let displayLabel = levelLabel; // default to original
+        if (legendLabels && legendLabels[title]) {
+          if (Array.isArray(legendLabels[title])) {
+            // Array format: use index-based mapping
+            displayLabel = legendLabels[title][index] !== undefined ? legendLabels[title][index] : levelLabel;
+          } else if (typeof legendLabels[title] === 'object') {
+            // Object format: use name-based mapping (including empty strings)
+            displayLabel = legendLabels[title].hasOwnProperty(levelLabel) ? legendLabels[title][levelLabel] : levelLabel;
+          }
+        }
 
         return (
           <div
-            key={levelLabel} // Use label as key
+            key={levelLabel} // Use original label as key for consistency
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -171,7 +200,7 @@ export default function Colorbar({
                   }} 
                 />
               )}
-              {levelLabel}
+              {displayLabel}
             </span>
           </div>
         );
@@ -341,16 +370,34 @@ export default function Colorbar({
           {colorSquares}
         </div>
       ) : (
-        <div
-          style={{
-            maxHeight: '30vh',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'start',
-          }}
-        >
-          {legendItems}
+        <div>
+          {/* Direction indicator */}
+          {legendDirectionText && (
+            <div
+              style={{
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '11px',
+                color: highlight2,
+                opacity: 0.8,
+              }}
+            >
+              <span style={{ marginRight: '4px' }}>{legendDirectionText}</span>
+              <span style={{ fontSize: '10px', transform: 'rotate(-90deg)', transformOrigin: 'center' }}>→</span>
+            </div>
+          )}
+          <div
+            style={{
+              maxHeight: '30vh',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'start',
+            }}
+          >
+            {legendItems}
+          </div>
         </div>
       )}
     </div>

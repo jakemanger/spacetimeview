@@ -113,6 +113,8 @@ export default function SpaceTimeViewer({
   observable = null,
   countryCodes = null,
   legendOrder = null,
+  legendLabels = null,
+  legendDirectionText = null,
   menuText = null,
   initialLongitude = null,
   initialLatitude = null,
@@ -752,6 +754,8 @@ export default function SpaceTimeViewer({
         observable={observable}
         countryCodes={countryCodes}
         legendOrder={legendOrder}
+        legendLabels={legendLabels}
+        legendDirectionText={legendDirectionText}
         style={style} // Pass the style prop
         radiusScale={style === 'Scatter' ? radiusScale : undefined} // Pass scatter-specific props
         radiusMinPixels={style === 'Scatter' ? radiusMinPixels : undefined}
@@ -931,7 +935,7 @@ export default function SpaceTimeViewer({
         </div>
       )}
       {plot}
-      <Snackbar
+      {/* <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
         onClose={handleSnackbarClose}
@@ -943,11 +947,11 @@ export default function SpaceTimeViewer({
             </>
           ) : (
             <>
-              Scroll to zoom, <Tooltip title="Shift"><Typography component="span">⇧</Typography></Tooltip> + Click to rotate and adjust time with the slider.
+              Scroll to zoom, <Tooltip title="C"><Typography component="span">⇧</Typography></Tooltip> + Click to rotate and adjust time with the slider.
             </>
           )}
         </Alert>
-      </Snackbar>
+      </Snackbar> */}
     </div>
   );
 }

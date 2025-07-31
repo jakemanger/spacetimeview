@@ -91,6 +91,15 @@
 #' @param legend_order Numeric vector. Optional. Custom ordering of legend items 
 #'   using 0-based indices. For example, c(5, 4, 3, 2, 1, 0) would reverse a 
 #'   6-item legend. If NULL, items are displayed in their default order.
+#' @param legend_labels List. Optional. Custom labels for legend items. Supports 
+#'   two formats: 1) Named list with character vectors in factor level order:
+#'   list(species = c("Red Fox", "Gray Wolf", "Brown Bear")), or 2) Named list
+#'   with named vectors for direct mapping: list(species = c("red_fox" = "Red Fox", 
+#'   "gray_wolf" = "Gray Wolf", "brown_bear" = "Brown Bear")). Empty strings will 
+#'   show only the color swatch without text labels.
+#' @param legend_direction_text Character. Optional. Text to display with an upward 
+#'   arrow (→) indicating the direction of increasing values in the legend. For example, 
+#'   "High" will display as "High →" above the legend items.
 #' @param menu_text Character. Optional. Text to display at the top of the 
 #'   controls menu. Can be used to provide instructions or context about the 
 #'   visualization controls.
@@ -146,6 +155,27 @@
 #' 
 #' # Save the plot as an HTML file
 #' htmlwidgets::saveWidget(plot3, "spacetime_plot_custom_view.html")
+#' 
+#' # Example with factor data and custom legend labels
+#' factor_data <- data.frame(
+#'   lat = runif(50, min = -30, max = 30),
+#'   lng = runif(50, min = -100, max = 100),
+#'   time = seq(as.POSIXct("2023-01-01"), by = "days", length.out = 50),
+#'   species = sample(c("red_fox", "gray_wolf", "brown_bear"), 50, replace = TRUE)
+#' )
+#' 
+#' plot4 <- spacetimeview(
+#'   data = factor_data,
+#'   column_to_plot = "species",
+#'   legend_labels = list(
+#'     species = c("red_fox" = "Red Fox", "gray_wolf" = "Gray Wolf", "brown_bear" = "Brown Bear")
+#'   ),
+#'   legend_direction_text = "More",
+#'   header_title = 'Wildlife Observations with Custom Legend Labels'
+#' )
+#' 
+#' # Save the plot as an HTML file
+#' htmlwidgets::saveWidget(plot4, "spacetime_plot_custom_legend.html")
 spacetimeview <- function(
     data,
     style = 'Summary',
@@ -207,6 +237,8 @@ spacetimeview <- function(
     observable = NULL,
     country_codes = NULL,
     legend_order = NULL,
+    legend_labels = NULL,
+    legend_direction_text = NULL,
     menu_text = NULL,
     initial_longitude = NULL,
     initial_latitude = NULL,
@@ -644,6 +676,8 @@ spacetimeview <- function(
       observable = observable,
       countryCodes = country_codes,
       legendOrder = legend_order,
+      legendLabels = legend_labels,
+      legendDirectionText = legend_direction_text,
       menuText = menu_text,
       initialLongitude = initial_longitude,
       initialLatitude = initial_latitude,

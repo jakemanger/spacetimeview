@@ -108,6 +108,8 @@ export default function SummaryPlot({
   observable = null,
   countryCodes = null,
   legendOrder = null,
+  legendLabels = null,
+  legendDirectionText = null,
   mapHeight = '100%', // Add mapHeight prop
 }) {
   const [filter, setFilter] = useState(timeRange);
@@ -607,7 +609,6 @@ export default function SummaryPlot({
 
           {enableClickedTooltips && clickedObject && clickedCoordinates && (
             <Popup
-              anchor="top"
               longitude={clickedCoordinates[0]}
               latitude={clickedCoordinates[1]}
               onClose={() => {
@@ -693,6 +694,8 @@ export default function SummaryPlot({
         factorColors={factorColors} 
         factorIcons={factorIcons} 
         legendOrder={legendOrder}
+        legendLabels={legendLabels}
+        legendDirectionText={legendDirectionText}
         style={{
           position: 'fixed',
           top: '20px',
