@@ -88,6 +88,18 @@
 #'   Australia, "US" for United States). Multiple countries can be specified 
 #'   separated by commas (e.g., "AU,NZ" for Australia and New Zealand). If NULL, 
 #'   searches worldwide.
+#' @param legend_order Numeric vector. Optional. Custom ordering of legend items 
+#'   using 0-based indices. For example, c(5, 4, 3, 2, 1, 0) would reverse a 
+#'   6-item legend. If NULL, items are displayed in their default order.
+#' @param menu_text Character. Optional. Text to display at the top of the 
+#'   controls menu. Can be used to provide instructions or context about the 
+#'   visualization controls.
+#' @param initial_longitude Numeric. Optional. Starting longitude for the map view. 
+#'   If NULL, automatically centers on the data.
+#' @param initial_latitude Numeric. Optional. Starting latitude for the map view. 
+#'   If NULL, automatically centers on the data.
+#' @param initial_zoom Numeric. Optional. Starting zoom level for the map view. 
+#'   If NULL, defaults to zoom level 3.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
 #' @export
@@ -122,6 +134,18 @@
 #' 
 #' # Save the plot as an HTML file
 #' htmlwidgets::saveWidget(plot2, "spacetime_plot_with_website_header.html")
+#' 
+#' # Create a plot with custom starting view (centered on Australia)
+#' plot3 <- spacetimeview(
+#'   data = data,
+#'   initial_longitude = 133.7751,
+#'   initial_latitude = -25.2744,
+#'   initial_zoom = 4,
+#'   header_title = 'Custom View Example'
+#' )
+#' 
+#' # Save the plot as an HTML file
+#' htmlwidgets::saveWidget(plot3, "spacetime_plot_custom_view.html")
 spacetimeview <- function(
     data,
     style = 'Summary',
@@ -182,6 +206,11 @@ spacetimeview <- function(
     elementId = NULL,
     observable = NULL,
     country_codes = NULL,
+    legend_order = NULL,
+    menu_text = NULL,
+    initial_longitude = NULL,
+    initial_latitude = NULL,
+    initial_zoom = NULL,
     ...
 ) {
 
@@ -302,17 +331,17 @@ spacetimeview <- function(
       warning("No time column detected automatically. Assuming no time column. Please specify `time_column_name` if you require a time slider.")
     }
   }
-  
+
   if (time_column_name %in% colnames(data)) {
     # if supplied, make sure timestamp is in the correct format
-    is_datetime <- lubridate::is.timepoint(data[,time_column_name])
+    is_datetime <- lubridate::is.timepoint(data[[time_column_name]])
     
     if (!is_datetime) {
       stop(paste0('The `', time_column_name, '` time column was not a POSIXct, POSIXlt, or Date object.'))
     }
     
     # then convert to timestamp format needed by js
-    data$timestamp <- format(data[,time_column_name], "%Y/%m/%d %H:%M:%OS2")
+    data$timestamp <- format(data[[time_column_name]], "%Y/%m/%d %H:%M:%OS2")
     # remove the original time column
     if (time_column_name != 'timestamp') {
       data <- data[, !(names(data) %in% time_column_name)]
@@ -614,6 +643,11 @@ spacetimeview <- function(
       polygons = polygon_data,
       observable = observable,
       countryCodes = country_codes,
+      legendOrder = legend_order,
+      menuText = menu_text,
+      initialLongitude = initial_longitude,
+      initialLatitude = initial_latitude,
+      initialZoom = initial_zoom,
       ...
     )
   )

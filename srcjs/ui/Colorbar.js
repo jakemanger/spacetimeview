@@ -1,7 +1,27 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useMobileDetection } from '../utils/mobileDetection.js';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function formatTitleForDisplay(title, newLineEveryWord) {
+  if (!title) return '';
+  
+  const capitalizedTitle = capitalizeFirstLetter(title);
+  
+  if (newLineEveryWord) {
+    // Split by spaces and join with line breaks
+    const words = capitalizedTitle.split(' ');
+    return words.map((word, index) => (
+      <React.Fragment key={index}>
+        {word}
+        {index < words.length - 1 && <br />}
+      </React.Fragment>
+    ));
+  }
+  
+  return capitalizedTitle;
 }
 
 export default function Colorbar({
@@ -23,72 +43,93 @@ export default function Colorbar({
     highlight3: '#FEFEFE',
   },
   factorIcons = null,
+  legendOrder = null, // Array of indices to customize legend item order
 }) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Extract theme colors to stable variables
+  const { elevation2, highlight2 } = themeColors;
+
+  // Use reliable mobile detection
+  const { isSmall: isSmallScreen } = useMobileDetection();
+
+  // Auto-collapse/expand based on screen size
+  useEffect(() => {
+    if (isSmallScreen) {
+      setIsCollapsed(true); // Default to collapsed on small screens
+    } else {
+      setIsCollapsed(false); // Always expanded on larger screens
+    }
+  }, [isSmallScreen]);
+
   // Early return if essential props are missing
-  if (!colorDomain || !colorRange) {
+  if (!colorDomain || !colorRange || !Array.isArray(colorRange) || !Array.isArray(colorDomain)) {
     return null;
   }
 
-  // Reverse the color range
-  const reversedColorRange = React.useMemo(
-    () => [...colorRange].reverse(),
-    [colorRange]
-  );
+  // Compute values directly without useMemo
+  const reversedColorRange = Array.isArray(colorRange) ? [...colorRange].reverse() : [];
+  
+  const colorDomainLength = (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) 
+    ? factorLevels[title].length 
+    : 6;
 
-  // Determine color domain length dynamically
-  const colorDomainLength = React.useMemo(() => {
-    return (factorLevels && factorLevels[title])
-      ? factorLevels[title].length
-      : 6;
-  }, [factorLevels, title]);
-
-  // Sampled domain calculation with improved handling
-  const sampledDomain = React.useMemo(() => {
+  // Sampled domain calculation
+  let sampledDomain = [];
+  if (Array.isArray(colorDomain)) {
     // Handle factor levels case
-    if (factorLevels && factorLevels[title]) {
-      return Array.from({ length: colorDomainLength }, (_, i) => i);
+    if (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) {
+      sampledDomain = Array.from({ length: colorDomainLength }, (_, i) => i);
     }
     // Handle numeric domain
-    if (colorDomain.length === 2) {
+    else if (colorDomain.length === 2) {
       const [min, max] = colorDomain;
-      const step = (max - min) / colorDomainLength;
-      return Array.from({ length: colorDomainLength + 1 }, (_, i) =>
-        (min + i * step).toFixed(numDecimals)
-      ).reverse();
+      if (typeof min === 'number' && typeof max === 'number') {
+        const step = (max - min) / colorDomainLength;
+        sampledDomain = Array.from({ length: colorDomainLength + 1 }, (_, i) =>
+          (min + i * step).toFixed(numDecimals)
+        ).reverse();
+      }
     }
     // Handle multi-value domain
-    const step = (colorDomain.length - 1) / colorDomainLength;
-    return Array.from({ length: colorDomainLength + 1 }, (_, i) => {
-      const index = Math.round(i * step);
-      return colorDomain[index].toFixed(numDecimals);
-    }).reverse();
-  }, [colorDomain, numDecimals, factorLevels, title, colorDomainLength]);
-
-  // Labels generation with improved handling
-  const labels = React.useMemo(() => {
-    if (factorLevels && factorLevels[title]) {
-      // Use factor levels, reversing to match color range
-      return [...factorLevels[title]].reverse();
+    else if (colorDomain.length > 0) {
+      const step = (colorDomain.length - 1) / colorDomainLength;
+      sampledDomain = Array.from({ length: colorDomainLength + 1 }, (_, i) => {
+        const index = Math.round(i * step);
+        const value = colorDomain[index];
+        return typeof value === 'number' ? value.toFixed(numDecimals) : String(value);
+      }).reverse();
     }
+  }
+
+  // Labels generation
+  let labels = [];
+  if (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) {
+    // Use factor levels, reversing to match color range
+    labels = [...factorLevels[title]].reverse();
+  } else if (Array.isArray(reversedColorRange) && Array.isArray(sampledDomain)) {
     // Generate labels from sampled domain for numeric data
-    return reversedColorRange.map((_, index) => {
+    labels = reversedColorRange.map((_, index) => {
       if (sampledDomain.length === colorDomainLength + 1 && index < colorDomainLength) {
         return `${sampledDomain[index + 1]} - ${sampledDomain[index]}`;
       }
       return '';
     });
-  }, [factorLevels, title, sampledDomain, reversedColorRange, colorDomainLength]);
+  }
 
   // Legend items generation
-  const legendItems = React.useMemo(() => {
+  let legendItems = [];
+  if (Array.isArray(colorRange)) {
     // If it's factor levels, map directly without reversing
-    if (factorLevels && factorLevels[title]) {
+    if (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) {
       const levels = factorLevels[title];
       // Use original colorRange for factor levels, display in provided order
-      return levels.map((levelLabel, index) => {
+      legendItems = levels.map((levelLabel, index) => {
         // Use direct index mapping to maintain order
         if (index >= colorRange.length) return null; // Handle bounds
         const color = colorRange[index];
+        if (!Array.isArray(color)) return null;
+        
         const colorString = `rgb(${color.join(',')})`;
         const iconPath = factorIcons && factorIcons[title] && factorIcons[title][levelLabel];
 
@@ -112,7 +153,7 @@ export default function Colorbar({
             />
             <span
               style={{
-                color: themeColors.highlight2,
+                color: highlight2,
                 fontSize: '12px',
                 display: 'flex', // Use flex to align icon and text
                 alignItems: 'center',
@@ -135,9 +176,11 @@ export default function Colorbar({
           </div>
         );
       }).filter(item => item !== null); // Filter out nulls if any
-    } else {
+    } else if (Array.isArray(reversedColorRange) && Array.isArray(labels)) {
       // Original logic for numeric data (still uses reversed colors)
-      return reversedColorRange.map((color, index) => {
+      legendItems = reversedColorRange.map((color, index) => {
+        if (!Array.isArray(color)) return null;
+        
         const colorString = `rgb(${color.join(',')})`;
         const label = labels[index]; // labels are already reversed here
         // Icons are not applicable for numeric data
@@ -161,7 +204,7 @@ export default function Colorbar({
             />
             <span
               style={{
-                color: themeColors.highlight2,
+                color: highlight2,
                 fontSize: '12px',
               }}
             >
@@ -169,9 +212,70 @@ export default function Colorbar({
             </span>
           </div>
         );
-      });
+      }).filter(item => item !== null);
     }
-  }, [factorLevels, title, colorRange, reversedColorRange, factorIcons, themeColors.highlight2, labels]);
+
+    // Apply custom ordering if legendOrder is provided
+    if (legendOrder && Array.isArray(legendOrder)) {
+      const orderedItems = [];
+      legendOrder.forEach(index => {
+        if (index >= 0 && index < legendItems.length) {
+          orderedItems.push(legendItems[index]);
+        }
+      });
+      legendItems = orderedItems;
+    }
+  }
+
+  // Generate color squares for collapsed view
+  let colorSquares = [];
+  if (Array.isArray(colorRange)) {
+    if (factorLevels && factorLevels[title] && Array.isArray(factorLevels[title])) {
+      // For factor levels, use original colorRange order
+      colorSquares = colorRange.map((color, index) => {
+        if (index >= factorLevels[title].length || !Array.isArray(color)) return null;
+        const colorString = `rgb(${color.join(',')})`;
+        return (
+          <div
+            key={index}
+            style={{
+              backgroundColor: colorString,
+              width: '16px',
+              height: '16px',
+              margin: '1px',
+              flexShrink: 0,
+              borderRadius: '2px',
+            }}
+          />
+        );
+      }).filter(item => item !== null);
+    } else if (Array.isArray(reversedColorRange)) {
+      // For numeric data, use reversed colors (consistent with expanded view)
+      colorSquares = reversedColorRange.map((color, index) => {
+        if (!Array.isArray(color)) return null;
+        const colorString = `rgb(${color.join(',')})`;
+        return (
+          <div
+            key={index}
+            style={{
+              backgroundColor: colorString,
+              width: '16px',
+              height: '16px',
+              margin: '1px',
+              flexShrink: 0,
+              borderRadius: '2px',
+            }}
+          />
+        );
+      }).filter(item => item !== null);
+    }
+  }
+
+  const handleToggle = () => {
+    if (isSmallScreen) {
+      setIsCollapsed(!isCollapsed);
+    }
+  };
 
   return (
     <div
@@ -180,37 +284,75 @@ export default function Colorbar({
         position: 'absolute',
         bottom: '20px',
         left: '20px',
-        backgroundColor: themeColors.elevation2,
-        padding: '10px',
+        backgroundColor: elevation2,
+        padding: isCollapsed ? '8px' : '10px',
         borderRadius: '5px',
         boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
-        maxHeight: '40vh',
+        maxHeight: isCollapsed ? 'auto' : '40vh',
+        cursor: isSmallScreen ? 'pointer' : 'default',
+        transition: 'all 0.2s ease-in-out',
       }}
+      onClick={handleToggle}
     >
-      <h4
-        style={{
-          marginTop: '0',
-          marginBottom: '10px',
-          color: themeColors.highlight2,
-          fontSize: '1rem',
-          position: 'sticky', // Make title stick to top when scrolling
-          top: '0',
-          backgroundColor: themeColors.elevation2,
-        }}
-      >
-        {capitalizeFirstLetter(title)}
-      </h4>
       <div
         style={{
-          maxHeight: '30vh', // Account for actual header and padding
-          overflowY: 'auto',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'start',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '10px',
         }}
       >
-        {legendItems}
+        <h4
+          style={{
+            margin: '0',
+            color: highlight2,
+            fontSize: isCollapsed ? '0.875rem' : '1rem',
+            position: isCollapsed ? 'static' : 'sticky',
+            top: '0',
+            backgroundColor: elevation2,
+          }}
+        >
+          {formatTitleForDisplay(title, isSmallScreen && isCollapsed)}
+        </h4>
+        {isSmallScreen && (
+          <span
+            style={{
+              color: highlight2,
+              fontSize: '12px',
+              marginLeft: '8px',
+            }}
+          >
+            {isCollapsed ? '▶' : '▼'}
+          </span>
+        )}
       </div>
+      
+      {isCollapsed ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flexWrap: 'wrap',
+            gap: '2px',
+            maxHeight: '110px',
+            alignContent: 'flex-start',
+          }}
+        >
+          {colorSquares}
+        </div>
+      ) : (
+        <div
+          style={{
+            maxHeight: '30vh',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'start',
+          }}
+        >
+          {legendItems}
+        </div>
+      )}
     </div>
   );
 }

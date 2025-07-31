@@ -26,6 +26,13 @@ body {
 	overflow: hidden;
 }
 
+.space-time-viewer {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* Fix up the maplibre attribution, as it seems it is broken when used with deckgl */
 .maplibregl-ctrl-bottom-right {
   position: fixed;
@@ -38,7 +45,7 @@ body {
 
 /* Make sure controls are positioned correctly */
 .maplibregl-ctrl-top-left {
-  top: 10px;
+  top: 70px;
   left: 10px;
 }
 
@@ -49,11 +56,15 @@ body {
 
 .maplibregl-ctrl-bottom-left {
   bottom: 10px;
-  left: 10px;
+  right: 10px;
 }
 
 .maplibregl-ctrl-attrib-button {
 	display: none;
+}
+
+.maplibregl-ctrl-geocoder {
+  margin-bottom: 2px !important;
 }
 
 /* Override MapLibre popup max-width for larger Observable plots */
@@ -63,6 +74,8 @@ body {
 
 .maplibregl-popup-content {
   max-width: 1000px !important;
+  border-radius: 4px !important;
+  padding: 4px !important;
 }
 
 div[mapboxgl-children] {
@@ -74,15 +87,33 @@ div[mapboxgl-children] {
   z-index: 9999;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px), 
+       screen and (max-device-width: 768px),
+       (hover: none) and (pointer: coarse) {
   .leva-c-kWgxhW {
     width: 95%;
   }
 
   .colorbar {
-    bottom: 110px !important;
+    bottom: 170px !important;
     left: 10px !important;
   }
+
+  .maplibregl-ctrl-top-left {
+    top: 60px;
+    left: 0px;
+    right: auto;
+  }
+
+  .maplibregl-ctrl-bottom-left {
+    bottom: 40px;
+    left: 0px;
+    right: auto;
+  }
+
+  /* Note: .space-time-viewer mobile styling now handled by JavaScript for better synchronization */
+
+  /* Fix iOS Safari viewport issues - now handled by JavaScript for better mobile detection */
 }
 
 /*#deckgl-wrapper {*/
@@ -115,4 +146,22 @@ div[mapboxgl-children] {
 
 .space-time-tab-pane.active {
   display: block;
+}
+
+/* Cursor pointer for interactive map elements */
+.maplibregl-canvas-container canvas {
+  cursor: default;
+}
+
+.maplibregl-canvas-container canvas:hover {
+  cursor: pointer;
+}
+
+/* Override cursor for non-interactive areas */
+.maplibregl-canvas-container.maplibregl-interactive canvas {
+  cursor: grab;
+}
+
+.maplibregl-canvas-container.maplibregl-interactive canvas:active {
+  cursor: grabbing;
 }

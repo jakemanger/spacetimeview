@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import SummaryPlot from './plots/SummaryPlot';
-import ScatterTimePlot from './plots/ScatterTimePlot';
 import { useControls, Leva } from 'leva';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -13,6 +12,7 @@ import { Helmet } from 'react-helmet';
 import Header from './ui/Header';
 import { interpolateRgb } from 'd3-interpolate';
 import ControlsMenu from './ui/ControlsMenu';
+import { useMobileDetection } from './utils/mobileDetection.js';
 
 
 function hexToRgb(hex) {
@@ -112,6 +112,11 @@ export default function SpaceTimeViewer({
   onTabChange = () => {},
   observable = null,
   countryCodes = null,
+  legendOrder = null,
+  menuText = null,
+  initialLongitude = null,
+  initialLatitude = null,
+  initialZoom = null,
   ...props // Capture any other props
 }) {
   // Memoize the data transformation to prevent unnecessary re-renders
@@ -633,13 +638,19 @@ export default function SpaceTimeViewer({
     }
   }, [polygons]);
 
-  let INITIAL_VIEW_STATE = {
-    longitude: transformedData.reduce((sum, d) => sum + d.lng, 0) / transformedData.length,
-    latitude: transformedData.reduce((sum, d) => sum + d.lat, 0) / transformedData.length,
-    zoom: 3,
-    pitch: 0,
-    bearing: 0
-  };
+  const INITIAL_VIEW_STATE = useMemo(() => {
+    const viewState = {
+      longitude: initialLongitude !== null ? initialLongitude : 
+        (transformedData.length > 0 ? transformedData.reduce((sum, d) => sum + d.lng, 0) / transformedData.length : 0),
+      latitude: initialLatitude !== null ? initialLatitude : 
+        (transformedData.length > 0 ? transformedData.reduce((sum, d) => sum + d.lat, 0) / transformedData.length : 0),
+      zoom: initialZoom !== null ? initialZoom : 3,
+      pitch: 0,
+      bearing: 0
+    };
+    console.log('Setting initial view state:', viewState);
+    return viewState;
+  }, [initialLongitude, initialLatitude, initialZoom, transformedData]);
 
   const timeRange = useMemo(() => getTimeRange(transformedData), [transformedData]);
 
@@ -689,6 +700,8 @@ export default function SpaceTimeViewer({
     return dat;
   }, [transformedData, columnsToPlotValues, columnNames, filterColumn, filterColumnValues]);
 
+  const hasHeader = headerLogo !== '' || headerTitle !== '' || headerWebsiteLink !== '' || Object.keys(socialLinks).length > 0;
+
   const plot = useMemo(() => {
     console.log('replotting plot');
     if (!filteredData || !filteredData.some(d => d.lng && d.lat)) {
@@ -706,68 +719,45 @@ export default function SpaceTimeViewer({
       MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
     }
 
-    if (style === 'Scatter') {
-      return (
-        <ScatterTimePlot
-          data={filteredData.sort((a, b) => a.value - b.value)}
-          timeRange={timeRange}
-          theme={theme}
-          mapStyle={MAP_STYLE}
-          initialViewState={INITIAL_VIEW_STATE}
-          radiusScale={radiusScale}
-          radiusMinPixels={radiusMinPixels}
-          animationSpeed={animationSpeed}
-          projection={projection}
-          colorRange={colorRange}
-          columnName={legendTitle}
-          themeColors={levaTheme.colors}
-          factorLevels={factorLevels}
-          factorColors={factorColors}
-          polygons={polygons}
-          factorIcons={factorIcons}
-          filterColumn={filterColumn}
-          enableClickedTooltips={clickedTooltipsEnabled}
-          observable={observable}
-        />
-      );
-    } else if (style === 'Summary') {
-      return (
-        <SummaryPlot
-          data={filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))}
-          colorAggregation={aggregateToUse}
-          elevationAggregation={aggregateToUse}
-          repeatedPointsAggregation={repeatedPointsAggregate}
-          preserveDomains={preserveDomains}
-          timeRange={timeRange}
-          radius={summaryRadius}
-          coverage={Math.min(Math.max(summaryCoverage, 0), 1)}
-          animationSpeed={animationSpeed}
-          theme={theme}
-          mapStyle={MAP_STYLE}
-          isGridView={summaryStyle === 'Grid'}
-          initialViewState={INITIAL_VIEW_STATE}
-          projection={projection}
-          summaryHeight={summaryHeight}
-          colorRange={colorRange}
-          legendTitle={legendTitle}
-          colorScaleType={colorScaleType}
-          numDecimals={numDecimals}
-          themeColors={levaTheme.colors}
-          factorLevels={factorLevels}
-          factorColors={factorColors}
-          filterColumnValues={filterColumnValues}
-          polygons={polygons}
-          factorIcons={factorIcons}
-          filterColumn={filterColumn}
-          enableClickedTooltips={clickedTooltipsEnabled}
-          observable={observable}
-          countryCodes={countryCodes}
-        />
-      );
-    } else {
-      console.error('Unsupported style:', style, 'Supported styles are: Scatter, Summary');
-      return null;
-    }
+    // Always use SummaryPlot, but pass the style prop to determine behavior
+    return (
+      <SummaryPlot
+        data={filteredData.sort((a, b) => style === 'Scatter' ? a.value - b.value : new Date(a.timestamp) - new Date(b.timestamp))}
+        colorAggregation={aggregateToUse}
+        elevationAggregation={aggregateToUse}
+        repeatedPointsAggregation={repeatedPointsAggregate}
+        preserveDomains={preserveDomains}
+        timeRange={timeRange}
+        radius={style === 'Summary' ? summaryRadius : undefined}
+        coverage={style === 'Summary' ? Math.min(Math.max(summaryCoverage, 0), 1) : undefined}
+        animationSpeed={animationSpeed}
+        theme={theme}
+        mapStyle={MAP_STYLE}
+        isGridView={summaryStyle === 'Grid'}
+        initialViewState={INITIAL_VIEW_STATE}
+        projection={projection}
+        summaryHeight={style === 'Summary' ? summaryHeight : 0}
+        colorRange={colorRange}
+        legendTitle={legendTitle}
+        colorScaleType={colorScaleType}
+        numDecimals={numDecimals}
+        themeColors={levaTheme.colors}
+        factorLevels={factorLevels}
+        factorColors={factorColors}
+        filterColumnValues={filterColumnValues}
+        polygons={polygons}
+        factorIcons={factorIcons}
+        filterColumn={filterColumn}
+        enableClickedTooltips={clickedTooltipsEnabled}
+        observable={observable}
+        countryCodes={countryCodes}
+        legendOrder={legendOrder}
+        style={style} // Pass the style prop
+        radiusScale={style === 'Scatter' ? radiusScale : undefined} // Pass scatter-specific props
+        radiusMinPixels={style === 'Scatter' ? radiusMinPixels : undefined}
+        mapHeight={'100%'}
+      />
+    );
   }, [
     style,
     aggregateToUse,
@@ -794,17 +784,49 @@ export default function SpaceTimeViewer({
     observable,
     legendTitle,
     countryCodes,
+    legendOrder,
+    INITIAL_VIEW_STATE,
   ]);
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
 
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  // Use reliable mobile detection
+  const { isMobile } = useMobileDetection();
+
+  // Handle body styling for mobile devices
+  useEffect(() => {
+    if (isMobile) {
+      // Apply mobile-specific body styling
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.height = '100%';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      // Reset body styling for desktop
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.height = '';
+      document.documentElement.style.overflow = '';
+    }
+
+    // Cleanup function to reset styles when component unmounts
+    return () => {
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.height = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isMobile]);
 
   let topOffset = '20px';
-
-  const hasHeader = headerLogo !== '' || headerTitle !== '' || headerWebsiteLink !== '' || Object.keys(socialLinks).length > 0;
 
   if (hasHeader) {
     topOffset = '80px';
@@ -832,9 +854,24 @@ export default function SpaceTimeViewer({
   };
 
   return (
-    <div className="space-time-viewer">
+    <div 
+      className="space-time-viewer"
+      style={isMobile ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden'
+      } : {
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden'
+      }}
+    >
       <Helmet>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
       </Helmet>
       {(hasHeader || tabTitles.length > 0) && (
         <Header
@@ -846,10 +883,11 @@ export default function SpaceTimeViewer({
           tabs={tabTitles}
           activeTab={activeTab}
           onTabClick={onTabChange}
+          isMobile={isMobile}
         />
       )}
       <ControlsMenu
-        dockPosition="floating"
+        dockPosition={isMobile ? "bottom" : "floating"}
         levaTheme={levaTheme}
         filterColumn={filterColumn}
         filterOptions={filterOptions}
@@ -862,6 +900,8 @@ export default function SpaceTimeViewer({
         factorIcons={factorIcons}
         visibleControls={visibleControls}
         controlNames={controlNames}
+        menuText={menuText}
+        isMobile={isMobile}
       />
 
       {/* Display Area for Selected Filter Info */} 

@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
-import { Link } from '@mui/material';
+import { Link, Menu, MenuItem } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import MenuIcon from '@mui/icons-material/Menu';
 
 const Header = ({
   logo,
@@ -29,13 +30,29 @@ const Header = ({
   },
   tabs = [],
   activeTab = 0,
-  onTabClick = () => {}
+  onTabClick = () => {},
+  isMobile = false
 }) => {
+  const [tabMenuAnchor, setTabMenuAnchor] = useState(null);
+  
   if (!logo && !title && Object.keys(socialLinks).length === 0) {
     return null;
   }
 
   const bottomPadding = '1px';
+  
+  const handleTabMenuOpen = (event) => {
+    setTabMenuAnchor(event.currentTarget);
+  };
+  
+  const handleTabMenuClose = () => {
+    setTabMenuAnchor(null);
+  };
+  
+  const handleTabMenuClick = (index) => {
+    onTabClick(index);
+    handleTabMenuClose();
+  };
   return (
     <AppBar position="sticky" sx={{ top: 0, height: '60px', backgroundColor: themeColors.elevation2, zIndex: 100, boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)' }}>
       <Toolbar sx={{ minHeight: '60px', display: 'flex', justifyContent: 'space-between' }}>
@@ -67,8 +84,8 @@ const Header = ({
             </Box>
           )}
 
-          {/* Tabs section */}
-          {tabs.length > 0 && (
+          {/* Desktop tabs section */}
+          {tabs.length > 0 && !isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', ml: 8, paddingBottom: bottomPadding }}>
               {tabs.map((tabTitle, index) => (
                 <Box 
@@ -93,8 +110,50 @@ const Header = ({
           )}
         </Box>
 
-        {/* Social Media Links */}
-        <Box sx={{ paddingBottom: bottomPadding }}>
+        {/* Social Media Links and Mobile Menu */}
+        <Box sx={{ display: 'flex', alignItems: 'center', paddingBottom: bottomPadding }}>
+          {/* Mobile hamburger menu for tabs */}
+          {tabs.length > 0 && isMobile && (
+            <Box sx={{ mr: 1 }}>
+              <IconButton
+                onClick={handleTabMenuOpen}
+                sx={{ color: themeColors.highlight2 }}
+                aria-label="open tabs menu"
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                anchorEl={tabMenuAnchor}
+                open={Boolean(tabMenuAnchor)}
+                onClose={handleTabMenuClose}
+                PaperProps={{
+                  style: {
+                    backgroundColor: themeColors.elevation2,
+                    color: themeColors.highlight2,
+                  },
+                }}
+              >
+                {tabs.map((tabTitle, index) => (
+                  <MenuItem
+                    key={index}
+                    onClick={() => handleTabMenuClick(index)}
+                    sx={{
+                      color: activeTab === index ? themeColors.accent2 : themeColors.highlight2,
+                      fontWeight: activeTab === index ? 500 : 400,
+                      backgroundColor: activeTab === index ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                      }
+                    }}
+                  >
+                    {tabTitle}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+          )}
+
+          {/* Social Media Icons */}
           {socialLinks.facebook && (
             <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.facebook} target="_blank">
               <FacebookIcon />

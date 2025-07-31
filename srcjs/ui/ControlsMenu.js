@@ -19,12 +19,16 @@ export default function ControlsMenu({
   visibleControls = [],
   controlNames = {},
   draggableMenu = false,
+  menuText = null,
+  isMobile = false,
 }) {
   // initialize position to match the default position in dockStyles
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const controlsRef = useRef(null);
   const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false); // Start expanded by default
+  const [startY, setStartY] = useState(null);
+  const [currentTranslateY, setCurrentTranslateY] = useState(0); // Start shown
 
   useEffect(() => {
     if (dockPosition === 'floating' && controlsRef.current) {
@@ -62,8 +66,52 @@ export default function ControlsMenu({
     return () => window.removeEventListener('resize', updateBounds);
   }, [collapsed]);
 
+  // Sync collapsed state with translateY position for mobile bottom drawer
+  useEffect(() => {
+    if (isMobile && dockPosition === 'bottom') {
+      if (collapsed) {
+        setCurrentTranslateY(75); // Better handle visibility for easier grabbing
+      } else {
+        setCurrentTranslateY(0);
+      }
+    }
+  }, [collapsed, isMobile, dockPosition]);
+
   const handleDragStop = (e, data) => {
     setPosition({ x: data.x, y: data.y });
+  };
+
+  // Touch gesture handlers for mobile bottom drawer
+  const handleTouchStart = (e) => {
+    if (!isMobile || dockPosition !== 'bottom') return;
+    setStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isMobile || dockPosition !== 'bottom' || startY === null) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY;
+    const percentChange = (deltaY / window.innerHeight) * 100;
+    
+    const newTranslateY = Math.max(0, Math.min(75, currentTranslateY + percentChange));
+    setCurrentTranslateY(newTranslateY);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!isMobile || dockPosition !== 'bottom' || startY === null) return;
+    
+    // Determine if should snap to open or closed based on position and velocity
+    const threshold = 35; // Lower threshold to match new collapsed position
+    if (currentTranslateY < threshold) {
+      setCurrentTranslateY(0); // Snap to open
+      setCollapsed(false);
+    } else {
+      setCurrentTranslateY(75); // Snap with better handle visibility
+      setCollapsed(true);
+    }
+    
+    setStartY(null);
   };
 
   const dockStyles = {
@@ -74,7 +122,7 @@ export default function ControlsMenu({
       zIndex: 1000,
       background: 'white',
       padding: '10px',
-      borderRadius: '8px',
+      borderRadius: '4px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       width: 'fit-content',
       height: 'fit-content',
@@ -87,7 +135,7 @@ export default function ControlsMenu({
       zIndex: 1000,
       background: 'white',
       padding: '10px',
-      borderRadius: '8px',
+      borderRadius: '4px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       width: 'fit-content',
       height: 'fit-content',
@@ -95,25 +143,29 @@ export default function ControlsMenu({
     },
     bottom: {
       position: 'fixed',
-      left: '20px',
-      right: '20px',
-      bottom: '20px',
+      left: isMobile ? '10px' : '20px',
+      right: isMobile ? '10px' : '20px',
+      bottom: '0px',
       zIndex: 1000,
-      background: 'white',
-      padding: '10px',
-      borderRadius: '8px',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      width: 'fit-content',
+      background: levaTheme?.colors?.elevation2 || 'white',
+      padding: '0px',
+      borderRadius: isMobile ? '16px 16px 0 0' : '4px',
+      boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+      width: isMobile ? 'auto' : 'fit-content',
       height: 'fit-content',
-      margin: 'auto',
-      maxWidth: '500px',
+      margin: isMobile ? '0' : 'auto',
+      maxWidth: isMobile ? 'none' : '500px',
+      maxHeight: isMobile ? '70vh' : 'auto',
+      overflowY: isMobile ? 'auto' : 'visible',
+      transform: isMobile ? `translateY(${currentTranslateY}%)` : 'none',
+      transition: isMobile ? 'transform 0.3s ease-out' : 'none',
     },
     floating: {
       position: 'absolute',
       zIndex: 1000,
       background: 'white',
       padding: '10px',
-      borderRadius: '8px',
+      borderRadius: '4px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       width: 'fit-content',
       height: 'fit-content',
@@ -129,6 +181,11 @@ export default function ControlsMenu({
     menu: (base) => ({
       ...base,
       fontSize: '12px',
+      zIndex: 9999,
+    }),
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 9999,
     }),
   };
 
@@ -218,6 +275,18 @@ export default function ControlsMenu({
         </div>
         {!collapsed && (
           <>
+            {menuText && (
+              <div style={{ 
+                padding: '14px 10px', 
+                fontSize: '13px', 
+                lineHeight: '1.4',
+                color: levaTheme?.colors?.highlight2 || '#323F4B',
+                whiteSpace: 'pre-wrap',
+                textAlign: 'center'
+              }}>
+                {menuText}
+              </div>
+            )}
             <Provider delayDuration={0}>
               <Leva
                 fill
@@ -238,6 +307,8 @@ export default function ControlsMenu({
                   placeholder={controlNames['column_to_plot'] || 'Select columns to plot...'}
                   styles={selectStyles}
                   formatOptionLabel={formatColumnsToPlotOptionLabel(factorIcons)}
+                  menuPlacement={dockPosition === 'bottom' ? 'top' : 'auto'}
+                  menuPortalTarget={document.body}
                 />
               </div>
             )}
@@ -252,6 +323,8 @@ export default function ControlsMenu({
                   placeholder={`Filter ${filterColumn}...`}
                   styles={selectStyles}
                   formatOptionLabel={formatOptionLabel(factorIcons, filterColumn)}
+                  menuPlacement={dockPosition === 'bottom' ? 'top' : 'auto'}
+                  menuPortalTarget={document.body}
                 />
               </div>
             )}
@@ -260,50 +333,100 @@ export default function ControlsMenu({
       </div>
     </Draggable>
   ) : (
-    <div style={dockStyles[dockPosition]}>
-      <div style={{ 
-        marginBottom: collapsed ? '0' : '10px', 
-        background: '#f1f3f5', 
-        padding: '5px', 
-        borderRadius: '4px', 
-        display: 'flex',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        minWidth: '300px'
-      }}>
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setCollapsed(!collapsed);
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setCollapsed(!collapsed);
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px',
+    <div 
+      style={dockStyles[dockPosition]}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Mobile bottom drawer handle or regular header */}
+      {isMobile && dockPosition === 'bottom' ? (
+        <div 
+          style={{ 
+            padding: '10px 20px 8px 20px',
             display: 'flex',
-            alignItems: 'center'
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'grab',
+            minHeight: 12
+          }}
+          onClick={() => {
+            console.log('Handle clicked, current collapsed:', collapsed, 'translateY:', currentTranslateY);
+            if (collapsed) {
+              setCurrentTranslateY(0);
+              setCollapsed(false);
+            } else {
+              setCurrentTranslateY(75);
+              setCollapsed(true);
+            }
           }}
         >
-          {collapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-            </svg>
+          <div style={{
+            width: '50px',
+            height: '5px',
+            backgroundColor: levaTheme?.colors?.highlight1 || '#535760',
+            borderRadius: '3px',
+            opacity: 0.6
+          }} />
+        </div>
+      ) : (
+        <div style={{ 
+          marginBottom: collapsed ? '0' : '10px', 
+          background: '#f1f3f5', 
+          padding: '5px', 
+          borderRadius: '4px', 
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          minWidth: '300px'
+        }}>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCollapsed(!collapsed);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCollapsed(!collapsed);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '2px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            {collapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="16" height="16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+              </svg>
+            )}
+          </button>
+        </div>
+      )}
+        <div style={{
+          padding: isMobile && dockPosition === 'bottom' ? '0 20px 20px 20px' : '0'
+        }}>
+          {menuText && (
+            <div style={{ 
+              padding: isMobile && dockPosition === 'bottom' ? '10px 0' : '10px', 
+              marginBottom: '10px', 
+              fontSize: '13px', 
+              lineHeight: '1.4',
+              color: levaTheme?.colors?.highlight2 || '#323F4B',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {menuText}
+            </div>
           )}
-        </button>
-      </div>
-      {!collapsed && (
-        <>
           <Provider delayDuration={0}>
             <Leva
               fill
@@ -313,7 +436,11 @@ export default function ControlsMenu({
             />
           </Provider>
           {visibleControls.includes('column_to_plot') && (
-            <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
+            <div style={{ 
+              marginTop: '2px', 
+              paddingLeft: isMobile && dockPosition === 'bottom' ? '0' : '10px', 
+              paddingRight: isMobile && dockPosition === 'bottom' ? '0' : '10px' 
+            }}>
               <Select
                 components={makeAnimated()}
                 isMulti={false}
@@ -323,11 +450,17 @@ export default function ControlsMenu({
                 placeholder={controlNames['column_to_plot'] || 'Select columns to plot...'}
                 styles={selectStyles}
                 formatOptionLabel={formatColumnsToPlotOptionLabel(factorIcons)}
+                menuPlacement={dockPosition === 'bottom' ? 'top' : 'auto'}
+                menuPortalTarget={document.body}
               />
             </div>
           )}
           {filterColumn && (
-            <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
+            <div style={{ 
+              marginTop: '2px', 
+              paddingLeft: isMobile && dockPosition === 'bottom' ? '0' : '10px', 
+              paddingRight: isMobile && dockPosition === 'bottom' ? '0' : '10px' 
+            }}>
               <Select
                 components={makeAnimated()}
                 isMulti
@@ -337,11 +470,12 @@ export default function ControlsMenu({
                 placeholder={`Filter ${filterColumn}...`}
                 styles={selectStyles}
                 formatOptionLabel={formatOptionLabel(factorIcons, filterColumn)}
+                menuPlacement={dockPosition === 'bottom' ? 'top' : 'auto'}
+                menuPortalTarget={document.body}
               />
             </div>
           )}
-        </>
-      )}
+        </div>
     </div>
   );
 }

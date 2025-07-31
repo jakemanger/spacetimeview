@@ -56,8 +56,9 @@ function generateTooltipHTML({ object, layer, options, isStaticMode = false }) {
 
   if (!object) return null;
 
+  // If custom tooltip content is provided, use it
+  // This case is now handled by the ObservablePlotTooltip component
   if (observable && isStaticMode) {
-     // This case is now handled by the ObservablePlotTooltip component
      return null;
   }
 
