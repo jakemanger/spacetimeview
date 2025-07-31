@@ -139,26 +139,27 @@ export default function SummaryPlot({
 
   // Adjust map dimensions after everything loads
   useEffect(() => {
+    let lastStableHeight = window.innerHeight;
+    let resizeTimeout;
+    
     const adjustMapDimensions = () => {
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
-      const viewportWidth = window.visualViewport?.width || screenWidth;
-      const viewportHeight = window.visualViewport?.height || screenHeight;
       
       // Debug logging
       console.log('Map dimension adjustment:', {
         isMobile,
         screenWidth,
         screenHeight,
-        viewportWidth,
-        viewportHeight,
-        visualViewport: window.visualViewport
+        lastStableHeight
       });
       
-             if (isMobile || screenWidth <= 768) {
+      if (isMobile || screenWidth <= 768) {
+        // Use CSS viewport units instead of JS measurements for mobile
+        // This prevents keyboard-induced re-renders
         setMapContainerStyle({
-          width: `${viewportWidth}px`,
-          height: `${viewportHeight}px`,
+          width: '100vw',
+          height: '100vh',
           position: 'fixed',
           top: 0,
           left: 0,
@@ -182,8 +183,25 @@ export default function SummaryPlot({
         });
       }
       
-      // Force map re-render after style change
-      setMapKey(prev => prev + 1);
+      // Only force map re-render for significant height changes (not keyboard)
+      const heightDiff = Math.abs(screenHeight - lastStableHeight);
+      if (heightDiff > 100) { // Only re-render if height change is substantial
+        setMapKey(prev => prev + 1);
+        lastStableHeight = screenHeight;
+      }
+    };
+
+    const debouncedAdjustMapDimensions = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(adjustMapDimensions, 150);
+    };
+
+    const handleOrientationChange = () => {
+      // Reset stable height on orientation change
+      setTimeout(() => {
+        lastStableHeight = window.innerHeight;
+        adjustMapDimensions();
+      }, 300);
     };
 
     // Initial adjustment
@@ -192,24 +210,17 @@ export default function SummaryPlot({
     // Adjust after a delay to ensure everything is loaded
     const timeoutId = setTimeout(adjustMapDimensions, 500);
     
-    // Listen for resize and orientation changes
-    window.addEventListener('resize', adjustMapDimensions);
-    window.addEventListener('orientationchange', () => {
-      setTimeout(adjustMapDimensions, 200);
-    });
+    // Listen for resize with debouncing
+    window.addEventListener('resize', debouncedAdjustMapDimensions);
+    window.addEventListener('orientationchange', handleOrientationChange);
     
-    // Listen for visual viewport changes (mobile keyboard, etc.)
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', adjustMapDimensions);
-    }
+    // DO NOT listen to visualViewport changes to prevent keyboard issues
 
     return () => {
       clearTimeout(timeoutId);
-      window.removeEventListener('resize', adjustMapDimensions);
-      window.removeEventListener('orientationchange', adjustMapDimensions);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', adjustMapDimensions);
-      }
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', debouncedAdjustMapDimensions);
+      window.removeEventListener('orientationchange', handleOrientationChange);
     };
   }, [isMobile, mapHeight]);
 
