@@ -67,7 +67,7 @@ const Header = ({
       }}
     >
       {/* Logo and Title section */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div style={{ paddingLeft: '8px', display: 'flex', alignItems: 'center' }}>
         {websiteLink ? (
           <a 
             href={websiteLink} 
