@@ -146,13 +146,32 @@ export default function SummaryPlot({
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
       
+      // Check if geocoder input is currently focused - if so, don't resize
+      const geocoderInput = document.querySelector('.maplibregl-ctrl-geocoder input');
+      const isGeocoderFocused = geocoderInput && document.activeElement === geocoderInput;
+      
+      // Check if any input element is focused (broader protection)
+      const isAnyInputFocused = document.activeElement && 
+        (document.activeElement.tagName === 'INPUT' || 
+         document.activeElement.tagName === 'TEXTAREA' ||
+         document.activeElement.contentEditable === 'true');
+      
       // Debug logging
       console.log('Map dimension adjustment:', {
         isMobile,
         screenWidth,
         screenHeight,
-        lastStableHeight
+        lastStableHeight,
+        isGeocoderFocused,
+        isAnyInputFocused,
+        activeElement: document.activeElement?.tagName
       });
+      
+      // Skip resize if any input is focused to prevent keyboard interference
+      if (isAnyInputFocused) {
+        console.log('Skipping resize - input element is focused');
+        return;
+      }
       
       if (isMobile || screenWidth <= 768) {
         // Use CSS viewport units instead of JS measurements for mobile
@@ -183,9 +202,9 @@ export default function SummaryPlot({
         });
       }
       
-      // Only force map re-render for significant height changes (not keyboard)
+      // Only force map re-render for significant height changes (not keyboard) and no input focus
       const heightDiff = Math.abs(screenHeight - lastStableHeight);
-      if (heightDiff > 100) { // Only re-render if height change is substantial
+      if (heightDiff > 100 && !isAnyInputFocused) { // Only re-render if height change is substantial and no inputs focused
         setMapKey(prev => prev + 1);
         lastStableHeight = screenHeight;
       }
@@ -193,7 +212,16 @@ export default function SummaryPlot({
 
     const debouncedAdjustMapDimensions = () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(adjustMapDimensions, 150);
+      
+      // Check if any input is focused before scheduling resize
+      const isAnyInputFocused = document.activeElement && 
+        (document.activeElement.tagName === 'INPUT' || 
+         document.activeElement.tagName === 'TEXTAREA' ||
+         document.activeElement.contentEditable === 'true');
+      
+      // If input is focused, use longer delay to avoid interfering with keyboard
+      const delay = isAnyInputFocused ? 500 : 150;
+      resizeTimeout = setTimeout(adjustMapDimensions, delay);
     };
 
     const handleOrientationChange = () => {
@@ -202,6 +230,29 @@ export default function SummaryPlot({
         lastStableHeight = window.innerHeight;
         adjustMapDimensions();
       }, 300);
+    };
+
+    // Track input focus state to prevent resize interference
+    let isInputCurrentlyFocused = false;
+    
+    const handleFocusIn = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.contentEditable === 'true') {
+        isInputCurrentlyFocused = true;
+        console.log('Input focused - pausing resize operations');
+      }
+    };
+    
+    const handleFocusOut = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.contentEditable === 'true') {
+        isInputCurrentlyFocused = false;
+        console.log('Input blurred - resuming resize operations');
+        // Small delay to allow keyboard to settle before resuming resizes
+        setTimeout(() => {
+          if (!isInputCurrentlyFocused) {
+            adjustMapDimensions();
+          }
+        }, 300);
+      }
     };
 
     // Initial adjustment
@@ -214,6 +265,10 @@ export default function SummaryPlot({
     window.addEventListener('resize', debouncedAdjustMapDimensions);
     window.addEventListener('orientationchange', handleOrientationChange);
     
+    // Listen for input focus changes to pause/resume resize operations
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+    
     // DO NOT listen to visualViewport changes to prevent keyboard issues
 
     return () => {
@@ -221,6 +276,8 @@ export default function SummaryPlot({
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', debouncedAdjustMapDimensions);
       window.removeEventListener('orientationchange', handleOrientationChange);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
     };
   }, [isMobile, mapHeight]);
 

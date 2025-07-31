@@ -98,11 +98,35 @@ body {
   right: 10px;
   left: auto;
 }
-/* if mobile, make left 10px */
+
+/* Mobile geocoder and control positioning fixes */
 @media screen and (max-width: 768px) {
   .maplibregl-ctrl-bottom-left {
     left: 10px;
     right: auto;
+  }
+  
+  /* Ensure geocoder input can receive focus and doesn't get affected by viewport changes */
+  .maplibregl-ctrl-geocoder {
+    position: relative !important;
+    z-index: 1000 !important;
+  }
+  
+  .maplibregl-ctrl-geocoder input {
+    /* Prevent the input from being affected by viewport unit changes */
+    position: relative !important;
+    z-index: 1001 !important;
+    /* Ensure input stays focusable */
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+  
+  /* Fix for iOS Safari input focus issues */
+  .maplibregl-ctrl-geocoder input:focus {
+    position: relative !important;
+    transform: none !important;
+    /* Prevent zoom on focus */
+    font-size: 16px !important;
   }
 }
 
