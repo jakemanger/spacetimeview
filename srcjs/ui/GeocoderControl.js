@@ -149,7 +149,7 @@ export default function GeocoderControl({
         ...props,
         marker: false,
         maplibregl: mapLib,
-        placeholder: 'Search places or coordinates...',
+        placeholder: 'Search places or gps...',
         minLength: 2,
         zoom: zoom,
         flyTo: flyTo
