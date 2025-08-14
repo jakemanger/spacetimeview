@@ -9,6 +9,8 @@ export default function GeocoderControl({
   marker = true,
   position = 'top-left',
   countryCodes = null, // e.g., 'AU' for Australia, 'US' for United States, or 'AU,NZ' for multiple countries
+  zoom = 10,
+  flyTo = { maxZoom: 12 },
   onLoading = noop,
   onResults = noop,
   onResult = noop,
@@ -18,15 +20,94 @@ export default function GeocoderControl({
   const [markerComponent, setMarkerComponent] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Create geocoder API with country filtering
+  // Helper function to parse coordinate input
+  const parseCoordinates = (query) => {
+    // Remove extra whitespace and normalize
+    const cleanQuery = query.trim().replace(/\s+/g, ' ');
+    
+    // Try various coordinate formats:
+    // 1. "lat, lng" or "lat,lng"
+    // 2. "lat lng" (space separated)
+    // 3. "lng, lat" (if longitude comes first, detect by range)
+    
+    const patterns = [
+      // Decimal degrees with comma: "40.7128, -74.0060"
+      /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/,
+      // Decimal degrees with space: "40.7128 -74.0060"
+      /^(-?\d+\.?\d*)\s+(-?\d+\.?\d*)$/,
+      // With degree symbols: "40.7128° -74.0060°"
+      /^(-?\d+\.?\d*)°?\s*,?\s*(-?\d+\.?\d*)°?$/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = cleanQuery.match(pattern);
+      if (match) {
+        const num1 = parseFloat(match[1]);
+        const num2 = parseFloat(match[2]);
+        
+        // Validate ranges
+        if (isNaN(num1) || isNaN(num2)) continue;
+        
+        // Determine if it's lat,lng or lng,lat based on ranges
+        // Latitude: -90 to 90, Longitude: -180 to 180
+        let lat, lng;
+        
+        if (Math.abs(num1) <= 90 && Math.abs(num2) <= 180) {
+          // First number could be latitude
+          lat = num1;
+          lng = num2;
+        } else if (Math.abs(num2) <= 90 && Math.abs(num1) <= 180) {
+          // Second number is latitude (lng,lat format)
+          lat = num2;
+          lng = num1;
+        } else {
+          continue; // Invalid coordinate ranges
+        }
+        
+        // Final validation
+        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+          return { lat, lng };
+        }
+      }
+    }
+    
+    return null;
+  };
+
   const geocoderApi = {
     forwardGeocode: async config => {
       const features = [];
+      
       try {
-        // Build the request URL with optional country filtering
+        // first try to parse as coordinates
+        const coords = parseCoordinates(config.query);
+        
+        if (coords) {
+          // create a coordinate-based feature
+          const point = {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [coords.lng, coords.lat]
+            },
+            place_name: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
+            properties: {
+              coordinate_search: true
+            },
+            text: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
+            place_type: ['coordinate'],
+            center: [coords.lng, coords.lat]
+          };
+          features.push(point);
+          
+          return { features };
+        }
+        
+        // if not coordinates, proceed with normal geocoding
+        // build the request URL with optional country filtering
         let request = `https://nominatim.openstreetmap.org/search?q=${config.query}&format=geojson&polygon_geojson=1&addressdetails=1`;
         
-        // Add country filtering if specified
+        // add country filtering if specified
         if (countryCodes) {
           request += `&countrycodes=${countryCodes}`;
         }
@@ -68,8 +149,10 @@ export default function GeocoderControl({
         ...props,
         marker: false,
         maplibregl: mapLib,
-        placeholder: 'Search for places...',
-        minLength: 2
+        placeholder: 'Search places or coordinates...',
+        minLength: 2,
+        zoom: zoom,
+        flyTo: flyTo
       });
       
       ctrl.on('loading', onLoading);
@@ -156,7 +239,7 @@ export default function GeocoderControl({
             display: none;
             pointer-events: none;
           `;
-          tooltipElement.textContent = 'Press Enter to search';
+          tooltipElement.textContent = 'Press Enter to search places or coordinates (lat, lng)';
           
           // Insert tooltip after the geocoder container
           const geocoderContainer = ctrl._inputEl.parentElement;

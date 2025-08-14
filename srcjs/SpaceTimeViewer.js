@@ -1,11 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import SummaryPlot from './plots/SummaryPlot';
 import { useControls, Leva } from 'leva';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import PinchIcon from '@mui/icons-material/Pinch';
 import './SpaceTimeViewer.css';
 import colorbrewer from 'colorbrewer';
 import { Helmet } from 'react-helmet';

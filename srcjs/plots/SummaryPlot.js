@@ -661,8 +661,13 @@ export default function SummaryPlot({
           <GeocoderControl 
             position="top-left" 
             countryCodes={countryCodes}
+            zoom={8}
+            flyTo={{ maxZoom: 10 }}
           />
-          <GeolocateControl position="top-left" />
+          <GeolocateControl 
+            position="top-left" 
+            fitBoundsOptions={{ maxZoom: 10 }}
+          />
           <NavigationControl position="top-left" />
           <ScaleControl />
 
