@@ -63,9 +63,9 @@ export default function SummaryPlot({
   timeRange = [Infinity, -Infinity],
   animationSpeed = 1,
   isGridView = false,
-  style = 'Summary', // Add style prop to determine if scatter or summary
-  radiusScale = 150, // Add radiusScale for scatter plots
-  radiusMinPixels = 5, // Add radiusMinPixels for scatter plots
+  style = 'Summary',
+  radiusScale = 150,
+  radiusMinPixels = 5,
   initialViewState = {
     longitude: -122.45,
     latitude: 37.78,
@@ -111,7 +111,8 @@ export default function SummaryPlot({
   legendOrder = null,
   legendLabels = null,
   legendDirectionText = null,
-  mapHeight = '100%', // Add mapHeight prop
+  mapHeight = '100%',
+  hasHeader = true,
 }) {
   const [filter, setFilter] = useState(timeRange);
   const [viewMode, setViewMode] = useState('historical');
@@ -650,7 +651,7 @@ export default function SummaryPlot({
 
   return (
     <>
-      <div style={mapContainerStyle}>
+      <div style={mapContainerStyle} className={!hasHeader ? 'no-header' : ''}>
         <Map 
           key={mapKey}
           reuseMaps 

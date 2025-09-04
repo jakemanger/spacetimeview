@@ -392,6 +392,14 @@ spacetimeview <- function(
       }
     }
     
+    # convert any interval columns to their start time first
+    for (col in names(data)) {
+      if (lubridate::is.interval(data[[col]])) {
+        data[[col]] <- lubridate::int_start(data[[col]])
+        message(paste0("Converted interval column '", col, "' to its start time"))
+      }
+    }
+    
     # re-check which columns are now recognized as date/time objects
     possible_time_columns <- names(data)[sapply(data, function(col) {
       lubridate::is.timepoint(col)
@@ -407,6 +415,12 @@ spacetimeview <- function(
   }
 
   if (time_column_name %in% colnames(data)) {
+    # check if it's an interval and convert to start time if needed
+    if (lubridate::is.interval(data[[time_column_name]])) {
+      data[[time_column_name]] <- lubridate::int_start(data[[time_column_name]])
+      message(paste0("Converted interval column '", time_column_name, "' to its start time"))
+    }
+    
     # if supplied, make sure timestamp is in the correct format
     is_datetime <- lubridate::is.timepoint(data[[time_column_name]])
     

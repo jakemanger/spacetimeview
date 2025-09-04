@@ -768,6 +768,7 @@ export default function SpaceTimeViewer({
         radiusScale={style === 'Scatter' ? radiusScale : undefined} // Pass scatter-specific props
         radiusMinPixels={style === 'Scatter' ? radiusMinPixels : undefined}
         mapHeight={'100%'}
+        hasHeader={hasHeader}
       />
     );
   }, [
