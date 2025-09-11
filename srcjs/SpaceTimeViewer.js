@@ -105,7 +105,7 @@ export default function SpaceTimeViewer({
   enableClickedTooltips = true, // highly experimental, undocumented and not recommended
   tabTitles = [],
   activeTab = 0,
-  onTabChange = () => {},
+  onTabChange = () => { },
   observable = null,
   countryCodes = null,
   legendOrder = null,
@@ -116,6 +116,7 @@ export default function SpaceTimeViewer({
   initialLongitude = null,
   initialLatitude = null,
   initialZoom = null,
+  initialTimeMode = 'historical',
   ...props // Capture any other props
 }) {
   // Memoize the data transformation to prevent unnecessary re-renders
@@ -446,21 +447,21 @@ export default function SpaceTimeViewer({
       const totalSelectedCount = transformedData.filter(d => filterColumnValues.includes(d[filterColumn])).length;
 
       return {
-         items: info,
-         totalSelectedCount: totalSelectedCount,
-         hasMore: filterColumnValues.length > displayLimit,
-         totalFiltersApplied: filterColumnValues.length
+        items: info,
+        totalSelectedCount: totalSelectedCount,
+        hasMore: filterColumnValues.length > displayLimit,
+        totalFiltersApplied: filterColumnValues.length
       };
     }
     return null;
   }, [filterColumn, filterColumnValues, factorLevels, factorIcons, transformedData]);
 
   // Calculate effective column to plot for aggregate logic and legend title
-  const effectiveColumnToPlot = columnsToPlotValues.length > 0 ? 
+  const effectiveColumnToPlot = columnsToPlotValues.length > 0 ?
     (columnsToPlotValues.length === 1 ? columnsToPlotValues[0] : 'Combined') :
     (columnNames.length > 0 ? columnNames[0] : 'value');
 
-  const legendTitle = columnsToPlotValues.length > 1 ? 
+  const legendTitle = columnsToPlotValues.length > 1 ?
     `${columnsToPlotValues.join(' + ')}` : effectiveColumnToPlot;
 
   let aggregateToUse = factorLevels && factorLevels[effectiveColumnToPlot] ? factorAggregate : aggregate;
@@ -475,16 +476,16 @@ export default function SpaceTimeViewer({
       const customColors = factorColors[effectiveColumnToPlot];
       const factorLevelNames = factorLevels[effectiveColumnToPlot];
       const numLevels = factorLevelNames.length;
-      
+
       // Convert hex colors to RGB arrays
       let colorRange = [];
-      
+
       // Check if customColors is an object (named colors) or array (indexed colors)
       const isNamedColors = customColors && typeof customColors === 'object' && !Array.isArray(customColors);
-      
+
       for (let i = 0; i < numLevels; i++) {
         let hexColor;
-        
+
         if (isNamedColors) {
           // Use factor level name to look up color
           const levelName = factorLevelNames[i];
@@ -502,7 +503,7 @@ export default function SpaceTimeViewer({
             hexColor = colorsArray[i % colorsArray.length];
           }
         }
-        
+
         if (hexColor) {
           const rgb = hexToRgb(hexColor);
           colorRange.push(rgb);
@@ -511,7 +512,7 @@ export default function SpaceTimeViewer({
           colorRange.push([136, 136, 136]); // Default gray
         }
       }
-      
+
       setColorRange(colorRange);
     } else if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
       // Fall back to colorbrewer interpolation
@@ -577,7 +578,7 @@ export default function SpaceTimeViewer({
         label: String(value), // Use the factor level as the label
       }));
       setFilterOptions(options);
-      
+
       if (defaultFilterValue !== null && Array.isArray(defaultFilterValue)) {
         const defaultIndices = defaultFilterValue
           .map(value => factorLevels[filterColumn].indexOf(value))
@@ -602,7 +603,7 @@ export default function SpaceTimeViewer({
         label: column
       }));
       setColumnsToPlotOptions(options);
-      
+
       // Set initial value if not already set or if it needs to be updated
       if (columnsToPlotValues.length === 0) {
         if (columnNames.includes(initialColumnToPlot)) {
@@ -625,11 +626,11 @@ export default function SpaceTimeViewer({
         // Log the raw data first
         console.log('Raw polygon data type:', typeof polygons);
         console.log('Raw polygon data length:', polygons.length);
-        
+
         // Then try to parse it if it's a string
         const parsedPolygons = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
         console.log('Parsed polygon data:', parsedPolygons);
-        
+
         // Check if it has the expected GeoJSON structure
         if (parsedPolygons.type && parsedPolygons.features) {
           console.log('GeoJSON type:', parsedPolygons.type);
@@ -649,9 +650,9 @@ export default function SpaceTimeViewer({
 
   const INITIAL_VIEW_STATE = useMemo(() => {
     const viewState = {
-      longitude: initialLongitude !== null ? initialLongitude : 
+      longitude: initialLongitude !== null ? initialLongitude :
         (transformedData.length > 0 ? transformedData.reduce((sum, d) => sum + d.lng, 0) / transformedData.length : 0),
-      latitude: initialLatitude !== null ? initialLatitude : 
+      latitude: initialLatitude !== null ? initialLatitude :
         (transformedData.length > 0 ? transformedData.reduce((sum, d) => sum + d.lat, 0) / transformedData.length : 0),
       zoom: initialZoom !== null ? initialZoom : 3,
       pitch: 0,
@@ -672,7 +673,7 @@ export default function SpaceTimeViewer({
     }
 
     // Handle multiple columns to plot - if no columns selected, use the first available column
-    const effectiveColumnsToPlot = columnsToPlotValues.length > 0 ? columnsToPlotValues : 
+    const effectiveColumnsToPlot = columnsToPlotValues.length > 0 ? columnsToPlotValues :
       (columnNames.length > 0 ? [columnNames[0]] : []);
 
     // remove rows where all selected columns are undefined or null
@@ -684,7 +685,7 @@ export default function SpaceTimeViewer({
     dat = dat.map(d => {
       let totalValue = 0;
       let validColumns = 0;
-      
+
       effectiveColumnsToPlot.forEach(col => {
         const colValue = d[col];
         if (colValue !== undefined && colValue !== null && !isNaN(colValue)) {
@@ -692,13 +693,13 @@ export default function SpaceTimeViewer({
           validColumns++;
         }
       });
-      
+
       // Use the sum if we have multiple columns, otherwise use the single value
-      const finalValue = effectiveColumnsToPlot.length > 1 ? totalValue : 
+      const finalValue = effectiveColumnsToPlot.length > 1 ? totalValue :
         (validColumns > 0 ? totalValue : undefined);
-      
+
       return {
-      ...d,
+        ...d,
         value: finalValue
       };
     });
@@ -769,6 +770,7 @@ export default function SpaceTimeViewer({
         radiusMinPixels={style === 'Scatter' ? radiusMinPixels : undefined}
         mapHeight={'100%'}
         hasHeader={hasHeader}
+        initialTimeMode={initialTimeMode}
       />
     );
   }, [
@@ -867,7 +869,7 @@ export default function SpaceTimeViewer({
   };
 
   return (
-    <div 
+    <div
       className="space-time-viewer"
       style={isMobile ? {
         position: 'fixed',
@@ -918,17 +920,17 @@ export default function SpaceTimeViewer({
         isMobile={isMobile}
       />
 
-      {/* Display Area for Selected Filter Info */} 
+      {/* Display Area for Selected Filter Info */}
       {selectedFilterDisplayInfo && (
         <div style={filterDisplayBoxStyle}>
           <span style={{ fontWeight: 'bold', flexShrink: 0 }}>Filter:</span>
           {selectedFilterDisplayInfo.items.map((item, index) => (
             <span key={item.label} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.iconPath && (
-                <img 
-                  src={item.iconPath} 
-                  alt="" 
-                  style={{ width: '18px', height: '18px', marginRight: '4px', verticalAlign: 'middle' }} 
+                <img
+                  src={item.iconPath}
+                  alt=""
+                  style={{ width: '18px', height: '18px', marginRight: '4px', verticalAlign: 'middle' }}
                 />
               )}
               {item.label} ({item.count})
@@ -936,12 +938,12 @@ export default function SpaceTimeViewer({
           ))}
           {selectedFilterDisplayInfo.hasMore && (
             <span style={{ fontStyle: 'italic', flexShrink: 0 }}>
-               (+{selectedFilterDisplayInfo.totalFiltersApplied - selectedFilterDisplayInfo.items.length} more)
+              (+{selectedFilterDisplayInfo.totalFiltersApplied - selectedFilterDisplayInfo.items.length} more)
             </span>
           )}
-           <span style={{ marginLeft: 'auto', paddingLeft: '10px', fontWeight: 'bold', flexShrink: 0 }}>
-              Total: {selectedFilterDisplayInfo.totalSelectedCount}
-           </span>
+          <span style={{ marginLeft: 'auto', paddingLeft: '10px', fontWeight: 'bold', flexShrink: 0 }}>
+            Total: {selectedFilterDisplayInfo.totalSelectedCount}
+          </span>
         </div>
       )}
       {plot}

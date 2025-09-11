@@ -113,9 +113,10 @@ export default function SummaryPlot({
   legendDirectionText = null,
   mapHeight = '100%',
   hasHeader = true,
+  initialTimeMode = 'historical',
 }) {
   const [filter, setFilter] = useState(timeRange);
-  const [viewMode, setViewMode] = useState('historical');
+  const [viewMode, setViewMode] = useState(initialTimeMode);
   const [initialColorDomain, setInitialColorDomain] = useState(null);
   const [initialElevationDomain, setInitialElevationDomain] = useState(null);
   const [colorbarDomain, setColorbarDomain] = useState(initialColorDomain);

@@ -120,6 +120,10 @@
 #'   If NULL, automatically centers on the data.
 #' @param initial_zoom Numeric. Optional. Starting zoom level for the map view. 
 #'   If NULL, defaults to zoom level 3.
+#' @param initial_time_mode Character. Optional. Initial temporal aggregation mode that can be 
+#'   later adjusted with the UI. Either 'historical' that preserves full date context (day/month/year) or
+#'   'seasonal' that aggregates across years by calendar position (e.g. all January data together).
+#'   Defaults to 'historical'.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
 #' @export
@@ -285,6 +289,7 @@ spacetimeview <- function(
     initial_longitude = NULL,
     initial_latitude = NULL,
     initial_zoom = NULL,
+    initial_time_mode = 'historical',
     ...
 ) {
 
@@ -296,8 +301,13 @@ spacetimeview <- function(
   }
   
   # ensure style is either "Scatter" or "Summary"
-  if (!style %in% c('Scatter', 'Summary')) {
+  if (!(style %in% c('Scatter', 'Summary'))) {
     stop("style must be either 'Scatter' or 'Summary'")
+  }
+
+  # ensure initial_time_mode is either "historical" or "seasonal"
+  if (!(initial_time_mode %in% c('historical', 'seasonal'))) {
+    stop("initial_time_mode  must be either 'historical' or 'seasonal'")
   }
   
   # columns we need to make for the js widget to work
@@ -740,6 +750,7 @@ spacetimeview <- function(
       initialLongitude = initial_longitude,
       initialLatitude = initial_latitude,
       initialZoom = initial_zoom,
+      initialTimeMode = initial_time_mode,
       ...
     )
   )
