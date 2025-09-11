@@ -382,6 +382,14 @@ spacetimeview <- function(
     # first, try to identify columns that could be date/time based on their names
     possible_time_columns <- names(data)[grepl("time|date", names(data), ignore.case = TRUE)]
     
+    # convert any interval columns to their start time first
+    for (col in names(data)) {
+      if (lubridate::is.interval(data[[col]])) {
+        data[[col]] <- lubridate::int_start(data[[col]])
+        message(paste0("Converted interval column '", col, "' to its start time"))
+      }
+    }
+    
     # attempt to convert these columns to date/time objects
     for (col in possible_time_columns) {
       if (!lubridate::is.timepoint(data[[col]])) {
@@ -389,14 +397,6 @@ spacetimeview <- function(
         if (!inherits(parsed_col, "try-error")) {
           data[[col]] <- parsed_col
         }
-      }
-    }
-    
-    # convert any interval columns to their start time first
-    for (col in names(data)) {
-      if (lubridate::is.interval(data[[col]])) {
-        data[[col]] <- lubridate::int_start(data[[col]])
-        message(paste0("Converted interval column '", col, "' to its start time"))
       }
     }
     

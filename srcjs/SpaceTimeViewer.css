@@ -84,14 +84,14 @@ body {
 
 /* Make sure controls are positioned correctly */
 .maplibregl-ctrl-top-left {
-  top: 70px;
-  left: 10px;
+  top: 70px !important;
+  left: 10px !important;
 }
 
 /* Position controls at 10px when there's no header */
 .no-header .maplibregl-ctrl-top-left {
-  top: 10px;
-  left: 10px;
+  top: 10px !important;
+  left: 10px !important;
 }
 
 .maplibregl-ctrl-top-right {
