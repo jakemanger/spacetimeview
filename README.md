@@ -17,41 +17,6 @@ You can use the plot as a static website html file to share with others
 html widget to explore your data.
 
 
-#### Example with Australian States
-
-``` r
-library(spacetimeview)
-library(sf)
-library(rnaturalearth)
-
-# Get Australia states
-aus_states <- rnaturalearth::ne_states(country = "australia", returnclass = "sf")
-
-# Create sample data points across Australia
-set.seed(123)
-n_points <- 500
-sample_data <- data.frame(
-  lat = runif(n_points, -39, -10),
-  lng = runif(n_points, 113, 154),
-  value = runif(n_points, 0, 100),
-  time = seq(as.POSIXct("2023-01-01"), by = "days", length.out = n_points)
-)
-
-# Create the SpaceTimeView with polygons
-view <- spacetimeview(
-  data = sample_data,
-  polygons = aus_states,
-  style = "Scatter",
-  column_to_plot = "value",
-  theme = "light",
-  projection = "Mercator",
-  header_title = "Australia Data with State Boundaries"
-)
-
-# Save the widget to an HTML file
-htmlwidgets::saveWidget(view, "australia_with_states.html")
-```
-
 ## Installation
 
 You can install the development version of spacetimeview from
