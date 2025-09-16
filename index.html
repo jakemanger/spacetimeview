@@ -60,46 +60,11 @@
 <!-- badges: end -->
 <p>spacetimeview generates an interactive space time data dashboard in one line of code. You provide the data with columns of GPS coordinates (or sf geometries) and a column of times and spacetimeview will turn it into an interactive plot.</p>
 <p>You can use the plot as a static website html file to share with others (hostable for free on services like github pages) or as an interactive html widget to explore your data.</p>
-<div class="section level4">
-<h4 id="example-with-australian-states">Example with Australian States<a class="anchor" aria-label="anchor" href="#example-with-australian-states"></a>
-</h4>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jakemanger.github.io/spacetimeview/">spacetimeview</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearth/" class="external-link">rnaturalearth</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Get Australia states</span></span>
-<span><span class="va">aus_states</span> <span class="op">&lt;-</span> <span class="fu">rnaturalearth</span><span class="fu">::</span><span class="fu">ne_states</span><span class="op">(</span>country <span class="op">=</span> <span class="st">"australia"</span>, returnclass <span class="op">=</span> <span class="st">"sf"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Create sample data points across Australia</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">n_points</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
-<span><span class="va">sample_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  lat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_points</span>, <span class="op">-</span><span class="fl">39</span>, <span class="op">-</span><span class="fl">10</span><span class="op">)</span>,</span>
-<span>  lng <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_points</span>, <span class="fl">113</span>, <span class="fl">154</span><span class="op">)</span>,</span>
-<span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_points</span>, <span class="fl">0</span>, <span class="fl">100</span><span class="op">)</span>,</span>
-<span>  time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2023-01-01"</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"days"</span>, length.out <span class="op">=</span> <span class="va">n_points</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Create the SpaceTimeView with polygons</span></span>
-<span><span class="va">view</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span></span>
-<span>  data <span class="op">=</span> <span class="va">sample_data</span>,</span>
-<span>  polygons <span class="op">=</span> <span class="va">aus_states</span>,</span>
-<span>  style <span class="op">=</span> <span class="st">"Scatter"</span>,</span>
-<span>  column_to_plot <span class="op">=</span> <span class="st">"value"</span>,</span>
-<span>  theme <span class="op">=</span> <span class="st">"light"</span>,</span>
-<span>  projection <span class="op">=</span> <span class="st">"Mercator"</span>,</span>
-<span>  header_title <span class="op">=</span> <span class="st">"Australia Data with State Boundaries"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Save the widget to an HTML file</span></span>
-<span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="va">view</span>, <span class="st">"australia_with_states.html"</span><span class="op">)</span></span></code></pre></div>
-</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>You can install the development version of spacetimeview from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># after cloning with `git clone git@github.com:jakemanger/spacetimeview.git`</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Loading spacetimeview</span></span>
@@ -111,16 +76,16 @@
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <p>Load your data with GPS coordinates and datetimes:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jakemanger.github.io/spacetimeview/">spacetimeview</a></span><span class="op">)</span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">'https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv'</span><span class="op">)</span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">[</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Latitude'</span>, <span class="st">'Longitude'</span>, <span class="st">'DateTime'</span>, <span class="st">'Magnitude'</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>Now, in one line of code, generate an interactive plot over space and time</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span><span class="va">d</span>, summary_radius <span class="op">=</span> <span class="fl">10000</span>, summary_height <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
 <p><img src="visualisation.gif"></p>
 <p>Note, this interactive plot is also a website, that you can save as a html file</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="fu"><a href="reference/spacetimeview.html">spacetimeview</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, <span class="st">"my_plot.html"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Auto-detected time column: `DateTime`</span></span>
 <span><span class="co">#&gt; Warning in spacetimeview(d): column_to_plot was not specified. Defaulting to</span></span>
@@ -130,7 +95,7 @@
 <span><span class="co">#&gt; [1] "plottable columns: Magnitude"</span></span>
 <span><span class="co">#&gt; Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.</span></span></code></pre></div>
 <p>and simply deploy to any website host, even free static site hosts like Github Pages</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># automate GitHub Pages setup to deploy html files in the `docs` folder</span></span>
 <span><span class="fu">usethis</span><span class="fu">::</span><span class="fu">use_github_pages</span><span class="op">(</span>branch<span class="op">=</span><span class="st">'main'</span>, path<span class="op">=</span><span class="st">'/docs'</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Setting active project to "/Users/jakemanger/projects/spacetimeview".</span></span>
