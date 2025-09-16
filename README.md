@@ -16,25 +16,6 @@ You can use the plot as a static website html file to share with others
 (hostable for free on services like github pages) or as an interactive
 html widget to explore your data.
 
-## Features
-
-- Interactive map visualization for space-time data
-- Multiple visualization modes: summary (grid/hexagon) and scatter
-- Supports various aggregation methods (SUM, MEAN, COUNT, MIN, MAX,
-  MODE)
-- Customizable color schemes, animation speed, and other visual
-  properties
-- Responsive design for various screen sizes
-- Supports both Mercator and Globe projections
-- Time animation controls for exploring temporal patterns
-- Tooltip with detailed location information and time series charts
-- Works with sf, stars, and terra objects
-
-### New Feature: Polygon Overlays
-
-You can now add polygon overlays to your visualizations using the
-`polygons` parameter. This is useful for showing administrative
-boundaries, regions, or any other geographical divisions.
 
 #### Example with Australian States
 
