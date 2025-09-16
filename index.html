@@ -60,24 +60,6 @@
 <!-- badges: end -->
 <p>spacetimeview generates an interactive space time data dashboard in one line of code. You provide the data with columns of GPS coordinates (or sf geometries) and a column of times and spacetimeview will turn it into an interactive plot.</p>
 <p>You can use the plot as a static website html file to share with others (hostable for free on services like github pages) or as an interactive html widget to explore your data.</p>
-<div class="section level2">
-<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
-</h2>
-<ul>
-<li>Interactive map visualization for space-time data</li>
-<li>Multiple visualization modes: summary (grid/hexagon) and scatter</li>
-<li>Supports various aggregation methods (SUM, MEAN, COUNT, MIN, MAX, MODE)</li>
-<li>Customizable color schemes, animation speed, and other visual properties</li>
-<li>Responsive design for various screen sizes</li>
-<li>Supports both Mercator and Globe projections</li>
-<li>Time animation controls for exploring temporal patterns</li>
-<li>Tooltip with detailed location information and time series charts</li>
-<li>Works with sf, stars, and terra objects</li>
-</ul>
-<div class="section level3">
-<h3 id="new-feature-polygon-overlays">New Feature: Polygon Overlays<a class="anchor" aria-label="anchor" href="#new-feature-polygon-overlays"></a>
-</h3>
-<p>You can now add polygon overlays to your visualizations using the <code>polygons</code> parameter. This is useful for showing administrative boundaries, regions, or any other geographical divisions.</p>
 <div class="section level4">
 <h4 id="example-with-australian-states">Example with Australian States<a class="anchor" aria-label="anchor" href="#example-with-australian-states"></a>
 </h4>
@@ -112,8 +94,6 @@
 <span></span>
 <span><span class="co"># Save the widget to an HTML file</span></span>
 <span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="va">view</span>, <span class="st">"australia_with_states.html"</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
