@@ -285,10 +285,8 @@ spacetimeview <- function(
       // or a histogram if there is no time column. This shows in the popup or tooltip.
       Plot.plot({
         marks: (() => {
-          // Check if we have time data
           const hasTime = data.some(d => d.timestamp);
 
-          // Find the main data column (first non-coordinate, non-time column with numeric data)
           const excludeFields = ["lat", "lng", "timestamp"];
           const dataKeys = Object.keys(data[0] || {});
           const columnName = "value";
