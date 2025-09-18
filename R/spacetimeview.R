@@ -83,9 +83,10 @@
 #'   such as state or country boundaries. Can be an sf object with POLYGON or
 #'   MULTIPOLYGON geometry or a list with GeoJSON structure.
 #' @param observable Character. Optional. Observable Plot code to be executed
-#'   in tooltips. The code can reference column names from the dataset and will
-#'   be executed with the filtered data for the current location/time. Only
-#'   activated when this parameter is provided.
+#'   in tooltips or popups. The code can reference column names from the dataset and 
+#'   will be executed with the filtered data for the current location/time. The currently
+#'   selected column to plot is assigned the column name `value` and the time column
+#'   is `timestamp`. Defaults to a scatter plot if there is a time column or a histogram if not.
 #' @param country_codes Character. Optional. Country codes to filter geocoder 
 #'   search results. Use ISO 3166-1 alpha-2 country codes (e.g., "AU" for 
 #'   Australia, "US" for United States). Multiple countries can be specified 
@@ -279,7 +280,109 @@ spacetimeview <- function(
     width = '100vw', 
     height = '100vh', 
     elementId = NULL,
-    observable = NULL,
+    observable = '
+      // default observable js code to plot a scatter plot if there is a time column
+      // or a histogram if there is no time column. This shows in the popup or tooltip.
+      Plot.plot({
+        marks: (() => {
+          // Check if we have time data
+          const hasTime = data.some(d => d.timestamp);
+
+          // Find the main data column (first non-coordinate, non-time column with numeric data)
+          const excludeFields = ["lat", "lng", "timestamp"];
+          const dataKeys = Object.keys(data[0] || {});
+          const columnName = "value";
+
+          if (hasTime) {
+            // Time series: scatter plot with time on x-axis
+            return [
+              Plot.dot(
+                data.filter(d => d.timestamp && d[columnName] !== undefined && d[columnName] !== null),
+                {
+                  x: d => new Date(d.timestamp),
+                  y: columnName,
+                  fill: "black",
+                  fillOpacity: 0.7,
+                  stroke: "white",
+                  strokeWidth: 0.5,
+                  r: 3,
+                  title: d => {
+                    const date = new Date(d.timestamp).toLocaleDateString();
+                    const value = d[columnName];
+                    return `${date}\\n${columnName}: ${value}`;
+                  }
+                }
+              )
+            ];
+          } else {
+            // No time data: histogram
+            return [
+              Plot.rectY(
+                data.filter(d => d[columnName] !== undefined && d[columnName] !== null),
+                Plot.binX(
+                  { y: "count" },
+                  {
+                    x: columnName,
+                    fill: "black",
+                    fillOpacity: 0.7,
+                    stroke: "white",
+                    strokeWidth: 1
+                  }
+                )
+              )
+            ];
+          }
+        })(),
+        x: (() => {
+          const hasTime = data.some(d => d.timestamp);
+
+          if (hasTime) {
+            return {
+              type: "time",
+              label: "Time",
+              grid: true
+            };
+          } else {
+            const excludeFields = ["lat", "lng", "timestamp"];
+            const dataKeys = Object.keys(data[0] || {});
+            const columnName = "value";
+
+            return {
+              label: columnName,
+              grid: true
+            };
+          }
+        })(),
+        y: (() => {
+          const hasTime = data.some(d => d.timestamp);
+
+          if (hasTime) {
+            const excludeFields = ["lat", "lng", "timestamp"];
+            const dataKeys = Object.keys(data[0] || {});
+            const columnName = "value";
+
+            return {
+              label: columnName,
+              grid: true
+            };
+          } else {
+            return {
+              label: "Count",
+              grid: true
+            };
+          }
+        })(),
+        style: {
+          fontSize: "12px"
+        },
+        width: 400,
+        height: 300,
+        marginLeft: 60,
+        marginBottom: 40,
+        marginRight: 20,
+        marginTop: 20
+      })
+    ',
     country_codes = NULL,
     legend_order = NULL,
     legend_labels = NULL,
