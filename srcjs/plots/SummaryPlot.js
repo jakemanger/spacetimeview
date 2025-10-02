@@ -139,7 +139,7 @@ export default function SummaryPlot({
   });
   const [mapKey, setMapKey] = useState(0); // Force map re-render
 
-  // Adjust map dimensions after everything loads
+  // adjust map dimensions after everything loads
   useEffect(() => {
     let lastStableHeight = window.innerHeight;
     let resizeTimeout;
@@ -283,7 +283,7 @@ export default function SummaryPlot({
     };
   }, [isMobile, mapHeight]);
 
-  // process data for seasonal view (normalize dates to the same year)
+  // process data for seasonal view (normalize dates to same year)
   const normalizedData = useMemo(() => {
     if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
     return normalizeDataByYear(data);
@@ -306,7 +306,7 @@ export default function SummaryPlot({
     );
   }, [normalizedData, timeRange, viewMode]);
 
-  // Color scale for scatter plots
+  // color scale for scatter plots
   const [minValue, maxValue] = useMemo(() => {
     if (style === 'Scatter') {
       return getMinMaxValues(normalizedData, 'value');
@@ -323,7 +323,7 @@ export default function SummaryPlot({
     return null;
   }, [minValue, maxValue, colorRange, style]);
 
-  // update colorbarDomain when initialColorDomain changes
+  // update colorbar domain when initial domain changes
   useEffect(() => {
     if (initialColorDomain !== null) {
       setColorbarDomain(initialColorDomain);
@@ -334,14 +334,13 @@ export default function SummaryPlot({
   const domainInitializedRef = useRef(false);
 
   useEffect(() => {
-    // When style changes, "refresh" the filter to trigger updates.
-    // Create a new array instance to ensure state change is detected.
+    // when style changes, refresh the filter to trigger updates
     setFilter(currentFilter => [...currentFilter]);
   }, [style]);
 
   useEffect(() => {
     // reset domains when categorical variable changes
-    console.log('Resetting domains due to data, time filter, filterColumnValues, or aggregation change');
+    console.log('resetting domains due to data, time filter, filterColumnValues, or aggregation change');
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
 
@@ -487,7 +486,7 @@ export default function SummaryPlot({
         filter: [filter]
       }
     }),
-    // Add scatter layer for scatter plots
+    // scatter layer for scatter plots
     style === 'Scatter' && filter && new ScatterplotLayer({
       id: 'scatterplot',
       data: normalizedData,
@@ -515,7 +514,7 @@ export default function SummaryPlot({
       pickable: true,
       billboard: true
     }),
-    // Add summary layers for summary plots
+    // summary layers for summary plots
     style === 'Summary' && (isGridView
       ? new GridLayer({
         id: 'grid-heatmap',
@@ -599,7 +598,7 @@ export default function SummaryPlot({
 
   const relevantFactorLevels = (factorLevels && factorLevels[legendTitle]) || null;
 
-  // use normalizedData when in seasonal view
+  // use normalized data when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
   const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
 
@@ -621,7 +620,7 @@ export default function SummaryPlot({
 
   // return tooltip content for hover events
   const getTooltipContent = (pickInfo) => {
-    // if popup mode is enabled, disable hover tooltips
+    // disable hover tooltips if popup mode is enabled
     if (enableClickedTooltips) {
       return null;
     }
@@ -755,6 +754,10 @@ export default function SummaryPlot({
           data={displayData}
           onViewModeChange={(mode) => setViewMode(mode)}
           viewMode={viewMode}
+          columnToPlot={legendTitle}
+          colorRange={colorRange}
+          colorScaleType={colorScaleType}
+          aggregate={colorAggregation.toLowerCase()}
           style={{
             position: 'fixed',
             bottom: '20px',

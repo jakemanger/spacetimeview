@@ -61992,6 +61992,7 @@ function SpaceTimeViewer(_ref) {
     },
     initialFilterColumn = null,
     defaultFilterValue = null,
+    selectableColumns = null,
     draggableMenu = false,
     polygons = null,
     factorIcons = null,
@@ -62397,7 +62398,12 @@ function SpaceTimeViewer(_ref) {
   }, [filterColumn, factorLevels, transformedData, defaultFilterValue]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (columnNames.length > 0) {
-      const options = columnNames.map(column => ({
+      // Filter columns based on selectableColumns if provided
+      let availableColumns = columnNames;
+      if (selectableColumns && selectableColumns.length > 0) {
+        availableColumns = columnNames.filter(col => selectableColumns.includes(col));
+      }
+      const options = availableColumns.map(column => ({
         value: column,
         label: column
       }));
@@ -62405,17 +62411,18 @@ function SpaceTimeViewer(_ref) {
 
       // Set initial value if not already set or if it needs to be updated
       if (columnsToPlotValues.length === 0) {
-        if (columnNames.includes(initialColumnToPlot)) {
+        // Try to use initialColumnToPlot if it's in the available columns
+        if (availableColumns.includes(initialColumnToPlot)) {
           setColumnsToPlotValues([initialColumnToPlot]);
-        } else if (columnNames.length > 0) {
-          setColumnsToPlotValues([columnNames[0]]);
+        } else if (availableColumns.length > 0) {
+          setColumnsToPlotValues([availableColumns[0]]);
         }
       }
     } else {
       setColumnsToPlotOptions([]);
       setColumnsToPlotValues([]);
     }
-  }, [columnNames, initialColumnToPlot]);
+  }, [columnNames, initialColumnToPlot, selectableColumns]);
 
   // Parse and log polygon data if available
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
@@ -63615,6 +63622,10 @@ function SummaryPlot(_ref) {
     data: displayData,
     onViewModeChange: mode => setViewMode(mode),
     viewMode: viewMode,
+    columnToPlot: legendTitle,
+    colorRange: colorRange,
+    colorScaleType: colorScaleType,
+    aggregate: colorAggregation.toLowerCase(),
     style: {
       position: 'fixed',
       bottom: '20px',
@@ -65618,15 +65629,18 @@ function ObservablePlotTooltip(_ref) {
       }
 
       // Create a simple function context and execute the Observable code
-      // Now includes factorIcons as a third parameter
-      const plotFunction = new Function('Plot', 'data', 'factorIcons', `
+      // Now includes factorIcons and columnName as parameters
+      const columnName = options.columnName || null;
+      console.log('16.5. Column name being passed to Observable:', columnName);
+      const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', `
         console.log('INSIDE OBSERVABLE FUNCTION:');
         console.log('- Plot object:', Plot);
         console.log('- Data received:', data);
         console.log('- Data length:', data.length);
         console.log('- First item:', data[0]);
         console.log('- Factor icons received:', factorIcons);
-        
+        console.log('- Column name received:', columnName);
+
         // Show what factor icons are available - corrected logging
         if (factorIcons && typeof factorIcons === 'object') {
           console.log('- Factor icon columns available:', Object.keys(factorIcons));
@@ -65641,17 +65655,17 @@ function ObservablePlotTooltip(_ref) {
             }
           });
         }
-        
+
         const result = ${options.observable};
-        
+
         console.log('- Observable result:', result);
         console.log('- Result type:', typeof result);
         console.log('- Result constructor:', result ? result.constructor.name : 'null');
-        
+
         return result;
       `);
-      console.log('17. Executing Observable function...');
-      const chart = plotFunction(_observablehq_plot__WEBPACK_IMPORTED_MODULE_1__, data, factorIcons);
+      console.log('17. Executing Observable function with columnName:', columnName);
+      const chart = plotFunction(_observablehq_plot__WEBPACK_IMPORTED_MODULE_1__, data, factorIcons, columnName);
       console.log('18. Chart result:', chart);
       console.log('19. Chart type:', typeof chart);
       console.log('20. Chart is DOM element:', chart instanceof Element);
@@ -65678,7 +65692,7 @@ function ObservablePlotTooltip(_ref) {
       </div>`;
     }
     console.log('=== OBSERVABLE PLOT DEBUG END ===');
-  }, [object, options.observable, options.allData, options.filter, options.factorIcons]);
+  }, [object, options.observable, options.allData, options.filter, options.factorIcons, options.columnName]);
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       position: 'relative'
@@ -65794,6 +65808,118 @@ const durations = {
   Month: [0, 30 * 8.64e7],
   Year: [0, 365 * 8.64e7]
 };
+
+// Aggregate data by time period
+function aggregateDataByTime(data, duration, columnToPlot) {
+  let aggregate = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'mean';
+  let viewMode = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'historical';
+  let normalizedTimeRange = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
+  if (!data || data.length === 0) return [];
+  console.log('AggregateDataByTime - columnToPlot:', columnToPlot, 'Sample data item:', data[0]);
+  const timeRange = viewMode === 'seasonal' ? normalizedTimeRange : [Math.min(...data.map(d => new Date(d.timestamp).getTime())), Math.max(...data.map(d => new Date(d.timestamp).getTime()))];
+
+  // Determine bucket size based on duration
+  let bucketSize;
+  if (duration === 'All' || duration === 'Custom') {
+    // For All/Custom, create ~100 buckets across the range
+    bucketSize = (timeRange[1] - timeRange[0]) / 100;
+  } else {
+    bucketSize = durations[duration][1] - durations[duration][0];
+  }
+
+  // Create buckets
+  const buckets = new Map();
+  data.forEach(d => {
+    const timestamp = new Date(d.timestamp).getTime();
+    const bucketIndex = Math.floor((timestamp - timeRange[0]) / bucketSize);
+    const bucketTime = timeRange[0] + bucketIndex * bucketSize + bucketSize / 2; // Use bucket midpoint
+
+    if (!buckets.has(bucketIndex)) {
+      buckets.set(bucketIndex, {
+        time: bucketTime,
+        values: []
+      });
+    }
+
+    // Get the value for the specified column - use 'value' as the column name since that's what the data has
+    const value = d.value;
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      buckets.get(bucketIndex).values.push(Number(value));
+    }
+  });
+
+  // Aggregate values in each bucket
+  const aggregatedData = [];
+  buckets.forEach(bucket => {
+    if (bucket.values.length > 0) {
+      let aggregatedValue;
+      switch (aggregate) {
+        case 'mean':
+          aggregatedValue = bucket.values.reduce((a, b) => a + b, 0) / bucket.values.length;
+          break;
+        case 'sum':
+          aggregatedValue = bucket.values.reduce((a, b) => a + b, 0);
+          break;
+        case 'min':
+          aggregatedValue = Math.min(...bucket.values);
+          break;
+        case 'max':
+          aggregatedValue = Math.max(...bucket.values);
+          break;
+        case 'median':
+          const sorted = [...bucket.values].sort((a, b) => a - b);
+          const mid = Math.floor(sorted.length / 2);
+          aggregatedValue = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+          break;
+        case 'count':
+          aggregatedValue = bucket.values.length;
+          break;
+        default:
+          aggregatedValue = bucket.values.reduce((a, b) => a + b, 0) / bucket.values.length;
+      }
+      aggregatedData.push({
+        time: bucket.time,
+        value: aggregatedValue
+      });
+    }
+  });
+  return aggregatedData.sort((a, b) => a.time - b.time);
+}
+
+// Create color scale similar to the map
+function createColorScale(data, colorRange) {
+  let colorScaleType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'quantize';
+  if (!data || data.length === 0 || !colorRange) return null;
+  const values = data.map(d => d.value).filter(v => v !== null && v !== undefined);
+  if (values.length === 0) return null;
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  if (colorScaleType === 'quantile') {
+    // Quantile scale
+    const sortedValues = [...values].sort((a, b) => a - b);
+    const quantiles = colorRange.map((_, i) => {
+      const index = Math.floor(i / (colorRange.length - 1) * (sortedValues.length - 1));
+      return sortedValues[index];
+    });
+    return value => {
+      for (let i = quantiles.length - 1; i >= 0; i--) {
+        if (value >= quantiles[i]) {
+          return colorRange[i];
+        }
+      }
+      return colorRange[0];
+    };
+  } else {
+    // Quantize scale (default)
+    const step = (maxValue - minValue) / colorRange.length;
+    return value => {
+      if (value <= minValue) return colorRange[0];
+      if (value >= maxValue) return colorRange[colorRange.length - 1];
+      const index = Math.min(Math.floor((value - minValue) / step), colorRange.length - 1);
+      return colorRange[index];
+    };
+  }
+}
 function RangeInput(_ref) {
   let {
     min,
@@ -65804,13 +65930,18 @@ function RangeInput(_ref) {
     formatLabel,
     data,
     onViewModeChange = null,
-    viewMode = 'historical'
+    viewMode = 'historical',
+    columnToPlot = 'value',
+    colorRange = null,
+    colorScaleType = 'quantize',
+    aggregate = 'mean'
   } = _ref;
   const [isPlaying, setIsPlaying] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   const [duration, setDuration] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)('All');
   const [showHint, setShowHint] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   const [localViewMode, setLocalViewMode] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(viewMode);
   const animationRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  const sliderRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
 
   // Sync localViewMode with prop
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
@@ -65947,6 +66078,69 @@ function RangeInput(_ref) {
       return formatLabel(timestamp);
     }
   };
+
+  // Calculate aggregated data for the timeline visualization
+  const timelineData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!data || !colorRange) return [];
+    const activeData = localViewMode === 'seasonal' ? normalizedData : data;
+    const aggregated = aggregateDataByTime(activeData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange);
+    console.log('Timeline aggregated data:', aggregated);
+    return aggregated;
+  }, [data, normalizedData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange, colorRange]);
+
+  // Create color scale for the timeline
+  const timelineColorScale = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!timelineData || timelineData.length === 0 || !colorRange) return null;
+    const scale = createColorScale(timelineData, colorRange, colorScaleType);
+    console.log('Color scale created:', scale ? 'yes' : 'no', 'ColorRange:', colorRange);
+    return scale;
+  }, [timelineData, colorRange, colorScaleType]);
+
+  // Create gradient stops for the slider track
+  const gradientStops = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!timelineData || !timelineColorScale) return [];
+    const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
+    const currentMax = localViewMode === 'seasonal' ? normalizedTimeRange[1] : max;
+    const range = currentMax - currentMin;
+    const stops = timelineData.map(d => {
+      const position = (d.time - currentMin) / range * 100;
+      const color = timelineColorScale(d.value);
+      const rgbColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+      return {
+        position,
+        color: rgbColor
+      };
+    });
+    console.log('Gradient stops:', stops);
+    return stops;
+  }, [timelineData, timelineColorScale, min, max, normalizedTimeRange, localViewMode]);
+
+  // Create CSS gradient string
+  const gradientString = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (gradientStops.length === 0) {
+      console.log('No gradient stops, using default color');
+      return 'linear-gradient(to right, #f5f1d8, #f5f1d8)';
+    }
+
+    // Ensure we have stops at 0% and 100%
+    const stops = [...gradientStops];
+    if (stops[0]?.position > 0) {
+      stops.unshift({
+        position: 0,
+        color: stops[0].color
+      });
+    }
+    if (stops[stops.length - 1]?.position < 100) {
+      stops.push({
+        position: 100,
+        color: stops[stops.length - 1].color
+      });
+    }
+    const gradientParts = stops.map(stop => `${stop.color} ${stop.position}%`);
+    const gradient = `linear-gradient(to right, ${gradientParts.join(', ')})`;
+    console.log('Final gradient string:', gradient);
+    return gradient;
+  }, [gradientStops]);
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_Box__WEBPACK_IMPORTED_MODULE_1__["default"], {
     sx: {
       position: 'absolute',
@@ -66031,10 +66225,27 @@ function RangeInput(_ref) {
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_Tooltip__WEBPACK_IMPORTED_MODULE_11__["default"], {
     title: "Seasonal View - Shows patterns within the year"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_CalendarViewMonth__WEBPACK_IMPORTED_MODULE_13__["default"], null)))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_Slider__WEBPACK_IMPORTED_MODULE_14__["default"], {
+    ref: sliderRef,
     sx: {
       marginLeft: 2,
       maxWidth: '40%',
       color: '#f5f1d8',
+      '& .MuiSlider-rail': {
+        opacity: 1,
+        background: gradientString,
+        height: '6px'
+      },
+      '& .MuiSlider-track': {
+        background: 'transparent',
+        border: 'none'
+      },
+      '& .MuiSlider-thumb': {
+        backgroundColor: '#fff',
+        border: '2px solid currentColor',
+        '&:hover, &.Mui-focusVisible': {
+          boxShadow: '0 0 0 8px rgba(245, 241, 216, 0.16)'
+        }
+      },
       '& .MuiSlider-valueLabel': {
         background: 'none',
         color: '#f5f1d8',

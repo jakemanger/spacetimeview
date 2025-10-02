@@ -50,7 +50,7 @@ export default function ObservablePlotTooltip({ object, options }) {
     console.log('4. Factor icons available:', options.factorIcons);
 
     try {
-      // Get the data for this tooltip
+      // get data for this tooltip
       const data = getTooltipData(object, options.allData, !isNaN(options.filter[0]), options.filter);
       
       console.log('5. Raw data from getTooltipData:', data);
@@ -73,11 +73,11 @@ export default function ObservablePlotTooltip({ object, options }) {
       console.log('13. Plot object available:', !!Plot);
       console.log('14. Plot methods:', Object.getOwnPropertyNames(Plot));
 
-      // Prepare factorIcons for the Observable function
+      // prepare factorIcons for the observable function
       const factorIcons = options.factorIcons || {};
       console.log('15. Factor icons being passed to Observable:', factorIcons);
 
-      // Better logging for factor icons structure
+      // log factor icons structure details
       if (factorIcons && typeof factorIcons === 'object') {
         console.log('16. Factor icon structure analysis:');
         Object.keys(factorIcons).forEach(column => {
@@ -95,16 +95,19 @@ export default function ObservablePlotTooltip({ object, options }) {
         });
       }
 
-      // Create a simple function context and execute the Observable code
-      // Now includes factorIcons as a third parameter
-      const plotFunction = new Function('Plot', 'data', 'factorIcons', `
+      // create function context and execute observable code
+      const columnName = options.columnName || null;
+      console.log('16.5. Column name being passed to Observable:', columnName);
+
+      const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', `
         console.log('INSIDE OBSERVABLE FUNCTION:');
         console.log('- Plot object:', Plot);
         console.log('- Data received:', data);
         console.log('- Data length:', data.length);
         console.log('- First item:', data[0]);
         console.log('- Factor icons received:', factorIcons);
-        
+        console.log('- Column name received:', columnName);
+
         // Show what factor icons are available - corrected logging
         if (factorIcons && typeof factorIcons === 'object') {
           console.log('- Factor icon columns available:', Object.keys(factorIcons));
@@ -119,25 +122,25 @@ export default function ObservablePlotTooltip({ object, options }) {
             }
           });
         }
-        
+
         const result = ${options.observable};
-        
+
         console.log('- Observable result:', result);
         console.log('- Result type:', typeof result);
         console.log('- Result constructor:', result ? result.constructor.name : 'null');
-        
+
         return result;
       `);
-      
-      console.log('17. Executing Observable function...');
-      const chart = plotFunction(Plot, data, factorIcons);
+
+      console.log('17. Executing Observable function with columnName:', columnName);
+      const chart = plotFunction(Plot, data, factorIcons, columnName);
       
       console.log('18. Chart result:', chart);
       console.log('19. Chart type:', typeof chart);
       console.log('20. Chart is DOM element:', chart instanceof Element);
       console.log('21. Chart tagName:', chart ? chart.tagName : 'N/A');
-      
-      // Clear and append the chart
+
+      // clear and append the chart
       containerRef.current.innerHTML = '';
       if (chart) {
         console.log('22. Appending chart to container...');
@@ -160,7 +163,7 @@ export default function ObservablePlotTooltip({ object, options }) {
     }
     
     console.log('=== OBSERVABLE PLOT DEBUG END ===');
-  }, [object, options.observable, options.allData, options.filter, options.factorIcons]);
+  }, [object, options.observable, options.allData, options.filter, options.factorIcons, options.columnName]);
 
   return (
     <div style={{ position: 'relative' }}>

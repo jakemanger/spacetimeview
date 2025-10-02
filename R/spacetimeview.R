@@ -83,10 +83,27 @@
 #'   such as state or country boundaries. Can be an sf object with POLYGON or
 #'   MULTIPOLYGON geometry or a list with GeoJSON structure.
 #' @param observable Character. Optional. Observable Plot code to be executed
-#'   in tooltips or popups. The code can reference column names from the dataset and 
-#'   will be executed with the filtered data for the current location/time. The currently
-#'   selected column to plot is assigned the column name `value` and the time column
-#'   is `timestamp`. Defaults to a scatter plot if there is a time column or a histogram if not.
+#'   in tooltips or popups. The code has access to the following variables:
+#'   - `Plot`: The Observable Plot library object
+#'   - `data`: Array of filtered data points for the current location/time
+#'   - `factorIcons`: Object mapping column names to icon URLs (if provided)
+#'   - `columnName`: Currently selected column name from the dropdown (e.g., "Bubas bison")
+#'
+#'   The data array contains objects with all original column names from your dataset,
+#'   plus standard fields: `lat`, `lng`, `timestamp` (if temporal), and `value`
+#'   (the currently selected column's data). For example, if you have columns like
+#'   "species_observed", "species_pred_lower", "species_pred_upper", they will all
+#'   be available in each data object.
+#'
+#'   Example usage in Observable code:
+#'   ```javascript
+#'   // Use columnName to dynamically select which species to plot
+#'   var selectedSpecies = columnName.replace(/ /g, '_');
+#'   var observedKey = selectedSpecies + '_observed';
+#'   var lowerKey = selectedSpecies + '_pred_lower';
+#'   ```
+#'
+#'   Defaults to a scatter plot if there is time data or a histogram if not.
 #' @param country_codes Character. Optional. Country codes to filter geocoder 
 #'   search results. Use ISO 3166-1 alpha-2 country codes (e.g., "AU" for 
 #'   Australia, "US" for United States). Multiple countries can be specified 
@@ -121,10 +138,16 @@
 #'   If NULL, automatically centers on the data.
 #' @param initial_zoom Numeric. Optional. Starting zoom level for the map view. 
 #'   If NULL, defaults to zoom level 3.
-#' @param initial_time_mode Character. Optional. Initial temporal aggregation mode that can be 
+#' @param initial_time_mode Character. Optional. Initial temporal aggregation mode that can be
 #'   later adjusted with the UI. Either 'historical' that preserves full date context (day/month/year) or
 #'   'seasonal' that aggregates across years by calendar position (e.g. all January data together).
 #'   Defaults to 'historical'.
+#' @param plottable_columns Character vector. Optional. Explicitly specify which columns should be
+#'   available for plotting. If NULL, all columns except lat, lng, and timestamp will be available.
+#' @param selectable_columns Character vector. Optional. Filter which columns appear in the UI dropdown
+#'   for column selection. Must be a subset of plottable_columns. Columns in plottable_columns but
+#'   not in selectable_columns will still be available for use in Observable code but won't appear
+#'   as options in the column selection dropdown.
 #'
 #' @return An interactive space-time viewer for visualizing and exploring data.
 #' @export
@@ -276,13 +299,13 @@ spacetimeview <- function(
     lng_name = 'auto',
     time_column_name = 'auto',
     plottable_columns = NULL,
+    selectable_columns = NULL,
     polygons = NULL,
     width = '100vw', 
     height = '100vh', 
     elementId = NULL,
     observable = '
-      // default observable js code to plot a scatter plot if there is a time column
-      // or a histogram if there is no time column. This shows in the popup or tooltip.
+      // default observable plot code - scatter if time data exists, histogram otherwise
       Plot.plot({
         marks: (() => {
           const hasTime = data.some(d => d.timestamp);
@@ -590,6 +613,17 @@ spacetimeview <- function(
     plottable_columns <- names(data)[!(names(data) %in% c(required_cols, time_column_name, 'timestamp'))]
   }
 
+  # Validate selectable_columns
+  if (!is.null(selectable_columns)) {
+    # Check that all selectable_columns are in plottable_columns
+    invalid_columns <- setdiff(selectable_columns, plottable_columns)
+    if (length(invalid_columns) > 0) {
+      warning(paste0("The following columns in selectable_columns are not in plottable_columns and will be ignored: ",
+                     paste(invalid_columns, collapse = ", ")))
+      selectable_columns <- intersect(selectable_columns, plottable_columns)
+    }
+  }
+
   # now filter data to only include the columns we need
   if ('timestamp' %in% names(data)) {
     data <- data[, c(required_cols, 'timestamp', plottable_columns)]
@@ -678,47 +712,45 @@ spacetimeview <- function(
     }
     print(paste("Automatically determined summary radius:", summary_radius))
   }
-  
+
   # process polygons if provided
   polygon_data <- NULL
   if (!is.null(polygons)) {
-    print("Processing polygon data...")
+    print("processing polygon data...")
     if (inherits(polygons, "sf")) {
       # convert sf polygons to GeoJSON
       if (!sf::st_is_longlat(polygons)) {
-        print("Transforming polygon coordinates to WGS84...")
+        print("transforming polygon coordinates to WGS84...")
         polygons <- sf::st_transform(polygons, "+proj=longlat +datum=WGS84")
       }
-      
-      print("Converting sf object to GeoJSON...")
+
+      print("converting sf object to GeoJSON...")
       
       # try using geojsonsf if available
       if (requireNamespace("geojsonsf", quietly = TRUE)) {
-        print("Using geojsonsf package for conversion...")
+        print("using geojsonsf package for conversion...")
         polygon_data <- geojsonsf::sf_geojson(polygons, atomise = FALSE)
       } else {
-        # fallback to sf::st_write approach
-        print("Using sf::st_write for conversion (consider installing geojsonsf package for better results)...")
+        # fallback to sf::st_write
+        print("using sf::st_write for conversion (consider installing geojsonsf for better results)...")
         tmp_file <- tempfile(fileext = ".geojson")
         sf::st_write(polygons, tmp_file, driver = "GeoJSON", delete_dsn = TRUE, quiet = TRUE)
         polygon_data <- paste(readLines(tmp_file), collapse = "\n")
         unlink(tmp_file)
       }
-      
-      print(paste("Polygon data length:", nchar(polygon_data), "characters"))
+
+      print(paste("polygon data length:", nchar(polygon_data), "characters"))
     } else if (is.list(polygons)) {
       # assume it's already in GeoJSON format
-      print("Converting list to GeoJSON...")
+      print("converting list to GeoJSON...")
       polygon_data <- jsonlite::toJSON(polygons, auto_unbox = TRUE)
     } else {
       warning("Polygons must be an sf object or a list in GeoJSON format. Ignoring polygons.")
     }
   }
 
-  # print('Reformatting data as list to be put in JS')
   data_list <- purrr::transpose(data)
-  print('Starting ReactR plot')
-  # describe a React component to send to the browser for rendering.
+  print('starting ReactR plot')
   print(paste('plottable columns:', plottable_columns))
 
   # function to convert image path to data URI
@@ -750,7 +782,7 @@ spacetimeview <- function(
 
   # process factor_icons to convert paths to data URIs
   if (!is.null(factor_icons)) {
-    print("Processing factor icons...")
+    print("processing factor icons...")
     factor_icons_uri <- list()
     for (col_name in names(factor_icons)) {
       col_icons <- factor_icons[[col_name]]
@@ -840,6 +872,7 @@ spacetimeview <- function(
       controlNames = control_names,
       initialFilterColumn = filter_column,
       defaultFilterValue = default_filter_value,
+      selectableColumns = selectable_columns,
       polygons = polygon_data,
       observable = observable,
       countryCodes = country_codes,

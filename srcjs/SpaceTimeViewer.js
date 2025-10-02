@@ -99,6 +99,7 @@ export default function SpaceTimeViewer({
   },
   initialFilterColumn = null,
   defaultFilterValue = null,
+  selectableColumns = null,
   draggableMenu = false,
   polygons = null,
   factorIcons = null,
@@ -119,7 +120,7 @@ export default function SpaceTimeViewer({
   initialTimeMode = 'historical',
   ...props // Capture any other props
 }) {
-  // Memoize the data transformation to prevent unnecessary re-renders
+  // memoize data transformation to prevent unnecessary re-renders
   const transformedData = useMemo(() => {
     const convertedData = HTMLWidgets.dataframeToD3(data);
     return convertedData;
@@ -377,7 +378,7 @@ export default function SpaceTimeViewer({
     ]
   );
 
-  // if any input props change (e.g. shiny controlling the ui)
+  // update controls when input props change (e.g. shiny controlling the ui)
   useEffect(() => {
     set(
       {
@@ -430,7 +431,7 @@ export default function SpaceTimeViewer({
     enableClickedTooltips,
   ]);
 
-  // Calculate information for the selected filter display
+  // calculate selected filter display info
   const selectedFilterDisplayInfo = useMemo(() => {
     if (filterColumn && factorLevels?.[filterColumn] && factorIcons?.[filterColumn] && filterColumnValues?.length > 0) {
       // Limit the number of displayed filters to avoid clutter
@@ -456,7 +457,7 @@ export default function SpaceTimeViewer({
     return null;
   }, [filterColumn, filterColumnValues, factorLevels, factorIcons, transformedData]);
 
-  // Calculate effective column to plot for aggregate logic and legend title
+  // determine effective column for aggregate logic and legend title
   const effectiveColumnToPlot = columnsToPlotValues.length > 0 ?
     (columnsToPlotValues.length === 1 ? columnsToPlotValues[0] : 'Combined') :
     (columnNames.length > 0 ? columnNames[0] : 'value');
@@ -598,27 +599,34 @@ export default function SpaceTimeViewer({
 
   useEffect(() => {
     if (columnNames.length > 0) {
-      const options = columnNames.map(column => ({
+      // filter columns based on selectableColumns if provided
+      let availableColumns = columnNames;
+      if (selectableColumns && selectableColumns.length > 0) {
+        availableColumns = columnNames.filter(col => selectableColumns.includes(col));
+      }
+
+      const options = availableColumns.map(column => ({
         value: column,
         label: column
       }));
       setColumnsToPlotOptions(options);
 
-      // Set initial value if not already set or if it needs to be updated
+      // set initial value if not already set
       if (columnsToPlotValues.length === 0) {
-        if (columnNames.includes(initialColumnToPlot)) {
+        // Try to use initialColumnToPlot if it's in the available columns
+        if (availableColumns.includes(initialColumnToPlot)) {
           setColumnsToPlotValues([initialColumnToPlot]);
-        } else if (columnNames.length > 0) {
-          setColumnsToPlotValues([columnNames[0]]);
+        } else if (availableColumns.length > 0) {
+          setColumnsToPlotValues([availableColumns[0]]);
         }
       }
     } else {
       setColumnsToPlotOptions([]);
       setColumnsToPlotValues([]);
     }
-  }, [columnNames, initialColumnToPlot]);
+  }, [columnNames, initialColumnToPlot, selectableColumns]);
 
-  // Parse and log polygon data if available
+  // parse and log polygon data if available
   useEffect(() => {
     if (polygons) {
       console.log('Polygon data provided to SpaceTimeViewer component:');

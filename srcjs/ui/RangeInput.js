@@ -26,24 +26,152 @@ const durations = {
   Year: [0, 365 * 8.64e7],
 };
 
-export default function RangeInput({ 
-  min, 
-  max, 
-  value, 
-  animationSpeed, 
-  onChange, 
-  formatLabel, 
-  data, 
-  onViewModeChange = null, 
-  viewMode = 'historical' 
+// aggregate data by time period
+function aggregateDataByTime(data, duration, columnToPlot, aggregate = 'mean', viewMode = 'historical', normalizedTimeRange = null) {
+  if (!data || data.length === 0) return [];
+
+  console.log('AggregateDataByTime - columnToPlot:', columnToPlot, 'Sample data item:', data[0]);
+
+  const timeRange = viewMode === 'seasonal' ? normalizedTimeRange : [
+    Math.min(...data.map(d => new Date(d.timestamp).getTime())),
+    Math.max(...data.map(d => new Date(d.timestamp).getTime()))
+  ];
+
+  // determine bucket size based on duration
+  let bucketSize;
+  if (duration === 'All' || duration === 'Custom') {
+    // for All/Custom, create ~100 buckets across the range
+    bucketSize = (timeRange[1] - timeRange[0]) / 100;
+  } else {
+    bucketSize = durations[duration][1] - durations[duration][0];
+  }
+
+  // create buckets
+  const buckets = new Map();
+
+  data.forEach(d => {
+    const timestamp = new Date(d.timestamp).getTime();
+    const bucketIndex = Math.floor((timestamp - timeRange[0]) / bucketSize);
+    const bucketTime = timeRange[0] + bucketIndex * bucketSize + bucketSize / 2; // use bucket midpoint
+
+    if (!buckets.has(bucketIndex)) {
+      buckets.set(bucketIndex, {
+        time: bucketTime,
+        values: []
+      });
+    }
+
+    // get the value for the specified column - use 'value' as the column name since that's what the data has
+    const value = d.value;
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      buckets.get(bucketIndex).values.push(Number(value));
+    }
+  });
+
+  // aggregate values in each bucket
+  const aggregatedData = [];
+  buckets.forEach(bucket => {
+    if (bucket.values.length > 0) {
+      let aggregatedValue;
+      switch (aggregate) {
+        case 'mean':
+          aggregatedValue = bucket.values.reduce((a, b) => a + b, 0) / bucket.values.length;
+          break;
+        case 'sum':
+          aggregatedValue = bucket.values.reduce((a, b) => a + b, 0);
+          break;
+        case 'min':
+          aggregatedValue = Math.min(...bucket.values);
+          break;
+        case 'max':
+          aggregatedValue = Math.max(...bucket.values);
+          break;
+        case 'median':
+          const sorted = [...bucket.values].sort((a, b) => a - b);
+          const mid = Math.floor(sorted.length / 2);
+          aggregatedValue = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+          break;
+        case 'count':
+          aggregatedValue = bucket.values.length;
+          break;
+        default:
+          aggregatedValue = bucket.values.reduce((a, b) => a + b, 0) / bucket.values.length;
+      }
+      aggregatedData.push({
+        time: bucket.time,
+        value: aggregatedValue
+      });
+    }
+  });
+
+  return aggregatedData.sort((a, b) => a.time - b.time);
+}
+
+// create color scale similar to the map
+function createColorScale(data, colorRange, colorScaleType = 'quantize') {
+  if (!data || data.length === 0 || !colorRange) return null;
+
+  const values = data.map(d => d.value).filter(v => v !== null && v !== undefined);
+  if (values.length === 0) return null;
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  if (colorScaleType === 'quantile') {
+    // quantile scale
+    const sortedValues = [...values].sort((a, b) => a - b);
+    const quantiles = colorRange.map((_, i) => {
+      const index = Math.floor((i / (colorRange.length - 1)) * (sortedValues.length - 1));
+      return sortedValues[index];
+    });
+
+    return (value) => {
+      for (let i = quantiles.length - 1; i >= 0; i--) {
+        if (value >= quantiles[i]) {
+          return colorRange[i];
+        }
+      }
+      return colorRange[0];
+    };
+  } else {
+    // quantize scale (default)
+    const step = (maxValue - minValue) / colorRange.length;
+
+    return (value) => {
+      if (value <= minValue) return colorRange[0];
+      if (value >= maxValue) return colorRange[colorRange.length - 1];
+      const index = Math.min(
+        Math.floor((value - minValue) / step),
+        colorRange.length - 1
+      );
+      return colorRange[index];
+    };
+  }
+}
+
+export default function RangeInput({
+  min,
+  max,
+  value,
+  animationSpeed,
+  onChange,
+  formatLabel,
+  data,
+  onViewModeChange = null,
+  viewMode = 'historical',
+  columnToPlot = 'value',
+  colorRange = null,
+  colorScaleType = 'quantize',
+  aggregate = 'mean'
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState('All');
   const [showHint, setShowHint] = useState(false);
   const [localViewMode, setLocalViewMode] = useState(viewMode);
   const animationRef = useRef(null);
+  const sliderRef = useRef(null);
 
-  // Sync localViewMode with prop
+  // sync localViewMode with prop
   useEffect(() => {
     setLocalViewMode(viewMode);
     onChange([-Infinity, Infinity]);
@@ -60,16 +188,16 @@ export default function RangeInput({
     return minDiff;
   }, [data]);
 
-  // Process data for seasonal view (normalize all dates to the same year)
+  // process data for seasonal view (normalize all dates to same year)
   const normalizedData = useMemo(() => {
     if (localViewMode !== 'seasonal' || !data || data.length === 0) return data;
     
-    // Use a reference year (2000 as it's a leap year)
+    // use a reference year (2000 as it's a leap year)
     const referenceYear = 2000;
-    
+
     return data.map(d => {
       const date = new Date(d.timestamp);
-      // Create a new date with the same month/day but reference year
+      // create a new date with the same month/day but reference year
       const normalizedDate = new Date(
         referenceYear,
         date.getMonth(),
@@ -87,7 +215,7 @@ export default function RangeInput({
     });
   }, [data, localViewMode]);
   
-  // Calculate time range for the normalized data
+  // calculate time range for normalized data
   const normalizedTimeRange = useMemo(() => {
     if (localViewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
       return [min, max];
@@ -105,10 +233,10 @@ export default function RangeInput({
   }, [normalizedData, min, max, localViewMode]);
 
   const availableDurations = useMemo(() => {
-    // Filter duration options based on minimum interval
+    // filter duration options based on minimum interval
     const filteredDurations = Object.entries(durations).filter(([key, [_, duration]]) => duration >= minInterval);
     
-    // If in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
+    // if in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
     if (localViewMode === 'seasonal') {
       return filteredDurations.filter(([key]) => key !== 'Month');
     }
@@ -131,7 +259,7 @@ export default function RangeInput({
     if (newMode !== null) {
       setLocalViewMode(newMode);
       
-      // If parent provided a handler, call it
+      // if parent provided a handler, call it
       if (onViewModeChange) {
         onViewModeChange(newMode);
       }
@@ -184,17 +312,76 @@ export default function RangeInput({
     onChange([currentMin, currentMin + (newMax - newMin)]);
   };
 
-  // Format the label based on the view mode
+  // format label based on view mode
   const formatTimeLabel = (timestamp) => {
     const date = new Date(timestamp);
     if (localViewMode === 'seasonal') {
-      // For seasonal view, just show month and day
+      // for seasonal view, just show month and day
       return `${date.toLocaleString('default', { month: 'short' })} ${date.getDate()}`;
     } else {
-      // Use the provided formatter for historical view
+      // use the provided formatter for historical view
       return formatLabel(timestamp);
     }
   };
+
+  // calculate aggregated data for timeline visualization
+  const timelineData = useMemo(() => {
+    if (!data || !colorRange) return [];
+
+    const activeData = localViewMode === 'seasonal' ? normalizedData : data;
+    const aggregated = aggregateDataByTime(activeData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange);
+    console.log('Timeline aggregated data:', aggregated);
+    return aggregated;
+  }, [data, normalizedData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange, colorRange]);
+
+  // create color scale for timeline
+  const timelineColorScale = useMemo(() => {
+    if (!timelineData || timelineData.length === 0 || !colorRange) return null;
+    const scale = createColorScale(timelineData, colorRange, colorScaleType);
+    console.log('Color scale created:', scale ? 'yes' : 'no', 'ColorRange:', colorRange);
+    return scale;
+  }, [timelineData, colorRange, colorScaleType]);
+
+  // create gradient stops for slider track
+  const gradientStops = useMemo(() => {
+    if (!timelineData || !timelineColorScale) return [];
+
+    const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
+    const currentMax = localViewMode === 'seasonal' ? normalizedTimeRange[1] : max;
+    const range = currentMax - currentMin;
+
+    const stops = timelineData.map(d => {
+      const position = ((d.time - currentMin) / range) * 100;
+      const color = timelineColorScale(d.value);
+      const rgbColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+      return { position, color: rgbColor };
+    });
+
+    console.log('Gradient stops:', stops);
+    return stops;
+  }, [timelineData, timelineColorScale, min, max, normalizedTimeRange, localViewMode]);
+
+  // create CSS gradient string
+  const gradientString = useMemo(() => {
+    if (gradientStops.length === 0) {
+      console.log('No gradient stops, using default color');
+      return 'linear-gradient(to right, #f5f1d8, #f5f1d8)';
+    }
+
+    // ensure we have stops at 0% and 100%
+    const stops = [...gradientStops];
+    if (stops[0]?.position > 0) {
+      stops.unshift({ position: 0, color: stops[0].color });
+    }
+    if (stops[stops.length - 1]?.position < 100) {
+      stops.push({ position: 100, color: stops[stops.length - 1].color });
+    }
+
+    const gradientParts = stops.map(stop => `${stop.color} ${stop.position}%`);
+    const gradient = `linear-gradient(to right, ${gradientParts.join(', ')})`;
+    console.log('Final gradient string:', gradient);
+    return gradient;
+  }, [gradientStops]);
 
   return (
     <Box
@@ -282,10 +469,27 @@ export default function RangeInput({
       </ToggleButtonGroup>
 
       <Slider
+        ref={sliderRef}
         sx={{
           marginLeft: 2,
           maxWidth: '40%',
           color: '#f5f1d8',
+          '& .MuiSlider-rail': {
+            opacity: 1,
+            background: gradientString,
+            height: '6px',
+          },
+          '& .MuiSlider-track': {
+            background: 'transparent',
+            border: 'none',
+          },
+          '& .MuiSlider-thumb': {
+            backgroundColor: '#fff',
+            border: '2px solid currentColor',
+            '&:hover, &.Mui-focusVisible': {
+              boxShadow: '0 0 0 8px rgba(245, 241, 216, 0.16)',
+            },
+          },
           '& .MuiSlider-valueLabel': {
             background: 'none',
             color: '#f5f1d8',
