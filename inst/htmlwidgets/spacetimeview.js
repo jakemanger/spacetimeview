@@ -62014,7 +62014,7 @@ function SpaceTimeViewer(_ref) {
     initialTimeMode = 'historical',
     ...props // Capture any other props
   } = _ref;
-  // Memoize the data transformation to prevent unnecessary re-renders
+  // memoize data transformation to prevent unnecessary re-renders
   const transformedData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     const convertedData = HTMLWidgets.dataframeToD3(data);
     return convertedData;
@@ -62222,7 +62222,7 @@ function SpaceTimeViewer(_ref) {
     enableClickedTooltips: clickedTooltipsEnabled
   }, set] = (0,leva__WEBPACK_IMPORTED_MODULE_2__.useControls)(() => controlsConfig, [data, initialStyle, initialColumnToPlot, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, factorLevels, controlNames, initialFilterColumn, draggableMenu, factorIcons, enableClickedTooltips]);
 
-  // if any input props change (e.g. shiny controlling the ui)
+  // update controls when input props change (e.g. shiny controlling the ui)
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     set({
       style: initialStyle,
@@ -62247,7 +62247,7 @@ function SpaceTimeViewer(_ref) {
     });
   }, [data, initialStyle, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, factorLevels, visibleControls, controlNames, initialFilterColumn, defaultFilterValue, draggableMenu, factorIcons, enableClickedTooltips]);
 
-  // Calculate information for the selected filter display
+  // calculate selected filter display info
   const selectedFilterDisplayInfo = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (filterColumn && factorLevels?.[filterColumn] && factorIcons?.[filterColumn] && filterColumnValues?.length > 0) {
       // Limit the number of displayed filters to avoid clutter
@@ -62276,7 +62276,7 @@ function SpaceTimeViewer(_ref) {
     return null;
   }, [filterColumn, filterColumnValues, factorLevels, factorIcons, transformedData]);
 
-  // Calculate effective column to plot for aggregate logic and legend title
+  // determine effective column for aggregate logic and legend title
   const effectiveColumnToPlot = columnsToPlotValues.length > 0 ? columnsToPlotValues.length === 1 ? columnsToPlotValues[0] : 'Combined' : columnNames.length > 0 ? columnNames[0] : 'value';
   const legendTitle = columnsToPlotValues.length > 1 ? `${columnsToPlotValues.join(' + ')}` : effectiveColumnToPlot;
   let aggregateToUse = factorLevels && factorLevels[effectiveColumnToPlot] ? factorAggregate : aggregate;
@@ -62398,7 +62398,7 @@ function SpaceTimeViewer(_ref) {
   }, [filterColumn, factorLevels, transformedData, defaultFilterValue]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (columnNames.length > 0) {
-      // Filter columns based on selectableColumns if provided
+      // filter columns based on selectableColumns if provided
       let availableColumns = columnNames;
       if (selectableColumns && selectableColumns.length > 0) {
         availableColumns = columnNames.filter(col => selectableColumns.includes(col));
@@ -62409,7 +62409,7 @@ function SpaceTimeViewer(_ref) {
       }));
       setColumnsToPlotOptions(options);
 
-      // Set initial value if not already set or if it needs to be updated
+      // set initial value if not already set
       if (columnsToPlotValues.length === 0) {
         // Try to use initialColumnToPlot if it's in the available columns
         if (availableColumns.includes(initialColumnToPlot)) {
@@ -62424,7 +62424,7 @@ function SpaceTimeViewer(_ref) {
     }
   }, [columnNames, initialColumnToPlot, selectableColumns]);
 
-  // Parse and log polygon data if available
+  // parse and log polygon data if available
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (polygons) {
       console.log('Polygon data provided to SpaceTimeViewer component:');
@@ -63055,7 +63055,7 @@ function SummaryPlot(_ref) {
   });
   const [mapKey, setMapKey] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0); // Force map re-render
 
-  // Adjust map dimensions after everything loads
+  // adjust map dimensions after everything loads
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     let lastStableHeight = window.innerHeight;
     let resizeTimeout;
@@ -63188,7 +63188,7 @@ function SummaryPlot(_ref) {
     };
   }, [isMobile, mapHeight]);
 
-  // process data for seasonal view (normalize dates to the same year)
+  // process data for seasonal view (normalize dates to same year)
   const normalizedData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (viewMode !== 'seasonal' || !data || data.length === 0) return data;
     return (0,_utils_dataUtils__WEBPACK_IMPORTED_MODULE_7__.normalizeDataByYear)(data);
@@ -63207,7 +63207,7 @@ function SummaryPlot(_ref) {
     }, [Infinity, -Infinity]);
   }, [normalizedData, timeRange, viewMode]);
 
-  // Color scale for scatter plots
+  // color scale for scatter plots
   const [minValue, maxValue] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (style === 'Scatter') {
       return (0,_utils_chartUtils__WEBPACK_IMPORTED_MODULE_6__.getMinMaxValues)(normalizedData, 'value');
@@ -63221,7 +63221,7 @@ function SummaryPlot(_ref) {
     return null;
   }, [minValue, maxValue, colorRange, style]);
 
-  // update colorbarDomain when initialColorDomain changes
+  // update colorbar domain when initial domain changes
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (initialColorDomain !== null) {
       setColorbarDomain(initialColorDomain);
@@ -63231,13 +63231,12 @@ function SummaryPlot(_ref) {
   // track domain initialization
   const domainInitializedRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    // When style changes, "refresh" the filter to trigger updates.
-    // Create a new array instance to ensure state change is detected.
+    // when style changes, refresh the filter to trigger updates
     setFilter(currentFilter => [...currentFilter]);
   }, [style]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     // reset domains when categorical variable changes
-    console.log('Resetting domains due to data, time filter, filterColumnValues, or aggregation change');
+    console.log('resetting domains due to data, time filter, filterColumnValues, or aggregation change');
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
     domainInitializedRef.current = false;
@@ -63372,7 +63371,7 @@ function SummaryPlot(_ref) {
       filter: [filter]
     }
   }),
-  // Add scatter layer for scatter plots
+  // scatter layer for scatter plots
   style === 'Scatter' && filter && new _deck_gl_layers__WEBPACK_IMPORTED_MODULE_19__["default"]({
     id: 'scatterplot',
     data: normalizedData,
@@ -63397,7 +63396,7 @@ function SummaryPlot(_ref) {
     pickable: true,
     billboard: true
   }),
-  // Add summary layers for summary plots
+  // summary layers for summary plots
   style === 'Summary' && (isGridView ? new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_20__["default"]({
     id: 'grid-heatmap',
     colorRange,
@@ -63480,7 +63479,7 @@ function SummaryPlot(_ref) {
   }
   const relevantFactorLevels = factorLevels && factorLevels[legendTitle] || null;
 
-  // use normalizedData when in seasonal view
+  // use normalized data when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
   const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
 
@@ -63499,7 +63498,7 @@ function SummaryPlot(_ref) {
 
   // return tooltip content for hover events
   const getTooltipContent = pickInfo => {
-    // if popup mode is enabled, disable hover tooltips
+    // disable hover tooltips if popup mode is enabled
     if (enableClickedTooltips) {
       return null;
     }
@@ -65587,7 +65586,7 @@ function ObservablePlotTooltip(_ref) {
     console.log('3. Observable code:', options.observable);
     console.log('4. Factor icons available:', options.factorIcons);
     try {
-      // Get the data for this tooltip
+      // get data for this tooltip
       const data = (0,_MapTooltip__WEBPACK_IMPORTED_MODULE_2__.getTooltipData)(object, options.allData, !isNaN(options.filter[0]), options.filter);
       console.log('5. Raw data from getTooltipData:', data);
       console.log('6. Data type:', typeof data);
@@ -65606,11 +65605,11 @@ function ObservablePlotTooltip(_ref) {
       console.log('13. Plot object available:', !!_observablehq_plot__WEBPACK_IMPORTED_MODULE_1__);
       console.log('14. Plot methods:', Object.getOwnPropertyNames(_observablehq_plot__WEBPACK_IMPORTED_MODULE_1__));
 
-      // Prepare factorIcons for the Observable function
+      // prepare factorIcons for the observable function
       const factorIcons = options.factorIcons || {};
       console.log('15. Factor icons being passed to Observable:', factorIcons);
 
-      // Better logging for factor icons structure
+      // log factor icons structure details
       if (factorIcons && typeof factorIcons === 'object') {
         console.log('16. Factor icon structure analysis:');
         Object.keys(factorIcons).forEach(column => {
@@ -65628,8 +65627,7 @@ function ObservablePlotTooltip(_ref) {
         });
       }
 
-      // Create a simple function context and execute the Observable code
-      // Now includes factorIcons and columnName as parameters
+      // create function context and execute observable code
       const columnName = options.columnName || null;
       console.log('16.5. Column name being passed to Observable:', columnName);
       const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', `
@@ -65671,7 +65669,7 @@ function ObservablePlotTooltip(_ref) {
       console.log('20. Chart is DOM element:', chart instanceof Element);
       console.log('21. Chart tagName:', chart ? chart.tagName : 'N/A');
 
-      // Clear and append the chart
+      // clear and append the chart
       containerRef.current.innerHTML = '';
       if (chart) {
         console.log('22. Appending chart to container...');
@@ -65809,7 +65807,7 @@ const durations = {
   Year: [0, 365 * 8.64e7]
 };
 
-// Aggregate data by time period
+// aggregate data by time period
 function aggregateDataByTime(data, duration, columnToPlot) {
   let aggregate = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'mean';
   let viewMode = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'historical';
@@ -65818,21 +65816,21 @@ function aggregateDataByTime(data, duration, columnToPlot) {
   console.log('AggregateDataByTime - columnToPlot:', columnToPlot, 'Sample data item:', data[0]);
   const timeRange = viewMode === 'seasonal' ? normalizedTimeRange : [Math.min(...data.map(d => new Date(d.timestamp).getTime())), Math.max(...data.map(d => new Date(d.timestamp).getTime()))];
 
-  // Determine bucket size based on duration
+  // determine bucket size based on duration
   let bucketSize;
   if (duration === 'All' || duration === 'Custom') {
-    // For All/Custom, create ~100 buckets across the range
+    // for All/Custom, create ~100 buckets across the range
     bucketSize = (timeRange[1] - timeRange[0]) / 100;
   } else {
     bucketSize = durations[duration][1] - durations[duration][0];
   }
 
-  // Create buckets
+  // create buckets
   const buckets = new Map();
   data.forEach(d => {
     const timestamp = new Date(d.timestamp).getTime();
     const bucketIndex = Math.floor((timestamp - timeRange[0]) / bucketSize);
-    const bucketTime = timeRange[0] + bucketIndex * bucketSize + bucketSize / 2; // Use bucket midpoint
+    const bucketTime = timeRange[0] + bucketIndex * bucketSize + bucketSize / 2; // use bucket midpoint
 
     if (!buckets.has(bucketIndex)) {
       buckets.set(bucketIndex, {
@@ -65841,14 +65839,14 @@ function aggregateDataByTime(data, duration, columnToPlot) {
       });
     }
 
-    // Get the value for the specified column - use 'value' as the column name since that's what the data has
+    // get the value for the specified column - use 'value' as the column name since that's what the data has
     const value = d.value;
     if (value !== null && value !== undefined && !isNaN(value)) {
       buckets.get(bucketIndex).values.push(Number(value));
     }
   });
 
-  // Aggregate values in each bucket
+  // aggregate values in each bucket
   const aggregatedData = [];
   buckets.forEach(bucket => {
     if (bucket.values.length > 0) {
@@ -65886,7 +65884,7 @@ function aggregateDataByTime(data, duration, columnToPlot) {
   return aggregatedData.sort((a, b) => a.time - b.time);
 }
 
-// Create color scale similar to the map
+// create color scale similar to the map
 function createColorScale(data, colorRange) {
   let colorScaleType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'quantize';
   if (!data || data.length === 0 || !colorRange) return null;
@@ -65895,7 +65893,7 @@ function createColorScale(data, colorRange) {
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
   if (colorScaleType === 'quantile') {
-    // Quantile scale
+    // quantile scale
     const sortedValues = [...values].sort((a, b) => a - b);
     const quantiles = colorRange.map((_, i) => {
       const index = Math.floor(i / (colorRange.length - 1) * (sortedValues.length - 1));
@@ -65910,7 +65908,7 @@ function createColorScale(data, colorRange) {
       return colorRange[0];
     };
   } else {
-    // Quantize scale (default)
+    // quantize scale (default)
     const step = (maxValue - minValue) / colorRange.length;
     return value => {
       if (value <= minValue) return colorRange[0];
@@ -65943,7 +65941,7 @@ function RangeInput(_ref) {
   const animationRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const sliderRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
 
-  // Sync localViewMode with prop
+  // sync localViewMode with prop
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     setLocalViewMode(viewMode);
     onChange([-Infinity, Infinity]);
@@ -65959,15 +65957,15 @@ function RangeInput(_ref) {
     return minDiff;
   }, [data]);
 
-  // Process data for seasonal view (normalize all dates to the same year)
+  // process data for seasonal view (normalize all dates to same year)
   const normalizedData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (localViewMode !== 'seasonal' || !data || data.length === 0) return data;
 
-    // Use a reference year (2000 as it's a leap year)
+    // use a reference year (2000 as it's a leap year)
     const referenceYear = 2000;
     return data.map(d => {
       const date = new Date(d.timestamp);
-      // Create a new date with the same month/day but reference year
+      // create a new date with the same month/day but reference year
       const normalizedDate = new Date(referenceYear, date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds());
       return {
         ...d,
@@ -65977,7 +65975,7 @@ function RangeInput(_ref) {
     });
   }, [data, localViewMode]);
 
-  // Calculate time range for the normalized data
+  // calculate time range for normalized data
   const normalizedTimeRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (localViewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
       return [min, max];
@@ -65990,13 +65988,13 @@ function RangeInput(_ref) {
     }, [Infinity, -Infinity]);
   }, [normalizedData, min, max, localViewMode]);
   const availableDurations = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
-    // Filter duration options based on minimum interval
+    // filter duration options based on minimum interval
     const filteredDurations = Object.entries(durations).filter(_ref2 => {
       let [key, [_, duration]] = _ref2;
       return duration >= minInterval;
     });
 
-    // If in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
+    // if in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
     if (localViewMode === 'seasonal') {
       return filteredDurations.filter(_ref3 => {
         let [key] = _ref3;
@@ -66019,7 +66017,7 @@ function RangeInput(_ref) {
     if (newMode !== null) {
       setLocalViewMode(newMode);
 
-      // If parent provided a handler, call it
+      // if parent provided a handler, call it
       if (onViewModeChange) {
         onViewModeChange(newMode);
       }
@@ -66065,21 +66063,21 @@ function RangeInput(_ref) {
     onChange([currentMin, currentMin + (newMax - newMin)]);
   };
 
-  // Format the label based on the view mode
+  // format label based on view mode
   const formatTimeLabel = timestamp => {
     const date = new Date(timestamp);
     if (localViewMode === 'seasonal') {
-      // For seasonal view, just show month and day
+      // for seasonal view, just show month and day
       return `${date.toLocaleString('default', {
         month: 'short'
       })} ${date.getDate()}`;
     } else {
-      // Use the provided formatter for historical view
+      // use the provided formatter for historical view
       return formatLabel(timestamp);
     }
   };
 
-  // Calculate aggregated data for the timeline visualization
+  // calculate aggregated data for timeline visualization
   const timelineData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!data || !colorRange) return [];
     const activeData = localViewMode === 'seasonal' ? normalizedData : data;
@@ -66088,7 +66086,7 @@ function RangeInput(_ref) {
     return aggregated;
   }, [data, normalizedData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange, colorRange]);
 
-  // Create color scale for the timeline
+  // create color scale for timeline
   const timelineColorScale = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!timelineData || timelineData.length === 0 || !colorRange) return null;
     const scale = createColorScale(timelineData, colorRange, colorScaleType);
@@ -66096,7 +66094,7 @@ function RangeInput(_ref) {
     return scale;
   }, [timelineData, colorRange, colorScaleType]);
 
-  // Create gradient stops for the slider track
+  // create gradient stops for slider track
   const gradientStops = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!timelineData || !timelineColorScale) return [];
     const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
@@ -66115,14 +66113,14 @@ function RangeInput(_ref) {
     return stops;
   }, [timelineData, timelineColorScale, min, max, normalizedTimeRange, localViewMode]);
 
-  // Create CSS gradient string
+  // create CSS gradient string
   const gradientString = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (gradientStops.length === 0) {
       console.log('No gradient stops, using default color');
       return 'linear-gradient(to right, #f5f1d8, #f5f1d8)';
     }
 
-    // Ensure we have stops at 0% and 100%
+    // ensure we have stops at 0% and 100%
     const stops = [...gradientStops];
     if (stops[0]?.position > 0) {
       stops.unshift({

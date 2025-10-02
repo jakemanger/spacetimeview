@@ -82,6 +82,9 @@
 #' @param polygons sf or list object. Optional. Polygons to display on the map,
 #'   such as state or country boundaries. Can be an sf object with POLYGON or
 #'   MULTIPOLYGON geometry or a list with GeoJSON structure.
+#' @param json_digits Integer. Number of decimal places to use when rounding
+#'   numeric data before JSON serialization. This reduces the size of the
+#'   generated HTML file. Default is 3. Set to NULL to disable rounding.
 #' @param observable Character. Optional. Observable Plot code to be executed
 #'   in tooltips or popups. The code has access to the following variables:
 #'   - `Plot`: The Observable Plot library object
@@ -301,8 +304,9 @@ spacetimeview <- function(
     plottable_columns = NULL,
     selectable_columns = NULL,
     polygons = NULL,
-    width = '100vw', 
-    height = '100vh', 
+    json_digits = 3,
+    width = '100vw',
+    height = '100vh',
     elementId = NULL,
     observable = '
       // default observable plot code - scatter if time data exists, histogram otherwise
@@ -749,6 +753,24 @@ spacetimeview <- function(
     }
   }
 
+  # round numeric columns to specified decimal places to reduce JSON size
+  # but keep integers as integers (don't convert factor indices to doubles)
+  if (!is.null(json_digits)) {
+    data <- data %>%
+      dplyr::mutate(dplyr::across(where(is.numeric) & !where(is.integer), ~ round(.x, json_digits)))
+  }
+
+  # calculate data size before JSON serialization
+  data_size_mb <- format(object.size(data), units = "MB")
+  print(paste('data object size (before JSON):', data_size_mb))
+
+  # log column types to verify factors are integers
+  factor_cols <- names(data)[sapply(data, is.integer)]
+  if (length(factor_cols) > 0) {
+    print(paste('Integer columns (factor indices):', length(factor_cols)))
+    print(paste('Sample values from first factor column:', paste(head(data[[factor_cols[1]]], 5), collapse=', ')))
+  }
+
   data_list <- purrr::transpose(data)
   print('starting ReactR plot')
   print(paste('plottable columns:', plottable_columns))
@@ -898,6 +920,12 @@ spacetimeview <- function(
     package = 'spacetimeview',
     elementId = elementId
   )
+
+  # estimate JSON payload size
+  widget_json <- jsonlite::toJSON(widget$x, auto_unbox = TRUE)
+  widget_json_chars <- nchar(widget_json)
+  widget_json_mb <- round(widget_json_chars / 1024 / 1024, 1)
+  print(paste('widget JSON payload:', widget_json_mb, 'MB', paste0('(', format(widget_json_chars, big.mark=','), ' characters)')))
   
   # Add SEO improvements if about_text is provided
   if (!is.null(about_text) && about_text != "") {
