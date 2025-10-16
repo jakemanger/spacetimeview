@@ -66268,8 +66268,11 @@ function RangeInput(_ref) {
         height: '6px'
       },
       '& .MuiSlider-track': {
-        background: 'transparent',
-        border: 'none'
+        backgroundColor: 'transparent',
+        border: '2px solid #fff',
+        '&:hover, &.Mui-focusVisible': {
+          boxShadow: '0 0 0 8px rgba(245, 241, 216, 0.16)'
+        }
       },
       '& .MuiSlider-thumb': {
         backgroundColor: '#fff',

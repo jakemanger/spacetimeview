@@ -191,7 +191,7 @@ export default function RangeInput({
   // process data for seasonal view (normalize all dates to same year)
   const normalizedData = useMemo(() => {
     if (localViewMode !== 'seasonal' || !data || data.length === 0) return data;
-    
+
     // use a reference year (2000 as it's a leap year)
     const referenceYear = 2000;
 
@@ -206,7 +206,7 @@ export default function RangeInput({
         date.getMinutes(),
         date.getSeconds()
       );
-      
+
       return {
         ...d,
         originalTimestamp: d.timestamp,
@@ -214,13 +214,13 @@ export default function RangeInput({
       };
     });
   }, [data, localViewMode]);
-  
+
   // calculate time range for normalized data
   const normalizedTimeRange = useMemo(() => {
     if (localViewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
       return [min, max];
     }
-    
+
     return normalizedData.reduce(
       (range, d) => {
         const t = new Date(d.timestamp).getTime();
@@ -235,12 +235,12 @@ export default function RangeInput({
   const availableDurations = useMemo(() => {
     // filter duration options based on minimum interval
     const filteredDurations = Object.entries(durations).filter(([key, [_, duration]]) => duration >= minInterval);
-    
+
     // if in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
     if (localViewMode === 'seasonal') {
       return filteredDurations.filter(([key]) => key !== 'Month');
     }
-    
+
     return filteredDurations;
   }, [minInterval, localViewMode]);
 
@@ -258,13 +258,13 @@ export default function RangeInput({
   const handleViewModeChange = (event, newMode) => {
     if (newMode !== null) {
       setLocalViewMode(newMode);
-      
+
       // if parent provided a handler, call it
       if (onViewModeChange) {
         onViewModeChange(newMode);
       }
-      
-        onChange([-Infinity, Infinity]);
+
+      onChange([-Infinity, Infinity]);
     }
   };
 
@@ -272,7 +272,7 @@ export default function RangeInput({
     const animate = () => {
       const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
       const currentMax = localViewMode === 'seasonal' ? normalizedTimeRange[1] : max;
-      
+
       let nextStartValue = value[0] + animationSpeed;
       let nextEndValue = value[1] + animationSpeed;
 
@@ -480,8 +480,11 @@ export default function RangeInput({
             height: '6px',
           },
           '& .MuiSlider-track': {
-            background: 'transparent',
-            border: 'none',
+            backgroundColor: 'transparent',
+            border: '2px solid #fff',
+            '&:hover, &.Mui-focusVisible': {
+              boxShadow: '0 0 0 8px rgba(245, 241, 216, 0.16)',
+            },
           },
           '& .MuiSlider-thumb': {
             backgroundColor: '#fff',
