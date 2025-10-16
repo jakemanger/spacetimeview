@@ -63230,17 +63230,20 @@ function SummaryPlot(_ref) {
 
   // track domain initialization
   const domainInitializedRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
+  const domainRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null); // Track current domain value synchronously
+
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     // when style changes, refresh the filter to trigger updates
     setFilter(currentFilter => [...currentFilter]);
   }, [style]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    // reset domains when categorical variable changes
-    console.log('resetting domains due to data, time filter, filterColumnValues, or aggregation change');
+    // reset domains when categorical variable changes (but not when filter changes - that's handled in updateTimeRange)
+    console.log('resetting domains due to data, filterColumnValues, or aggregation change');
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
     domainInitializedRef.current = false;
-  }, [data, filter, filterColumnValues, legendTitle, colorAggregation, elevationAggregation, style]);
+    domainRef.current = null;
+  }, [data, filterColumnValues, legendTitle, colorAggregation, elevationAggregation, style]);
   const directionalLight1 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_17__.DirectionalLight({
     color: [255, 255, 255],
     intensity: 0.4,
@@ -63257,10 +63260,20 @@ function SummaryPlot(_ref) {
     directionalLight2
   });
   function updateTimeRange(newFilter) {
-    if ((filter[0] !== newFilter[0] || filter[1] !== newFilter[1]) && (!factorLevels || !factorLevels[legendTitle])) {
+    // Calculate time span
+    const oldSpan = filter[1] - filter[0];
+    const newSpan = newFilter[1] - newFilter[0];
+    const spanChanged = oldSpan !== newSpan;
+
+    // If span changed, reset to recalculate fresh (regardless of preserveDomains)
+    if (spanChanged && (!factorLevels || !factorLevels[legendTitle])) {
       setInitialColorDomain(null);
       setInitialElevationDomain(null);
+      domainRef.current = null;
     }
+
+    // Always allow recalculation when filter changes
+    domainInitializedRef.current = false;
     setFilter(newFilter);
   }
   const aggregateRepeatedPoints = points => {
@@ -63315,20 +63328,41 @@ function SummaryPlot(_ref) {
       setInitialColorDomain(factorLevelsDomain);
       return;
     }
+    console.log('onSetColorDomain called:', {
+      colorDomain,
+      preserveDomains,
+      'domainRef.current': domainRef.current,
+      initialized: domainInitializedRef.current
+    });
 
-    // prevent multiple unnecessary domain sets
-    if (domainInitializedRef.current) return;
-
-    // apply domain preservation logic
-    if (preserveDomains && initialColorDomain !== null) {
-      const newDomain = [Math.min(colorDomain[0], initialColorDomain[0]), Math.max(colorDomain[1], initialColorDomain[1])];
-      setInitialColorDomain(newDomain);
+    // If preserveDomains, always try to expand (don't skip on subsequent calls)
+    if (preserveDomains) {
+      if (domainRef.current !== null) {
+        const newDomain = [Math.min(colorDomain[0], domainRef.current[0]), Math.max(colorDomain[1], domainRef.current[1])];
+        // Only update if the domain actually changed
+        if (newDomain[0] !== domainRef.current[0] || newDomain[1] !== domainRef.current[1]) {
+          console.log('Expanding domain from', domainRef.current, 'to', newDomain);
+          domainRef.current = newDomain;
+          setInitialColorDomain(newDomain);
+        }
+      } else {
+        // First time setting domain
+        console.log('Setting initial domain to:', colorDomain);
+        domainRef.current = colorDomain;
+        setInitialColorDomain(colorDomain);
+      }
       domainInitializedRef.current = true;
     } else {
+      // Without preserveDomains, only set once per render
+      if (domainInitializedRef.current) {
+        console.log('Domain already initialized, skipping');
+        return;
+      }
+      console.log('Setting fresh domain to:', colorDomain);
+      domainRef.current = colorDomain;
       setInitialColorDomain(colorDomain);
       domainInitializedRef.current = true;
     }
-    console.log('Setting color domain to:', colorDomain);
   };
   let updateTriggers = {
     getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
