@@ -65848,7 +65848,22 @@ function aggregateDataByTime(data, duration, columnToPlot) {
   let normalizedTimeRange = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
   if (!data || data.length === 0) return [];
   console.log('AggregateDataByTime - columnToPlot:', columnToPlot, 'Sample data item:', data[0]);
-  const timeRange = viewMode === 'seasonal' ? normalizedTimeRange : [Math.min(...data.map(d => new Date(d.timestamp).getTime())), Math.max(...data.map(d => new Date(d.timestamp).getTime()))];
+
+  // Calculate time range, with validation for seasonal mode
+  let timeRange;
+  if (viewMode === 'seasonal' && normalizedTimeRange && normalizedTimeRange[0] !== Infinity && normalizedTimeRange[1] !== -Infinity) {
+    timeRange = normalizedTimeRange;
+  } else {
+    // Calculate min/max without spread operator to avoid stack overflow with large datasets
+    const timestamps = data.map(d => new Date(d.timestamp).getTime());
+    timeRange = [timestamps.reduce((min, val) => val < min ? val : min, timestamps[0]), timestamps.reduce((max, val) => val > max ? val : max, timestamps[0])];
+  }
+
+  // Guard against invalid time ranges
+  if (!isFinite(timeRange[0]) || !isFinite(timeRange[1]) || timeRange[0] >= timeRange[1]) {
+    console.warn('Invalid time range:', timeRange);
+    return [];
+  }
 
   // determine bucket size based on duration
   let bucketSize;
@@ -65924,8 +65939,10 @@ function createColorScale(data, colorRange) {
   if (!data || data.length === 0 || !colorRange) return null;
   const values = data.map(d => d.value).filter(v => v !== null && v !== undefined);
   if (values.length === 0) return null;
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+
+  // Use reduce instead of spread to avoid stack overflow with large datasets
+  const minValue = values.reduce((min, val) => val < min ? val : min, values[0]);
+  const maxValue = values.reduce((max, val) => val > max ? val : max, values[0]);
   if (colorScaleType === 'quantile') {
     // quantile scale
     const sortedValues = [...values].sort((a, b) => a - b);
@@ -65975,10 +65992,15 @@ function RangeInput(_ref) {
   const animationRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const sliderRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
 
-  // sync localViewMode with prop
+  // sync localViewMode with prop and reset range when switching modes
+  const prevViewModeRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(viewMode);
+  const hasResetRangeRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    setLocalViewMode(viewMode);
-    onChange([-Infinity, Infinity]);
+    if (prevViewModeRef.current !== viewMode) {
+      setLocalViewMode(viewMode);
+      prevViewModeRef.current = viewMode;
+      hasResetRangeRef.current = false; // Allow range reset when mode changes
+    }
   }, [viewMode]);
   const minInterval = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!data || data.length < 2) return Infinity;
@@ -66012,15 +66034,27 @@ function RangeInput(_ref) {
   // calculate time range for normalized data
   const normalizedTimeRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (localViewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
-      return [min, max];
+      // Return null to signal we should use min/max from props
+      return null;
     }
-    return normalizedData.reduce((range, d) => {
-      const t = new Date(d.timestamp).getTime();
-      range[0] = Math.min(range[0], t);
-      range[1] = Math.max(range[1], t);
-      return range;
-    }, [Infinity, -Infinity]);
-  }, [normalizedData, min, max, localViewMode]);
+
+    // For seasonal view, use the full year range (Jan 1 - Dec 31 of reference year)
+    const referenceYear = 2000;
+    const yearStart = new Date(referenceYear, 0, 1, 0, 0, 0).getTime();
+    const yearEnd = new Date(referenceYear, 11, 31, 23, 59, 59).getTime();
+    return [yearStart, yearEnd];
+  }, [normalizedData, localViewMode]);
+
+  // Reset range when switching to seasonal mode with the full year range
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    if (localViewMode === 'seasonal' && normalizedTimeRange && !hasResetRangeRef.current) {
+      onChange([normalizedTimeRange[0], normalizedTimeRange[1]]);
+      hasResetRangeRef.current = true;
+    } else if (localViewMode === 'historical' && !hasResetRangeRef.current) {
+      onChange([-Infinity, Infinity]);
+      hasResetRangeRef.current = true;
+    }
+  }, [localViewMode, normalizedTimeRange]);
   const availableDurations = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     // filter duration options based on minimum interval
     const filteredDurations = Object.entries(durations).filter(_ref2 => {
@@ -66060,8 +66094,8 @@ function RangeInput(_ref) {
   };
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     const animate = () => {
-      const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
-      const currentMax = localViewMode === 'seasonal' ? normalizedTimeRange[1] : max;
+      const currentMin = localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[0] : min;
+      const currentMax = localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[1] : max;
       let nextStartValue = value[0] + animationSpeed;
       let nextEndValue = value[1] + animationSpeed;
       if (Math.abs(value[0] - value[1]) > (currentMax - currentMin) * 0.8) {
@@ -66093,7 +66127,7 @@ function RangeInput(_ref) {
       alert(`The selected duration is too short for the data. Minimum interval between data points is ${(minInterval / 1000).toFixed(2)} seconds.`);
       return;
     }
-    const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
+    const currentMin = localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[0] : min;
     onChange([currentMin, currentMin + (newMax - newMin)]);
   };
 
@@ -66115,10 +66149,11 @@ function RangeInput(_ref) {
   const timelineData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!data || !colorRange) return [];
     const activeData = localViewMode === 'seasonal' ? normalizedData : data;
-    const aggregated = aggregateDataByTime(activeData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange);
+    const timeRange = normalizedTimeRange || [min, max];
+    const aggregated = aggregateDataByTime(activeData, duration, columnToPlot, aggregate, localViewMode, timeRange);
     console.log('Timeline aggregated data:', aggregated);
     return aggregated;
-  }, [data, normalizedData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange, colorRange]);
+  }, [data, normalizedData, duration, columnToPlot, aggregate, localViewMode, normalizedTimeRange, colorRange, min, max]);
 
   // create color scale for timeline
   const timelineColorScale = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
@@ -66131,8 +66166,8 @@ function RangeInput(_ref) {
   // create gradient stops for slider track
   const gradientStops = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!timelineData || !timelineColorScale) return [];
-    const currentMin = localViewMode === 'seasonal' ? normalizedTimeRange[0] : min;
-    const currentMax = localViewMode === 'seasonal' ? normalizedTimeRange[1] : max;
+    const currentMin = localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[0] : min;
+    const currentMax = localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[1] : max;
     const range = currentMax - currentMin;
     const stops = timelineData.map(d => {
       const position = (d.time - currentMin) / range * 100;
@@ -66291,8 +66326,8 @@ function RangeInput(_ref) {
         transition: 'none'
       }
     },
-    min: localViewMode === 'seasonal' ? normalizedTimeRange[0] : min,
-    max: localViewMode === 'seasonal' ? normalizedTimeRange[1] : max,
+    min: localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[0] : min,
+    max: localViewMode === 'seasonal' && normalizedTimeRange ? normalizedTimeRange[1] : max,
     value: value,
     onChange: (e, newValue) => handleSliderChange(newValue),
     valueLabelDisplay: "on",
