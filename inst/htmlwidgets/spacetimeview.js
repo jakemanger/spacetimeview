@@ -62401,7 +62401,7 @@ function SpaceTimeViewer(_ref) {
       // filter columns based on selectableColumns if provided
       let availableColumns = columnNames;
       if (selectableColumns && selectableColumns.length > 0) {
-        // Preserve the order from selectableColumns instead of columnNames
+        // preserve the order from selectableColumns instead of columnNames
         availableColumns = selectableColumns.filter(col => columnNames.includes(col));
       }
       const options = availableColumns.map(column => ({
@@ -63232,7 +63232,7 @@ function SummaryPlot(_ref) {
   // track domain initialization
   const domainInitializedRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
   const domainRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null); // Track current domain value synchronously
-
+  const previousLegendTitleRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(legendTitle);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     // when style changes, refresh the filter to trigger updates
     setFilter(currentFilter => [...currentFilter]);
@@ -63322,6 +63322,16 @@ function SummaryPlot(_ref) {
   };
   const elevationFunction = getAggregationFunction(elevationAggregation, 0);
   const colorFunction = getAggregationFunction(colorAggregation, 0);
+
+  // Synchronously reset refs AND state when legendTitle changes (before layers are created)
+  if (previousLegendTitleRef.current !== legendTitle) {
+    console.log('legendTitle changed from', previousLegendTitleRef.current, 'to', legendTitle, '- resetting refs and forcing layer recreation');
+    domainRef.current = null;
+    domainInitializedRef.current = false;
+    setInitialColorDomain(null);
+    setInitialElevationDomain(null);
+    previousLegendTitleRef.current = legendTitle;
+  }
   const onSetColorDomain = colorDomain => {
     // if using factor levels, set a predefined domain
     if (factorLevels && factorLevels[legendTitle]) {
@@ -63433,7 +63443,7 @@ function SummaryPlot(_ref) {
   }),
   // summary layers for summary plots
   style === 'Summary' && (isGridView ? new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_20__["default"]({
-    id: 'grid-heatmap',
+    id: `grid-heatmap-${legendTitle}`,
     colorRange,
     coverage,
     data: normalizedData,
@@ -63459,7 +63469,7 @@ function SummaryPlot(_ref) {
     updateTriggers: updateTriggers,
     colorScaleType
   }) : new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_21__["default"]({
-    id: 'hex-heatmap',
+    id: `hex-heatmap-${legendTitle}`,
     colorRange,
     coverage,
     data: normalizedData,

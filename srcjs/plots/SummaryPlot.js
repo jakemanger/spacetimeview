@@ -333,6 +333,7 @@ export default function SummaryPlot({
   // track domain initialization
   const domainInitializedRef = useRef(false);
   const domainRef = useRef(null); // Track current domain value synchronously
+  const previousLegendTitleRef = useRef(legendTitle);
 
   useEffect(() => {
     // when style changes, refresh the filter to trigger updates
@@ -430,6 +431,15 @@ export default function SummaryPlot({
   const elevationFunction = getAggregationFunction(elevationAggregation, 0);
   const colorFunction = getAggregationFunction(colorAggregation, 0);
 
+  // Synchronously reset refs AND state when legendTitle changes (before layers are created)
+  if (previousLegendTitleRef.current !== legendTitle) {
+    console.log('legendTitle changed from', previousLegendTitleRef.current, 'to', legendTitle, '- resetting refs and forcing layer recreation');
+    domainRef.current = null;
+    domainInitializedRef.current = false;
+    setInitialColorDomain(null);
+    setInitialElevationDomain(null);
+    previousLegendTitleRef.current = legendTitle;
+  }
 
   const onSetColorDomain = (colorDomain) => {
     // if using factor levels, set a predefined domain
@@ -551,7 +561,7 @@ export default function SummaryPlot({
     // summary layers for summary plots
     style === 'Summary' && (isGridView
       ? new GridLayer({
-        id: 'grid-heatmap',
+        id: `grid-heatmap-${legendTitle}`,
         colorRange,
         coverage,
         data: normalizedData,
@@ -578,7 +588,7 @@ export default function SummaryPlot({
         colorScaleType
       })
       : new HexagonLayer({
-        id: 'hex-heatmap',
+        id: `hex-heatmap-${legendTitle}`,
         colorRange,
         coverage,
         data: normalizedData,
