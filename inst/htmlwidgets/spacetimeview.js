@@ -62401,7 +62401,8 @@ function SpaceTimeViewer(_ref) {
       // filter columns based on selectableColumns if provided
       let availableColumns = columnNames;
       if (selectableColumns && selectableColumns.length > 0) {
-        availableColumns = columnNames.filter(col => selectableColumns.includes(col));
+        // Preserve the order from selectableColumns instead of columnNames
+        availableColumns = selectableColumns.filter(col => columnNames.includes(col));
       }
       const options = availableColumns.map(column => ({
         value: column,
