@@ -32,12 +32,18 @@ function aggregateDataByTime(data, duration, columnToPlot, aggregate = 'mean', v
 
   console.log('AggregateDataByTime - columnToPlot:', columnToPlot, 'Sample data item:', data[0]);
 
-  // Calculate time range, with validation for seasonal mode
+  // can't aggregate by time without timestamps
+  if (!data[0] || !data[0].timestamp) {
+    console.warn('Data does not have timestamps, cannot aggregate by time');
+    return [];
+  }
+
+  // calculate time range, with validation for seasonal mode
   let timeRange;
   if (viewMode === 'seasonal' && normalizedTimeRange && normalizedTimeRange[0] !== Infinity && normalizedTimeRange[1] !== -Infinity) {
     timeRange = normalizedTimeRange;
   } else {
-    // Calculate min/max without spread operator to avoid stack overflow with large datasets
+    // calculate min/max without spread to avoid stack overflow on large datasets
     const timestamps = data.map(d => new Date(d.timestamp).getTime());
     timeRange = [
       timestamps.reduce((min, val) => val < min ? val : min, timestamps[0]),
@@ -45,7 +51,7 @@ function aggregateDataByTime(data, duration, columnToPlot, aggregate = 'mean', v
     ];
   }
 
-  // Guard against invalid time ranges
+  // bail on invalid time ranges
   if (!isFinite(timeRange[0]) || !isFinite(timeRange[1]) || timeRange[0] >= timeRange[1]) {
     console.warn('Invalid time range:', timeRange);
     return [];
@@ -75,7 +81,7 @@ function aggregateDataByTime(data, duration, columnToPlot, aggregate = 'mean', v
       });
     }
 
-    // get the value for the specified column - use 'value' as the column name since that's what the data has
+    // get value from 'value' column (this is what the data has)
     const value = d.value;
     if (value !== null && value !== undefined && !isNaN(value)) {
       buckets.get(bucketIndex).values.push(Number(value));
@@ -128,7 +134,7 @@ function createColorScale(data, colorRange, colorScaleType = 'quantize') {
   const values = data.map(d => d.value).filter(v => v !== null && v !== undefined);
   if (values.length === 0) return null;
 
-  // Use reduce instead of spread to avoid stack overflow with large datasets
+  // use reduce instead of spread to avoid stack overflow with large datasets
   const minValue = values.reduce((min, val) => val < min ? val : min, values[0]);
   const maxValue = values.reduce((max, val) => val > max ? val : max, values[0]);
 
@@ -194,12 +200,16 @@ export default function RangeInput({
     if (prevViewModeRef.current !== viewMode) {
       setLocalViewMode(viewMode);
       prevViewModeRef.current = viewMode;
-      hasResetRangeRef.current = false; // Allow range reset when mode changes
+      hasResetRangeRef.current = false; // allow range reset when mode changes
     }
   }, [viewMode]);
 
   const minInterval = useMemo(() => {
     if (!data || data.length < 2) return Infinity;
+
+    // bail if no timestamps
+    if (!data[0] || !data[0].timestamp) return Infinity;
+
     const sortedTimestamps = data.map(d => new Date(d.timestamp).getTime()).sort((a, b) => a - b);
     let minDiff = Infinity;
     for (let i = 1; i < sortedTimestamps.length; i++) {
@@ -213,12 +223,22 @@ export default function RangeInput({
   const normalizedData = useMemo(() => {
     if (localViewMode !== 'seasonal' || !data || data.length === 0) return data;
 
-    // use a reference year (2000 as it's a leap year)
+    // return unchanged if no timestamps
+    if (!data[0] || !data[0].timestamp) return data;
+
+    // use 2000 as reference year (it's a leap year)
     const referenceYear = 2000;
 
     return data.map(d => {
+      // skip normalization if no timestamp
+      if (!d.timestamp) return d;
+
       const date = new Date(d.timestamp);
-      // create a new date with the same month/day but reference year
+
+      // skip if invalid date
+      if (isNaN(date.getTime())) return d;
+
+      // create new date with same month/day but reference year
       const normalizedDate = new Date(
         referenceYear,
         date.getMonth(),
@@ -239,11 +259,11 @@ export default function RangeInput({
   // calculate time range for normalized data
   const normalizedTimeRange = useMemo(() => {
     if (localViewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
-      // Return null to signal we should use min/max from props
+      // return null to signal we should use min/max from props
       return null;
     }
 
-    // For seasonal view, use the full year range (Jan 1 - Dec 31 of reference year)
+    // for seasonal view, use full year range (jan 1 - dec 31 of reference year)
     const referenceYear = 2000;
     const yearStart = new Date(referenceYear, 0, 1, 0, 0, 0).getTime();
     const yearEnd = new Date(referenceYear, 11, 31, 23, 59, 59).getTime();
@@ -251,7 +271,7 @@ export default function RangeInput({
     return [yearStart, yearEnd];
   }, [normalizedData, localViewMode]);
 
-  // Reset range when switching to seasonal mode with the full year range
+  // reset range when switching modes
   useEffect(() => {
     if (localViewMode === 'seasonal' && normalizedTimeRange && !hasResetRangeRef.current) {
       onChange([normalizedTimeRange[0], normalizedTimeRange[1]]);
@@ -266,7 +286,7 @@ export default function RangeInput({
     // filter duration options based on minimum interval
     const filteredDurations = Object.entries(durations).filter(([key, [_, duration]]) => duration >= minInterval);
 
-    // if in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
+    // remove Month option in seasonal view (doesn't make sense in year-normalized context)
     if (localViewMode === 'seasonal') {
       return filteredDurations.filter(([key]) => key !== 'Month');
     }
@@ -289,7 +309,7 @@ export default function RangeInput({
     if (newMode !== null) {
       setLocalViewMode(newMode);
 
-      // if parent provided a handler, call it
+      // call parent handler if provided
       if (onViewModeChange) {
         onViewModeChange(newMode);
       }
@@ -346,10 +366,10 @@ export default function RangeInput({
   const formatTimeLabel = (timestamp) => {
     const date = new Date(timestamp);
     if (localViewMode === 'seasonal') {
-      // for seasonal view, just show month and day
+      // just show month and day for seasonal view
       return `${date.toLocaleString('default', { month: 'short' })} ${date.getDate()}`;
     } else {
-      // use the provided formatter for historical view
+      // use provided formatter for historical view
       return formatLabel(timestamp);
     }
   };
@@ -399,7 +419,7 @@ export default function RangeInput({
       return 'linear-gradient(to right, #f5f1d8, #f5f1d8)';
     }
 
-    // ensure we have stops at 0% and 100%
+    // make sure we have stops at 0% and 100%
     const stops = [...gradientStops];
     if (stops[0]?.position > 0) {
       stops.unshift({ position: 0, color: stops[0].color });

@@ -4,6 +4,9 @@
 #'
 #' @param ... spacetimeview objects to combine
 #' @param tab_titles Character vector of tab titles. If not provided, default titles will be used.
+#' @param split_data Logical. If TRUE, splits data into separate JSON files for lazy loading. Default is TRUE.
+#' @param split_by_column Logical. If TRUE and split_data is TRUE, creates separate JSON files for each plottable column (EXPERIMENTAL). Default is FALSE.
+#' @param data_dir Character. Directory name for data files relative to HTML output. Default is "data".
 #' @param width Width of the widget
 #' @param height Height of the widget
 #' @param elementId Optional element ID for the widget
@@ -13,6 +16,9 @@
 spacetimetabs <- function(
   ...,
   tab_titles = NULL,
+  split_data = TRUE,
+  split_by_column = FALSE,  # Default to FALSE - split by tab only (column splitting is experimental)
+  data_dir = "data",
   width = '100vw',
   height = '100vh',
   elementId = NULL
@@ -20,13 +26,13 @@ spacetimetabs <- function(
   # get the spacetimeview objects
   views <- list(...)
   views <- views[[1]]
-  # check if the input is from the + operator (SpacetimeviewList)
+  # handle input from + operator (SpacetimeviewList)
   if (length(views$views) > 1 && inherits(views, "SpacetimeviewList")) {
     tab_titles <- views$tab_titles %||% tab_titles
     views <- views$views
   }
 
-  # validate
+  # validate input
   if (length(views) == 0) {
     stop("No spacetimeview objects provided")
   }
@@ -36,7 +42,7 @@ spacetimetabs <- function(
     stop("All objects must be spacetimeview objects")
   }
 
-  # generate default tab titles if not provided
+  # use default tab titles if not provided
   if (is.null(tab_titles)) {
     tab_titles <- paste("Tab", seq_along(views))
   } else if (length(tab_titles) != length(views)) {
@@ -49,42 +55,155 @@ spacetimetabs <- function(
     tab_titles <- paste("Tab", seq_along(views))
   }
 
-  # extract configuration from each spacetimeview object
-  view_configs <- lapply(views, function(view) {
-    config <- view$x$tag$attribs
+  # extract config from each view
+  view_configs <- lapply(seq_along(views), function(i) {
+    tryCatch({
+      view <- views[[i]]
+      config <- view$x$tag$attribs
+
+      # save data to separate json files if split_data is enabled
+      if (split_data && !is.null(config$data)) {
+      # config$data is in column-oriented format (list where each element is a vector)
+      # this is the raw dataframe passed as a list, not purrr::transpose format
+      original_data <- config$data
+
+      message(paste("Processing tab", i, "- data has", length(original_data), "columns"))
+      if (length(original_data) == 0 || is.null(names(original_data))) {
+        message("  No data or unnamed data, skipping...")
+        return(config)
+      }
+
+      message(paste("  Column names:", paste(names(original_data), collapse=", ")))
+      message(paste("  First column length:", length(original_data[[1]])))
+
+      # create data directory if needed
+      if (!dir.exists(data_dir)) {
+        dir.create(data_dir, recursive = TRUE)
+      }
+
+      if (split_by_column) {
+        # split by column: one file per selectable column (experimental)
+        selectable_cols <- config$selectableColumns
+        if (is.null(selectable_cols)) {
+          # use all plottable columns if none specified
+          all_cols <- names(original_data)
+          selectable_cols <- setdiff(all_cols, c('lat', 'lng', 'timestamp'))
+        }
+
+        # create mapping of column name -> file path
+        data_files <- list()
+        for (col in selectable_cols) {
+          # sanitize column name for filename
+          safe_col_name <- gsub("[^A-Za-z0-9_]", "_", col)
+          filename <- paste0("tab_", i-1, "_", safe_col_name, ".json")
+          filepath <- file.path(data_dir, filename)
+
+          # get required base columns
+          required_cols <- c('lat', 'lng')
+          if ('timestamp' %in% names(original_data)) {
+            required_cols <- c(required_cols, 'timestamp')
+          }
+
+          # add the column and related columns (like _lower, _upper, _pred_lower, _pred_upper)
+          col_pattern <- paste0("^", gsub("([.|()\\^{}+$*?])", "\\\\\\1", col), "(_.*)?$")
+          related_cols <- grep(col_pattern, names(original_data), value = TRUE)
+          cols_to_include <- unique(c(required_cols, related_cols))
+
+          # extract just these columns
+          column_data <- original_data[cols_to_include]
+
+          # write to json in column-oriented format (more compact)
+          json_string <- jsonlite::toJSON(
+            column_data,
+            dataframe = "columns",
+            auto_unbox = TRUE,
+            digits = config$jsonDigits %||% 3,
+            pretty = FALSE
+          )
+          writeLines(json_string, filepath)
+
+          # store relative path for html
+          data_files[[col]] <- filename  # relative to data_dir
+        }
+
+        # replace inline data with dataFiles mapping
+        config$data <- NULL
+        config$dataFiles <- data_files
+        config$dataDir <- data_dir
+
+      } else {
+        # split by tab only: one file per tab
+        filename <- paste0("tab_", i-1, "_data.json")
+        filepath <- file.path(data_dir, filename)
+
+        # write to json in column-oriented format
+        json_string <- jsonlite::toJSON(
+          original_data,
+          dataframe = "columns",
+          auto_unbox = TRUE,
+          digits = config$jsonDigits %||% 3,
+          pretty = FALSE
+        )
+        writeLines(json_string, filepath)
+
+        # replace inline data with dataUrl
+        config$data <- NULL
+        config$dataUrl <- filename  # relative to data_dir
+        config$dataDir <- data_dir
+      }
+    }
+
     return(config)
+    }, error = function(e) {
+      message(paste("Error processing view", i, ":", e$message))
+      traceback()
+      stop(e)
+    })
   })
 
-  # then pass to the SpaceTimeTabs component
-  component <- reactR::component("SpaceTimeTabs", list(
-    viewConfigs = view_configs,
-    titles = tab_titles
-  ))
+  # pass configs to spacetimetabs component
+  message(paste("Creating tabs component with", length(view_configs), "views"))
 
-  htmlwidgets::createWidget(
-    name = 'spacetimeview',
-    reactR::reactMarkup(component),
-    width = width,
-    height = height,
-    package = 'spacetimeview',
-    elementId = elementId
-  )
+  tryCatch({
+    component <- reactR::component("SpaceTimeTabs", list(
+      viewConfigs = view_configs,
+      titles = tab_titles
+    ))
+
+    message("Creating widget...")
+    widget <- htmlwidgets::createWidget(
+      name = 'spacetimeview',
+      reactR::reactMarkup(component),
+      width = width,
+      height = height,
+      package = 'spacetimeview',
+      elementId = elementId
+    )
+
+    message("Widget created successfully")
+    return(widget)
+  }, error = function(e) {
+    message("Error creating tabs widget:")
+    message(e$message)
+    print(traceback())
+    stop(e)
+  })
 }
 
 #' @export
 `+.spacetimeview` <- function(e1, e2) {
-  # check if e2 is a spacetimeview object
+  # validate e2 is a spacetimeview object
   if (!inherits(e2, "spacetimeview")) {
     stop("Can only add spacetimeview objects together")
   }
 
-  # check if e1 is already a SpacetimeviewList
+  # add to existing list if e1 is already a SpacetimeviewList
   if (inherits(e1, "SpacetimeviewList")) {
     e1$views <- c(e1$views, list(e2))
     return(e1)
   }
 
-  # create a new SpacetimeviewList
+  # create new list
   result <- structure(
     list(
       views = list(e1, e2),
@@ -202,7 +321,7 @@ renderSpacetimetabs <- function(expr, env = parent.frame(), quoted = FALSE) {
   htmlwidgets::shinyRenderWidget(expr, spacetimetabsOutput, env, quoted = TRUE)
 }
 
-# Utility for NULL coalescing
+# null coalescing utility
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }

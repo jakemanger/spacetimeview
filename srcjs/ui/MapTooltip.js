@@ -56,34 +56,33 @@ function generateTooltipHTML({ object, layer, options, isStaticMode = false }) {
 
   if (!object) return null;
 
-  // If custom tooltip content is provided, use it
-  // This case is now handled by the ObservablePlotTooltip component
+  // custom tooltip content is now handled by ObservablePlotTooltip component
   if (observable && isStaticMode) {
      return null;
   }
 
-  // Check if aggregation layer (HexagonLayer/GridLayer)
+  // check if aggregation layer (HexagonLayer/GridLayer)
   if (object.points && object.position) {
     return generateAggregateHTML(
-      object, 
-      colorAggregation, 
-      filter, 
-      hasTime, 
-      factorLevels, 
-      factorIcons, 
-      columnName, 
-      filterColumn, 
+      object,
+      colorAggregation,
+      filter,
+      hasTime,
+      factorLevels,
+      factorIcons,
+      columnName,
+      filterColumn,
       allData,
       isStaticMode
     );
   }
 
-  // For point data (ScatterplotLayer)
+  // for point data (ScatterplotLayer)
   return generatePointHTML(object, hasTime, factorLevels, factorIcons, columnName);
 }
 
 
-// --- Data Processing for Observable Plots ---
+// --- data processing for observable plots ---
 
 export function getTooltipData(object, allData, hasTime, filter) {
   console.log('--- getTooltipData DEBUG ---');
@@ -98,38 +97,40 @@ export function getTooltipData(object, allData, hasTime, filter) {
     return [];
   }
   
-  // If it's an aggregated object (hexagon/grid), extract points from that cell
+  // for aggregated objects (hexagon/grid), extract points from cell
   if (object.points && object.position) {
     let points = object.points;
     console.log('Processing aggregated object with', points.length, 'points');
-    
-    // Extract the source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
+
+    // extract source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
     let sourceData = points.map(point => point.source || point);
     console.log('Extracted source data:', sourceData);
     console.log('Source data length:', sourceData.length);
-    
-    // Apply time filter if we have time data
-    if (hasTime && filter) {
+
+    // apply time filter if we have time data AND the data actually has timestamps
+    if (hasTime && filter && sourceData.length > 0 && sourceData[0].timestamp) {
       const beforeFilter = sourceData.length;
       sourceData = sourceData.filter(d => {
+        if (!d.timestamp) return true; // keep data without timestamps
         const timestamp = new Date(d.timestamp).getTime();
+        if (isNaN(timestamp)) return true; // keep data with invalid timestamps
         return timestamp >= filter[0] && timestamp <= filter[1];
       });
       console.log('Applied time filter: from', beforeFilter, 'to', sourceData.length, 'items');
     }
-    
+
     console.log('Final source data for aggregated:', sourceData);
     return sourceData;
   }
-  
-  // For individual points, return the object as an array
+
+  // for individual points, return as array
   console.log('Processing individual point');
   const result = [object];
   console.log('Returning single object as array:', result);
   return result;
 }
 
-// --- Main Exported Functions for Use by Components ---
+// --- main exported functions for use by components ---
 
 export function getTooltip({ object, layer }, options = {}) {
   if (!object) {
@@ -140,7 +141,7 @@ export function getTooltip({ object, layer }, options = {}) {
 
 export function getStaticTooltip(pickInfo, options) {
   if (options.observable) {
-    // This case is handled by the dedicated ObservablePlotTooltip component in SummaryPlot.js
+    // handled by ObservablePlotTooltip component in SummaryPlot.js
     return null;
   }
   return generateTooltipHTML({
@@ -151,12 +152,12 @@ export function getStaticTooltip(pickInfo, options) {
   });
 }
 
-export function createObservablePlot(chartId, plot, Plot, retryCount = 0) { // Accept Plot as an argument
+export function createObservablePlot(chartId, plot, Plot, retryCount = 0) { // accept Plot as argument
   const container = document.getElementById(chartId);
   if (container) {
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; // clear previous content
     try {
-      // The plot function receives the Plot object as an argument
+      // plot function receives Plot object as argument
       const chart = typeof plot === 'function' ? plot(Plot) : plot;
       if (chart) {
         container.appendChild(chart);
@@ -168,7 +169,7 @@ export function createObservablePlot(chartId, plot, Plot, retryCount = 0) { // A
       container.innerHTML = `<div style="color: red; padding: 10px;">Error: ${e.message}</div>`;
     }
   } else {
-    // Retry up to 3 times with increasing delays
+    // retry up to 3 times with increasing delays
     if (retryCount < 3) {
       console.warn(`Plot container not found, retrying in ${(retryCount + 1) * 50}ms: ${chartId}`);
       setTimeout(() => {

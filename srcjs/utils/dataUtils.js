@@ -59,9 +59,21 @@ export function formatNumber(value, decimals = 2) {
  */
 export function normalizeDataByYear(data, referenceYear = 2000) {
   if (!data || data.length === 0) return data;
-  
+
   return data.map(d => {
+    // return unchanged if no timestamp
+    if (!d.timestamp) {
+      return d;
+    }
+
     const date = new Date(d.timestamp);
+
+    // validate date
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid timestamp found in data:', d.timestamp);
+      return d;
+    }
+
     const normalizedDate = new Date(
       referenceYear,
       date.getMonth(),
@@ -70,7 +82,7 @@ export function normalizeDataByYear(data, referenceYear = 2000) {
       date.getMinutes(),
       date.getSeconds()
     );
-    
+
     return {
       ...d,
       originalTimestamp: d.timestamp,

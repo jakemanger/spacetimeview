@@ -49,6 +49,9 @@ function getNested(obj, ...args) {
 
 export default function SpaceTimeViewer({
   data = [],
+  dataFiles = null,  // Object mapping column names to file paths (for split_by_column=TRUE)
+  dataUrl = null,    // Single file path for all data (for split_by_column=FALSE)
+  dataDir = 'data',  // Directory where data files are stored
   initialStyle = 'Summary',
   initialColumnToPlot = 'value',
   initialAggregate = 'MEAN',
@@ -107,6 +110,9 @@ export default function SpaceTimeViewer({
   tabTitles = [],
   activeTab = 0,
   onTabChange = () => { },
+  tabIndex = 0,  // Index of this tab (for shared state namespacing)
+  sharedLoadedData = null,  // Shared loaded data state from parent
+  setSharedLoadedData = null,  // Setter for shared loaded data
   observable = null,
   countryCodes = null,
   legendOrder = null,
@@ -120,11 +126,74 @@ export default function SpaceTimeViewer({
   initialTimeMode = 'historical',
   ...props // Capture any other props
 }) {
+  // If we have shared state from parent (tabs), use it; otherwise use local state
+  const [localLoadedData, setLocalLoadedData] = useState({});
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [loadingColumn, setLoadingColumn] = useState(null);
+
+  // Determine which state to use and how to namespace keys
+  const usingSharedState = sharedLoadedData !== null && setSharedLoadedData !== null;
+
+  // Get this tab's data from shared state, or use local state
+  const loadedData = usingSharedState
+    ? Object.keys(sharedLoadedData)
+        .filter(key => key.startsWith(`tab_${tabIndex}_`))
+        .reduce((acc, key) => {
+          const columnName = key.replace(`tab_${tabIndex}_`, '');
+          acc[columnName] = sharedLoadedData[key];
+          return acc;
+        }, {})
+    : localLoadedData;
+
+  // Function to update loaded data (handles both shared and local state)
+  const updateLoadedData = (columnName, data) => {
+    if (usingSharedState) {
+      const key = `tab_${tabIndex}_${columnName}`;
+      setSharedLoadedData(prev => ({
+        ...prev,
+        [key]: data
+      }));
+    } else {
+      setLocalLoadedData(prev => ({
+        ...prev,
+        [columnName]: data
+      }));
+    }
+  };
+
+  // State for columns to plot selection - MUST be before transformedData useMemo
+  const [columnsToPlotValues, setColumnsToPlotValues] = useState([]);
+  const [columnsToPlotOptions, setColumnsToPlotOptions] = useState([]);
+
   // memoize data transformation to prevent unnecessary re-renders
   const transformedData = useMemo(() => {
+    // If we have data loaded from dataUrl (split_by_column=FALSE), use it
+    if (dataUrl && loadedData['__all__']) {
+      console.log(`transformedData: using data from dataUrl with ${loadedData['__all__'].length} rows`);
+      return loadedData['__all__'];
+    }
+
+    // If we have dataFiles, use the loaded data for the selected column
+    if (dataFiles && Object.keys(loadedData).length > 0 && columnsToPlotValues.length > 0) {
+      // Get the first selected column (for now we only support one column at a time with lazy loading)
+      const selectedColumn = columnsToPlotValues[0];
+
+      if (loadedData[selectedColumn]) {
+        console.log(`transformedData: using lazy-loaded data for column "${selectedColumn}" with ${loadedData[selectedColumn].length} rows`);
+        return loadedData[selectedColumn];
+      }
+
+      // If selected column isn't loaded yet, fall back to any loaded data
+      const firstAvailableColumn = Object.keys(loadedData)[0];
+      console.log(`transformedData: selected column "${selectedColumn}" not loaded yet, using "${firstAvailableColumn}"`);
+      return loadedData[firstAvailableColumn];
+    }
+
+    // Otherwise, just use inline data (already in D3 format from R)
+    console.log('transformedData: using inline data');
     const convertedData = HTMLWidgets.dataframeToD3(data);
     return convertedData;
-  }, [data]);
+  }, [data, dataFiles, dataUrl, loadedData, columnsToPlotValues]);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -155,10 +224,6 @@ export default function SpaceTimeViewer({
 
   const [filterColumnValues, setFilterColumnValues] = useState([]);
   const [filterOptions, setFilterOptions] = useState([]);
-
-  // Add new state for columns to plot selection
-  const [columnsToPlotValues, setColumnsToPlotValues] = useState([]);
-  const [columnsToPlotOptions, setColumnsToPlotOptions] = useState([]);
 
   const columnNames = useMemo(() => {
     if (transformedData.length === 0) return [];
@@ -598,14 +663,27 @@ export default function SpaceTimeViewer({
   }, [filterColumn, factorLevels, transformedData, defaultFilterValue]);
 
   useEffect(() => {
-    if (columnNames.length > 0) {
-      // filter columns based on selectableColumns if provided
-      let availableColumns = columnNames;
+    // Determine available columns based on dataFiles or columnNames
+    let availableColumns = [];
+
+    if (dataFiles && Object.keys(dataFiles).length > 0) {
+      // Use column names from dataFiles
+      availableColumns = Object.keys(dataFiles);
+
+      // Apply selectableColumns filter if provided
+      if (selectableColumns && selectableColumns.length > 0) {
+        availableColumns = selectableColumns.filter(col => availableColumns.includes(col));
+      }
+    } else if (columnNames.length > 0) {
+      // Use columnNames from inline data
+      availableColumns = columnNames;
       if (selectableColumns && selectableColumns.length > 0) {
         // preserve the order from selectableColumns instead of columnNames
         availableColumns = selectableColumns.filter(col => columnNames.includes(col));
       }
+    }
 
+    if (availableColumns.length > 0) {
       const options = availableColumns.map(column => ({
         value: column,
         label: column
@@ -625,7 +703,90 @@ export default function SpaceTimeViewer({
       setColumnsToPlotOptions([]);
       setColumnsToPlotValues([]);
     }
-  }, [columnNames, initialColumnToPlot, selectableColumns]);
+  }, [columnNames, initialColumnToPlot, selectableColumns, dataFiles]);
+
+  // Load data from dataUrl (for split_by_column=FALSE)
+  useEffect(() => {
+    if (!dataUrl) {
+      return; // No dataUrl to load
+    }
+
+    // Check if this specific data is already loaded
+    if (loadedData['__all__']) {
+      console.log('Data already loaded from cache');
+      return;
+    }
+
+    const filepath = dataDir ? `${dataDir}/${dataUrl}` : dataUrl;
+    console.log(`Loading data from dataUrl: ${filepath}`);
+    setIsLoadingData(true);
+
+    fetch(filepath, { cache: 'force-cache' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${filepath}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(jsonData => {
+        // Convert from column-oriented format to row-oriented D3 format
+        const d3Data = HTMLWidgets.dataframeToD3(jsonData);
+        console.log(`Loaded data from dataUrl:`, d3Data.length, 'rows');
+        // Store it with a special key since there's no specific column
+        updateLoadedData('__all__', d3Data);
+        setIsLoadingData(false);
+      })
+      .catch(error => {
+        console.error(`Error loading data from dataUrl:`, error);
+        setIsLoadingData(false);
+      });
+  }, [dataUrl, dataDir]);
+
+  // Fetch data when columnsToPlotValues changes and dataFiles is provided
+  useEffect(() => {
+    if (!dataFiles || !columnsToPlotValues || columnsToPlotValues.length === 0) {
+      return;
+    }
+
+    // Determine which columns need to be loaded
+    const columnsToLoad = columnsToPlotValues.filter(col =>
+      !loadedData[col] && dataFiles[col]
+    );
+
+    if (columnsToLoad.length === 0) {
+      return; // All required data is already loaded
+    }
+
+    // Load the first missing column
+    const columnToLoad = columnsToLoad[0];
+    const filename = dataFiles[columnToLoad];
+    const filepath = dataDir ? `${dataDir}/${filename}` : filename;
+
+    console.log(`Loading data for column: ${columnToLoad} from ${filepath}`);
+    setIsLoadingData(true);
+    setLoadingColumn(columnToLoad);
+
+    fetch(filepath, { cache: 'force-cache' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${filepath}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(columnData => {
+        // Convert from column-oriented format to row-oriented D3 format
+        const d3Data = HTMLWidgets.dataframeToD3(columnData);
+        console.log(`Loaded data for column: ${columnToLoad}`, d3Data.length, 'rows');
+        updateLoadedData(columnToLoad, d3Data);
+        setIsLoadingData(false);
+        setLoadingColumn(null);
+      })
+      .catch(error => {
+        console.error(`Error loading data for column ${columnToLoad}:`, error);
+        setIsLoadingData(false);
+        setLoadingColumn(null);
+      });
+  }, [columnsToPlotValues, dataFiles, dataDir, loadedData]);
 
   // parse and log polygon data if available
   useEffect(() => {
@@ -723,30 +884,63 @@ export default function SpaceTimeViewer({
 
   const plot = useMemo(() => {
     console.log('replotting plot');
-    if (!filteredData || !filteredData.some(d => d.lng && d.lat)) {
-      let columnsInData = filteredData.map(d => Object.keys(d));
-      console.error(
-        'Unsupported columns: ',
-        columnsInData,
-        'Columns should include: "lng", "lat", an optional timestamp and columns to plot.'
-      );
-      return <div>Unsupported data type: {columnsInData}</div>;
-    }
 
     let MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
     if (theme === 'light') {
       MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
     }
 
+    // Determine what data to use - if loading or no data, use a single dummy point to show empty map
+    let dataToRender = filteredData;
+    let isUsingDummyData = false;
+
+    if (isLoadingData || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
+      // Create a single invisible point at the initial view location to render an empty map
+      // NO timestamp - this is spatial-only data
+      const dummyLat = initialLatitude !== null ? initialLatitude : -25;
+      const dummyLng = initialLongitude !== null ? initialLongitude : 133;
+      const dummyPoint = {
+        lat: dummyLat,
+        lng: dummyLng,
+        value: 0
+      };
+
+      // Add the column being plotted if it's known
+      if (effectiveColumnToPlot && effectiveColumnToPlot !== 'value') {
+        dummyPoint[effectiveColumnToPlot] = 0;
+      }
+
+      dataToRender = [dummyPoint];
+      isUsingDummyData = true;
+
+      // Log error if not loading but data is invalid
+      if (!isLoadingData && filteredData && filteredData.length > 0) {
+        let columnsInData = filteredData?.map(d => Object.keys(d)) || [];
+        console.error(
+          'Unsupported columns: ',
+          columnsInData,
+          'Columns should include: "lng", "lat", an optional timestamp and columns to plot.'
+        );
+      }
+    }
+
+    // Sort data only if not using dummy data (to avoid unnecessary computation)
+    const sortedData = isUsingDummyData ? dataToRender :
+      dataToRender.sort((a, b) => style === 'Scatter' ? a.value - b.value : new Date(a.timestamp) - new Date(b.timestamp));
+
+    // Use a valid timeRange for dummy data
+    const now = new Date().getTime();
+    const effectiveTimeRange = isUsingDummyData ? [now, now] : timeRange;
+
     // Always use SummaryPlot, but pass the style prop to determine behavior
     return (
       <SummaryPlot
-        data={filteredData.sort((a, b) => style === 'Scatter' ? a.value - b.value : new Date(a.timestamp) - new Date(b.timestamp))}
+        data={sortedData}
         colorAggregation={aggregateToUse}
         elevationAggregation={aggregateToUse}
         repeatedPointsAggregation={repeatedPointsAggregate}
         preserveDomains={preserveDomains}
-        timeRange={timeRange}
+        timeRange={effectiveTimeRange}
         radius={style === 'Summary' ? summaryRadius : undefined}
         coverage={style === 'Summary' ? Math.min(Math.max(summaryCoverage, 0), 1) : undefined}
         animationSpeed={animationSpeed}
@@ -810,6 +1004,7 @@ export default function SpaceTimeViewer({
     countryCodes,
     legendOrder,
     INITIAL_VIEW_STATE,
+    isLoadingData,
   ]);
 
   const handleSnackbarClose = () => {
@@ -955,6 +1150,44 @@ export default function SpaceTimeViewer({
           </span>
         </div>
       )}
+
+      {/* Loading indicator for lazy-loaded data */}
+      {isLoadingData && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1000,
+          background: levaTheme.colors.elevation2,
+          padding: '20px 30px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+          color: levaTheme.colors.highlight2,
+          fontSize: '16px',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{
+            width: '20px',
+            height: '20px',
+            border: `3px solid ${levaTheme.colors.elevation3}`,
+            borderTop: `3px solid ${levaTheme.colors.accent2}`,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          Loading {loadingColumn || 'data'}...
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+
       {plot}
       {/* <Snackbar
         open={snackbarOpen}

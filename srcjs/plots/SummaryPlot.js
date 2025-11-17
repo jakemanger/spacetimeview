@@ -295,7 +295,14 @@ export default function SummaryPlot({
       return timeRange;
     }
 
-    return normalizedData.reduce(
+    // filter out data points without timestamps before calculating range
+    const dataWithTimestamps = normalizedData.filter(d => d.timestamp);
+
+    if (dataWithTimestamps.length === 0) {
+      return timeRange; // Fall back to original timeRange if no timestamps
+    }
+
+    return dataWithTimestamps.reduce(
       (range, d) => {
         const t = new Date(d.timestamp).getTime();
         range[0] = Math.min(range[0], t);
@@ -384,6 +391,11 @@ export default function SummaryPlot({
   }
 
   const aggregateRepeatedPoints = (points) => {
+    // if points don't have timestamps, just return their values
+    if (!points[0] || !points[0].timestamp) {
+      return points.map((point) => point.value);
+    }
+
     const groupedPoints = points.reduce((acc, point) => {
       const timeKey = new Date(point.timestamp).getTime();
       if (!acc[timeKey]) acc[timeKey] = [];
@@ -548,7 +560,7 @@ export default function SummaryPlot({
         }
         return [0, 0, 0, 255]; // fallback color for invalid or null values
       },
-      getFilterValue: d => new Date(d.timestamp).getTime(),
+      getFilterValue: d => d.timestamp ? new Date(d.timestamp).getTime() : filter[0], // Use filter start if no timestamp
       filterRange: [filter[0], filter[1]],
       filterSoftRange: [
         filter[0] * 0.999 + filter[1] * 0.001,

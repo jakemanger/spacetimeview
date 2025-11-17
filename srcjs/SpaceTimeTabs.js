@@ -5,6 +5,10 @@ import SpaceTimeViewer from './SpaceTimeViewer';
 export default function SpaceTimeTabs({ viewConfigs, titles }) {
     const [activeTab, setActiveTab] = useState(0);
 
+    // Shared state for loaded data across all tabs
+    // Key format: `tab_${tabIndex}_${columnName}` or `tab_${tabIndex}___all__` for dataUrl
+    const [sharedLoadedData, setSharedLoadedData] = useState({});
+
     console.log('SpaceTimeTabs props:', { viewConfigs, titles });
 
     if (!viewConfigs || viewConfigs.length === 0) {
@@ -21,17 +25,20 @@ export default function SpaceTimeTabs({ viewConfigs, titles }) {
         <div className="space-time-tabs-container">
             <div className="space-time-tabs-content">
                 {viewConfigs.map((config, index) => (
-                    <div 
-                        key={index} 
+                    <div
+                        key={index}
                         className={`space-time-tab-pane ${activeTab === index ? 'active' : ''}`}
                     >
                         {activeTab === index && (
-                            <SpaceTimeViewer 
+                            <SpaceTimeViewer
                                 {...config}
                                 headerTitle={config.headerTitle || (titles && titles[index])}
                                 tabTitles={titles}
                                 activeTab={activeTab}
                                 onTabChange={setActiveTab}
+                                tabIndex={index}
+                                sharedLoadedData={sharedLoadedData}
+                                setSharedLoadedData={setSharedLoadedData}
                             />
                         )}
                     </div>
