@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import IconButton from '@mui/material/IconButton';
-import { Menu, MenuItem } from '@mui/material';
+import { Menu, MenuItem, CircularProgress } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
@@ -9,7 +9,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import AboutModal from './AboutModal';
 
-// Font family constant for consistent usage
+// font family constant for consistent usage
 const fontFamily = "'DM Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 
 const Header = ({
@@ -32,7 +32,8 @@ const Header = ({
   activeTab = 0,
   onTabClick = () => {},
   aboutText = null,
-  isMobile = false
+  isMobile = false,
+  loadingTab = null
 }) => {
   const [tabMenuAnchor, setTabMenuAnchor] = useState(null);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
@@ -134,27 +135,37 @@ const Header = ({
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: '32px' }}>
             {enhancedTabs.map((tabTitle, index) => {
               const isActive = isAboutTab(index) ? false : activeTab === index;
+              const isLoading = loadingTab === index;
               return (
-                <div 
+                <div
                   key={index}
                   onClick={() => handleTabClick(index)}
                   style={{
                     padding: '8px 16px',
                     cursor: 'pointer',
-                    color: isActive ? themeColors.accent2 : themeColors.highlight2,
-                    borderBottom: isActive ? `2px solid ${themeColors.accent2}` : 'none',
-                    fontWeight: isActive ? 500 : 400,
+                    color: (isActive || isLoading) ? themeColors.accent2 : themeColors.highlight2,
+                    borderBottom: (isActive || isLoading) ? `2px solid ${themeColors.accent2}` : 'none',
+                    fontWeight: (isActive || isLoading) ? 500 : 400,
                     fontFamily,
                     transition: 'background-color 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
                   {tabTitle}
+                  {isLoading && (
+                    <CircularProgress
+                      size={14}
+                      sx={{ color: themeColors.accent2 }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -187,21 +198,31 @@ const Header = ({
             >
               {enhancedTabs.map((tabTitle, index) => {
                 const isActive = isAboutTab(index) ? false : activeTab === index;
+                const isLoading = loadingTab === index;
                 return (
                   <MenuItem
                     key={index}
                     onClick={() => handleTabMenuClick(index)}
                     sx={{
-                      color: isActive ? themeColors.accent2 : themeColors.highlight2,
-                      fontWeight: isActive ? 500 : 400,
+                      color: (isActive || isLoading) ? themeColors.accent2 : themeColors.highlight2,
+                      fontWeight: (isActive || isLoading) ? 500 : 400,
                       fontFamily,
-                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backgroundColor: (isActive || isLoading) ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
                       '&:hover': {
                         backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                      }
+                      },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
                     {tabTitle}
+                    {isLoading && (
+                      <CircularProgress
+                        size={14}
+                        sx={{ color: themeColors.accent2 }}
+                      />
+                    )}
                   </MenuItem>
                 );
               })}
@@ -210,31 +231,61 @@ const Header = ({
         )}
 
         {/* Social Media Icons */}
-        {socialLinks.facebook && (
-          <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.facebook} target="_blank">
-            <FacebookIcon />
-          </IconButton>
-        )}
-        {socialLinks.twitter && (
-          <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.twitter} target="_blank">
-            <TwitterIcon />
-          </IconButton>
-        )}
-        {socialLinks.linkedin && (
-          <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.linkedin} target="_blank">
-            <LinkedInIcon />
-          </IconButton>
-        )}
-        {socialLinks.instagram && (
-          <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.instagram} target="_blank">
-            <InstagramIcon />
-          </IconButton>
-        )}
-        {socialLinks.github && (
-          <IconButton sx={{ color: themeColors.highlight2 }} href={socialLinks.github} target="_blank">
-            <GitHubIcon />
-          </IconButton>
-        )}
+        {Object.entries(socialLinks).map(([key, value]) => {
+          // Handle standard icon-based social links (string URLs)
+          if (typeof value === 'string') {
+            const iconMap = {
+              facebook: <FacebookIcon />,
+              twitter: <TwitterIcon />,
+              linkedin: <LinkedInIcon />,
+              instagram: <InstagramIcon />,
+              github: <GitHubIcon />
+            };
+
+            const icon = iconMap[key.toLowerCase()];
+            if (icon) {
+              return (
+                <IconButton
+                  key={key}
+                  sx={{ color: themeColors.highlight2 }}
+                  href={value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {icon}
+                </IconButton>
+              );
+            }
+          }
+
+          // Handle custom image-based social links (object with url and image)
+          if (typeof value === 'object' && value.url && value.image) {
+            return (
+              <IconButton
+                key={key}
+                sx={{
+                  color: themeColors.highlight2,
+                  padding: '8px'
+                }}
+                href={value.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={value.image}
+                  alt={key}
+                  style={{
+                    height: '24px',
+                    width: 'auto',
+                    display: 'block'
+                  }}
+                />
+              </IconButton>
+            );
+          }
+
+          return null;
+        })}
       </div>
       
       {/* About Modal */}

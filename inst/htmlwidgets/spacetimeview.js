@@ -61857,14 +61857,28 @@ function SpaceTimeTabs(_ref) {
     titles
   } = _ref;
   const [activeTab, setActiveTab] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0);
+  const [loadingTab, setLoadingTab] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+  const [tabsDataLoaded, setTabsDataLoaded] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(new Set());
 
-  // Shared state for loaded data across all tabs
-  // Key format: `tab_${tabIndex}_${columnName}` or `tab_${tabIndex}___all__` for dataUrl
+  // shared state for loaded data across all tabs
+  // key format: `tab_${tabIndex}_${columnName}` or `tab_${tabIndex}___all__` for dataUrl
   const [sharedLoadedData, setSharedLoadedData] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({});
   console.log('SpaceTimeTabs props:', {
     viewConfigs,
     titles
   });
+  const handleTabChange = newTab => {
+    // Only show loading indicator if this tab hasn't loaded data yet
+    if (!tabsDataLoaded.has(newTab)) {
+      setLoadingTab(newTab);
+    }
+    setActiveTab(newTab);
+  };
+  const handleDataLoaded = tabIndex => {
+    setLoadingTab(null);
+    // Mark this tab's data as loaded
+    setTabsDataLoaded(prev => new Set([...prev, tabIndex]));
+  };
   if (!viewConfigs || viewConfigs.length === 0) {
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "space-time-tabs-container"
@@ -61879,11 +61893,13 @@ function SpaceTimeTabs(_ref) {
   }, viewConfigs.map((config, index) => /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     key: index,
     className: `space-time-tab-pane ${activeTab === index ? 'active' : ''}`
-  }, activeTab === index && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_SpaceTimeViewer__WEBPACK_IMPORTED_MODULE_2__["default"], _extends({}, config, {
+  }, (activeTab === index || index === 0) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_SpaceTimeViewer__WEBPACK_IMPORTED_MODULE_2__["default"], _extends({}, config, {
     headerTitle: config.headerTitle || titles && titles[index],
     tabTitles: titles,
     activeTab: activeTab,
-    onTabChange: setActiveTab,
+    onTabChange: handleTabChange,
+    loadingTab: loadingTab,
+    onDataLoaded: () => handleDataLoaded(index),
     tabIndex: index,
     sharedLoadedData: sharedLoadedData,
     setSharedLoadedData: setSharedLoadedData
@@ -62014,12 +62030,16 @@ function SpaceTimeViewer(_ref) {
     tabTitles = [],
     activeTab = 0,
     onTabChange = () => {},
+    loadingTab = null,
+    // index of tab currently loading
+    onDataLoaded = () => {},
+    // callback when data finishes loading
     tabIndex = 0,
-    // Index of this tab (for shared state namespacing)
+    // index of this tab (for shared state namespacing)
     sharedLoadedData = null,
-    // Shared loaded data state from parent
+    // shared loaded data state from parent
     setSharedLoadedData = null,
-    // Setter for shared loaded data
+    // setter for shared loaded data
     observable = null,
     countryCodes = null,
     legendOrder = null,
@@ -62584,20 +62604,35 @@ function SpaceTimeViewer(_ref) {
     });
   }, [columnsToPlotValues, dataFiles, dataDir, loadedData]);
 
+  // call onDataLoaded when data finishes loading OR when component mounts with inline data
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    if (!isLoadingData && transformedData.length > 0) {
+      onDataLoaded();
+    }
+  }, [isLoadingData, transformedData]);
+
+  // Also call onDataLoaded immediately if we have inline data (not lazy-loaded)
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    if (!dataUrl && !dataFiles && transformedData.length > 0) {
+      // Data is inline (embedded in HTML), mark as loaded immediately
+      onDataLoaded();
+    }
+  }, []);
+
   // parse and log polygon data if available
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (polygons) {
       console.log('Polygon data provided to SpaceTimeViewer component:');
       try {
-        // Log the raw data first
+        // log raw data first
         console.log('Raw polygon data type:', typeof polygons);
         console.log('Raw polygon data length:', polygons.length);
 
-        // Then try to parse it if it's a string
+        // then try to parse if it's a string
         const parsedPolygons = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
         console.log('Parsed polygon data:', parsedPolygons);
 
-        // Check if it has the expected GeoJSON structure
+        // check if it has expected GeoJSON structure
         if (parsedPolygons.type && parsedPolygons.features) {
           console.log('GeoJSON type:', parsedPolygons.type);
           console.log('Number of features:', parsedPolygons.features.length);
@@ -62752,7 +62787,9 @@ function SpaceTimeViewer(_ref) {
       hasHeader: hasHeader,
       initialTimeMode: initialTimeMode
     });
-  }, [style, aggregateToUse, colorRange, colorScaleType, repeatedPointsAggregate, preserveDomains, timeRange, summaryRadius, summaryCoverage, animationSpeed, summaryHeight, theme, radiusScale, radiusMinPixels, summaryStyle, projection, filterColumnValues, filteredData, polygons, factorIcons, filterColumn, clickedTooltipsEnabled, observable, legendTitle, countryCodes, legendOrder, INITIAL_VIEW_STATE, isLoadingData]);
+  }, [style, aggregateToUse, colorRange, colorScaleType, repeatedPointsAggregate, preserveDomains, timeRange, summaryRadius, summaryCoverage, animationSpeed, summaryHeight, theme, radiusScale, radiusMinPixels, summaryStyle, projection, filterColumnValues, filteredData, polygons, factorIcons, filterColumn, clickedTooltipsEnabled, observable, legendTitle, countryCodes, legendOrder, INITIAL_VIEW_STATE
+  // Note: isLoadingData removed from dependencies to allow map to load in parallel with data
+  ]);
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
@@ -62850,7 +62887,8 @@ function SpaceTimeViewer(_ref) {
     activeTab: activeTab,
     onTabClick: onTabChange,
     aboutText: aboutText,
-    isMobile: isMobile
+    isMobile: isMobile,
+    loadingTab: loadingTab
   }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ui_ControlsMenu__WEBPACK_IMPORTED_MODULE_7__["default"], {
     dockPosition: isMobile ? "bottom" : "floating",
     levaTheme: levaTheme,
@@ -62902,7 +62940,7 @@ function SpaceTimeViewer(_ref) {
       fontWeight: 'bold',
       flexShrink: 0
     }
-  }, "Total: ", selectedFilterDisplayInfo.totalSelectedCount)), isLoadingData && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }, "Total: ", selectedFilterDisplayInfo.totalSelectedCount)), isLoadingData && activeTab === tabIndex && (dataUrl || dataFiles) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       position: 'absolute',
       top: '50%',
@@ -63422,7 +63460,7 @@ function SummaryPlot(_ref) {
       return timeRange;
     }
 
-    // Filter out data points without timestamps before calculating range
+    // filter out data points without timestamps before calculating range
     const dataWithTimestamps = normalizedData.filter(d => d.timestamp);
     if (dataWithTimestamps.length === 0) {
       return timeRange; // Fall back to original timeRange if no timestamps
@@ -63505,7 +63543,7 @@ function SummaryPlot(_ref) {
     setFilter(newFilter);
   }
   const aggregateRepeatedPoints = points => {
-    // If points don't have timestamps, just return their values
+    // if points don't have timestamps, just return their values
     if (!points[0] || !points[0].timestamp) {
       return points.map(point => point.value);
     }
@@ -65356,15 +65394,16 @@ function GeocoderControl(_ref) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @mui/material/IconButton */ "./node_modules/@mui/material/IconButton/IconButton.js");
-/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/Menu/Menu.js");
-/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/MenuItem/MenuItem.js");
-/* harmony import */ var _mui_icons_material_Facebook__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @mui/icons-material/Facebook */ "./node_modules/@mui/icons-material/Facebook.js");
-/* harmony import */ var _mui_icons_material_Twitter__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @mui/icons-material/Twitter */ "./node_modules/@mui/icons-material/Twitter.js");
-/* harmony import */ var _mui_icons_material_LinkedIn__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @mui/icons-material/LinkedIn */ "./node_modules/@mui/icons-material/LinkedIn.js");
-/* harmony import */ var _mui_icons_material_Instagram__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @mui/icons-material/Instagram */ "./node_modules/@mui/icons-material/Instagram.js");
-/* harmony import */ var _mui_icons_material_GitHub__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @mui/icons-material/GitHub */ "./node_modules/@mui/icons-material/GitHub.js");
-/* harmony import */ var _mui_icons_material_Menu__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @mui/icons-material/Menu */ "./node_modules/@mui/icons-material/Menu.js");
+/* harmony import */ var _mui_material_IconButton__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @mui/material/IconButton */ "./node_modules/@mui/material/IconButton/IconButton.js");
+/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/CircularProgress/CircularProgress.js");
+/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/Menu/Menu.js");
+/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/MenuItem/MenuItem.js");
+/* harmony import */ var _mui_icons_material_Facebook__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @mui/icons-material/Facebook */ "./node_modules/@mui/icons-material/Facebook.js");
+/* harmony import */ var _mui_icons_material_Twitter__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @mui/icons-material/Twitter */ "./node_modules/@mui/icons-material/Twitter.js");
+/* harmony import */ var _mui_icons_material_LinkedIn__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @mui/icons-material/LinkedIn */ "./node_modules/@mui/icons-material/LinkedIn.js");
+/* harmony import */ var _mui_icons_material_Instagram__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @mui/icons-material/Instagram */ "./node_modules/@mui/icons-material/Instagram.js");
+/* harmony import */ var _mui_icons_material_GitHub__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @mui/icons-material/GitHub */ "./node_modules/@mui/icons-material/GitHub.js");
+/* harmony import */ var _mui_icons_material_Menu__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @mui/icons-material/Menu */ "./node_modules/@mui/icons-material/Menu.js");
 /* harmony import */ var _AboutModal__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./AboutModal */ "./srcjs/ui/AboutModal.js");
 
 
@@ -65377,7 +65416,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-// Font family constant for consistent usage
+// font family constant for consistent usage
 const fontFamily = "'DM Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 const Header = _ref => {
   let {
@@ -65400,7 +65439,8 @@ const Header = _ref => {
     activeTab = 0,
     onTabClick = () => {},
     aboutText = null,
-    isMobile = false
+    isMobile = false,
+    loadingTab = null
   } = _ref;
   const [tabMenuAnchor, setTabMenuAnchor] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
   const [aboutModalOpen, setAboutModalOpen] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
@@ -65501,25 +65541,34 @@ const Header = _ref => {
     }
   }, enhancedTabs.map((tabTitle, index) => {
     const isActive = isAboutTab(index) ? false : activeTab === index;
+    const isLoading = loadingTab === index;
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       key: index,
       onClick: () => handleTabClick(index),
       style: {
         padding: '8px 16px',
         cursor: 'pointer',
-        color: isActive ? themeColors.accent2 : themeColors.highlight2,
-        borderBottom: isActive ? `2px solid ${themeColors.accent2}` : 'none',
-        fontWeight: isActive ? 500 : 400,
+        color: isActive || isLoading ? themeColors.accent2 : themeColors.highlight2,
+        borderBottom: isActive || isLoading ? `2px solid ${themeColors.accent2}` : 'none',
+        fontWeight: isActive || isLoading ? 500 : 400,
         fontFamily,
-        transition: 'background-color 0.2s ease'
+        transition: 'background-color 0.2s ease',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
       },
       onMouseEnter: e => {
-        e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
       },
       onMouseLeave: e => {
-        e.target.style.backgroundColor = 'transparent';
+        e.currentTarget.style.backgroundColor = 'transparent';
       }
-    }, tabTitle);
+    }, tabTitle, isLoading && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_2__["default"], {
+      size: 14,
+      sx: {
+        color: themeColors.accent2
+      }
+    }));
   }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       display: 'flex',
@@ -65529,13 +65578,13 @@ const Header = _ref => {
     style: {
       marginRight: '8px'
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_3__["default"], {
     onClick: handleTabMenuOpen,
     sx: {
       color: themeColors.highlight2
     },
     "aria-label": "open tabs menu"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Menu__WEBPACK_IMPORTED_MODULE_3__["default"], null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_4__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Menu__WEBPACK_IMPORTED_MODULE_4__["default"], null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_5__["default"], {
     anchorEl: tabMenuAnchor,
     open: Boolean(tabMenuAnchor),
     onClose: handleTabMenuClose,
@@ -65547,50 +65596,76 @@ const Header = _ref => {
     }
   }, enhancedTabs.map((tabTitle, index) => {
     const isActive = isAboutTab(index) ? false : activeTab === index;
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_5__["default"], {
+    const isLoading = loadingTab === index;
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_6__["default"], {
       key: index,
       onClick: () => handleTabMenuClick(index),
       sx: {
-        color: isActive ? themeColors.accent2 : themeColors.highlight2,
-        fontWeight: isActive ? 500 : 400,
+        color: isActive || isLoading ? themeColors.accent2 : themeColors.highlight2,
+        fontWeight: isActive || isLoading ? 500 : 400,
         fontFamily,
-        backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+        backgroundColor: isActive || isLoading ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
         '&:hover': {
           backgroundColor: 'rgba(255, 255, 255, 0.1)'
-        }
+        },
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
       }
-    }, tabTitle);
-  }))), socialLinks.facebook && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    sx: {
-      color: themeColors.highlight2
-    },
-    href: socialLinks.facebook,
-    target: "_blank"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Facebook__WEBPACK_IMPORTED_MODULE_6__["default"], null)), socialLinks.twitter && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    sx: {
-      color: themeColors.highlight2
-    },
-    href: socialLinks.twitter,
-    target: "_blank"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Twitter__WEBPACK_IMPORTED_MODULE_7__["default"], null)), socialLinks.linkedin && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    sx: {
-      color: themeColors.highlight2
-    },
-    href: socialLinks.linkedin,
-    target: "_blank"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_LinkedIn__WEBPACK_IMPORTED_MODULE_8__["default"], null)), socialLinks.instagram && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    sx: {
-      color: themeColors.highlight2
-    },
-    href: socialLinks.instagram,
-    target: "_blank"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Instagram__WEBPACK_IMPORTED_MODULE_9__["default"], null)), socialLinks.github && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    sx: {
-      color: themeColors.highlight2
-    },
-    href: socialLinks.github,
-    target: "_blank"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_GitHub__WEBPACK_IMPORTED_MODULE_10__["default"], null))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_AboutModal__WEBPACK_IMPORTED_MODULE_1__["default"], {
+    }, tabTitle, isLoading && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_2__["default"], {
+      size: 14,
+      sx: {
+        color: themeColors.accent2
+      }
+    }));
+  }))), Object.entries(socialLinks).map(_ref2 => {
+    let [key, value] = _ref2;
+    // Handle standard icon-based social links (string URLs)
+    if (typeof value === 'string') {
+      const iconMap = {
+        facebook: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Facebook__WEBPACK_IMPORTED_MODULE_7__["default"], null),
+        twitter: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Twitter__WEBPACK_IMPORTED_MODULE_8__["default"], null),
+        linkedin: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_LinkedIn__WEBPACK_IMPORTED_MODULE_9__["default"], null),
+        instagram: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Instagram__WEBPACK_IMPORTED_MODULE_10__["default"], null),
+        github: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_GitHub__WEBPACK_IMPORTED_MODULE_11__["default"], null)
+      };
+      const icon = iconMap[key.toLowerCase()];
+      if (icon) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_3__["default"], {
+          key: key,
+          sx: {
+            color: themeColors.highlight2
+          },
+          href: value,
+          target: "_blank",
+          rel: "noopener noreferrer"
+        }, icon);
+      }
+    }
+
+    // Handle custom image-based social links (object with url and image)
+    if (typeof value === 'object' && value.url && value.image) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material_IconButton__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        key: key,
+        sx: {
+          color: themeColors.highlight2,
+          padding: '8px'
+        },
+        href: value.url,
+        target: "_blank",
+        rel: "noopener noreferrer"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
+        src: value.image,
+        alt: key,
+        style: {
+          height: '24px',
+          width: 'auto',
+          display: 'block'
+        }
+      }));
+    }
+    return null;
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_AboutModal__WEBPACK_IMPORTED_MODULE_1__["default"], {
     open: aboutModalOpen,
     onClose: () => setAboutModalOpen(false),
     aboutText: aboutText,
@@ -65676,22 +65751,21 @@ function generateTooltipHTML(_ref) {
   } = options;
   if (!object) return null;
 
-  // If custom tooltip content is provided, use it
-  // This case is now handled by the ObservablePlotTooltip component
+  // custom tooltip content is now handled by ObservablePlotTooltip component
   if (observable && isStaticMode) {
     return null;
   }
 
-  // Check if aggregation layer (HexagonLayer/GridLayer)
+  // check if aggregation layer (HexagonLayer/GridLayer)
   if (object.points && object.position) {
     return generateAggregateHTML(object, colorAggregation, filter, hasTime, factorLevels, factorIcons, columnName, filterColumn, allData, isStaticMode);
   }
 
-  // For point data (ScatterplotLayer)
+  // for point data (ScatterplotLayer)
   return generatePointHTML(object, hasTime, factorLevels, factorIcons, columnName);
 }
 
-// --- Data Processing for Observable Plots ---
+// --- data processing for observable plots ---
 
 function getTooltipData(object, allData, hasTime, filter) {
   console.log('--- getTooltipData DEBUG ---');
@@ -65705,23 +65779,23 @@ function getTooltipData(object, allData, hasTime, filter) {
     return [];
   }
 
-  // If it's an aggregated object (hexagon/grid), extract points from that cell
+  // for aggregated objects (hexagon/grid), extract points from cell
   if (object.points && object.position) {
     let points = object.points;
     console.log('Processing aggregated object with', points.length, 'points');
 
-    // Extract the source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
+    // extract source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
     let sourceData = points.map(point => point.source || point);
     console.log('Extracted source data:', sourceData);
     console.log('Source data length:', sourceData.length);
 
-    // Apply time filter if we have time data AND the data actually has timestamps
+    // apply time filter if we have time data AND the data actually has timestamps
     if (hasTime && filter && sourceData.length > 0 && sourceData[0].timestamp) {
       const beforeFilter = sourceData.length;
       sourceData = sourceData.filter(d => {
-        if (!d.timestamp) return true; // Keep data without timestamps
+        if (!d.timestamp) return true; // keep data without timestamps
         const timestamp = new Date(d.timestamp).getTime();
-        if (isNaN(timestamp)) return true; // Keep data with invalid timestamps
+        if (isNaN(timestamp)) return true; // keep data with invalid timestamps
         return timestamp >= filter[0] && timestamp <= filter[1];
       });
       console.log('Applied time filter: from', beforeFilter, 'to', sourceData.length, 'items');
@@ -65730,14 +65804,14 @@ function getTooltipData(object, allData, hasTime, filter) {
     return sourceData;
   }
 
-  // For individual points, return the object as an array
+  // for individual points, return as array
   console.log('Processing individual point');
   const result = [object];
   console.log('Returning single object as array:', result);
   return result;
 }
 
-// --- Main Exported Functions for Use by Components ---
+// --- main exported functions for use by components ---
 
 function getTooltip(_ref2) {
   let {
@@ -65757,7 +65831,7 @@ function getTooltip(_ref2) {
 }
 function getStaticTooltip(pickInfo, options) {
   if (options.observable) {
-    // This case is handled by the dedicated ObservablePlotTooltip component in SummaryPlot.js
+    // handled by ObservablePlotTooltip component in SummaryPlot.js
     return null;
   }
   return generateTooltipHTML({
@@ -65769,12 +65843,12 @@ function getStaticTooltip(pickInfo, options) {
 }
 function createObservablePlot(chartId, plot, Plot) {
   let retryCount = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-  // Accept Plot as an argument
+  // accept Plot as argument
   const container = document.getElementById(chartId);
   if (container) {
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; // clear previous content
     try {
-      // The plot function receives the Plot object as an argument
+      // plot function receives Plot object as argument
       const chart = typeof plot === 'function' ? plot(Plot) : plot;
       if (chart) {
         container.appendChild(chart);
@@ -65786,7 +65860,7 @@ function createObservablePlot(chartId, plot, Plot) {
       container.innerHTML = `<div style="color: red; padding: 10px;">Error: ${e.message}</div>`;
     }
   } else {
-    // Retry up to 3 times with increasing delays
+    // retry up to 3 times with increasing delays
     if (retryCount < 3) {
       console.warn(`Plot container not found, retrying in ${(retryCount + 1) * 50}ms: ${chartId}`);
       setTimeout(() => {
@@ -66094,23 +66168,23 @@ function aggregateDataByTime(data, duration, columnToPlot) {
   if (!data || data.length === 0) return [];
   console.log('AggregateDataByTime - columnToPlot:', columnToPlot, 'Sample data item:', data[0]);
 
-  // Check if data has timestamps - if not, cannot aggregate by time
+  // can't aggregate by time without timestamps
   if (!data[0] || !data[0].timestamp) {
     console.warn('Data does not have timestamps, cannot aggregate by time');
     return [];
   }
 
-  // Calculate time range, with validation for seasonal mode
+  // calculate time range, with validation for seasonal mode
   let timeRange;
   if (viewMode === 'seasonal' && normalizedTimeRange && normalizedTimeRange[0] !== Infinity && normalizedTimeRange[1] !== -Infinity) {
     timeRange = normalizedTimeRange;
   } else {
-    // Calculate min/max without spread operator to avoid stack overflow with large datasets
+    // calculate min/max without spread to avoid stack overflow on large datasets
     const timestamps = data.map(d => new Date(d.timestamp).getTime());
     timeRange = [timestamps.reduce((min, val) => val < min ? val : min, timestamps[0]), timestamps.reduce((max, val) => val > max ? val : max, timestamps[0])];
   }
 
-  // Guard against invalid time ranges
+  // bail on invalid time ranges
   if (!isFinite(timeRange[0]) || !isFinite(timeRange[1]) || timeRange[0] >= timeRange[1]) {
     console.warn('Invalid time range:', timeRange);
     return [];
@@ -66139,7 +66213,7 @@ function aggregateDataByTime(data, duration, columnToPlot) {
       });
     }
 
-    // get the value for the specified column - use 'value' as the column name since that's what the data has
+    // get value from 'value' column (this is what the data has)
     const value = d.value;
     if (value !== null && value !== undefined && !isNaN(value)) {
       buckets.get(bucketIndex).values.push(Number(value));
@@ -66191,7 +66265,7 @@ function createColorScale(data, colorRange) {
   const values = data.map(d => d.value).filter(v => v !== null && v !== undefined);
   if (values.length === 0) return null;
 
-  // Use reduce instead of spread to avoid stack overflow with large datasets
+  // use reduce instead of spread to avoid stack overflow with large datasets
   const minValue = values.reduce((min, val) => val < min ? val : min, values[0]);
   const maxValue = values.reduce((max, val) => val > max ? val : max, values[0]);
   if (colorScaleType === 'quantile') {
@@ -66250,13 +66324,13 @@ function RangeInput(_ref) {
     if (prevViewModeRef.current !== viewMode) {
       setLocalViewMode(viewMode);
       prevViewModeRef.current = viewMode;
-      hasResetRangeRef.current = false; // Allow range reset when mode changes
+      hasResetRangeRef.current = false; // allow range reset when mode changes
     }
   }, [viewMode]);
   const minInterval = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (!data || data.length < 2) return Infinity;
 
-    // Check if data has timestamps
+    // bail if no timestamps
     if (!data[0] || !data[0].timestamp) return Infinity;
     const sortedTimestamps = data.map(d => new Date(d.timestamp).getTime()).sort((a, b) => a - b);
     let minDiff = Infinity;
@@ -66271,20 +66345,20 @@ function RangeInput(_ref) {
   const normalizedData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (localViewMode !== 'seasonal' || !data || data.length === 0) return data;
 
-    // Check if data has timestamps - if not, return unchanged
+    // return unchanged if no timestamps
     if (!data[0] || !data[0].timestamp) return data;
 
-    // use a reference year (2000 as it's a leap year)
+    // use 2000 as reference year (it's a leap year)
     const referenceYear = 2000;
     return data.map(d => {
-      // Skip normalization if no timestamp
+      // skip normalization if no timestamp
       if (!d.timestamp) return d;
       const date = new Date(d.timestamp);
 
-      // Skip if invalid date
+      // skip if invalid date
       if (isNaN(date.getTime())) return d;
 
-      // create a new date with the same month/day but reference year
+      // create new date with same month/day but reference year
       const normalizedDate = new Date(referenceYear, date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds());
       return {
         ...d,
@@ -66297,18 +66371,18 @@ function RangeInput(_ref) {
   // calculate time range for normalized data
   const normalizedTimeRange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     if (localViewMode !== 'seasonal' || !normalizedData || normalizedData.length === 0) {
-      // Return null to signal we should use min/max from props
+      // return null to signal we should use min/max from props
       return null;
     }
 
-    // For seasonal view, use the full year range (Jan 1 - Dec 31 of reference year)
+    // for seasonal view, use full year range (jan 1 - dec 31 of reference year)
     const referenceYear = 2000;
     const yearStart = new Date(referenceYear, 0, 1, 0, 0, 0).getTime();
     const yearEnd = new Date(referenceYear, 11, 31, 23, 59, 59).getTime();
     return [yearStart, yearEnd];
   }, [normalizedData, localViewMode]);
 
-  // Reset range when switching to seasonal mode with the full year range
+  // reset range when switching modes
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (localViewMode === 'seasonal' && normalizedTimeRange && !hasResetRangeRef.current) {
       onChange([normalizedTimeRange[0], normalizedTimeRange[1]]);
@@ -66325,7 +66399,7 @@ function RangeInput(_ref) {
       return duration >= minInterval;
     });
 
-    // if in seasonal view, remove the Month option as it doesn't make sense in a year-normalized context
+    // remove Month option in seasonal view (doesn't make sense in year-normalized context)
     if (localViewMode === 'seasonal') {
       return filteredDurations.filter(_ref3 => {
         let [key] = _ref3;
@@ -66348,7 +66422,7 @@ function RangeInput(_ref) {
     if (newMode !== null) {
       setLocalViewMode(newMode);
 
-      // if parent provided a handler, call it
+      // call parent handler if provided
       if (onViewModeChange) {
         onViewModeChange(newMode);
       }
@@ -66398,12 +66472,12 @@ function RangeInput(_ref) {
   const formatTimeLabel = timestamp => {
     const date = new Date(timestamp);
     if (localViewMode === 'seasonal') {
-      // for seasonal view, just show month and day
+      // just show month and day for seasonal view
       return `${date.toLocaleString('default', {
         month: 'short'
       })} ${date.getDate()}`;
     } else {
-      // use the provided formatter for historical view
+      // use provided formatter for historical view
       return formatLabel(timestamp);
     }
   };
@@ -66452,7 +66526,7 @@ function RangeInput(_ref) {
       return 'linear-gradient(to right, #f5f1d8, #f5f1d8)';
     }
 
-    // ensure we have stops at 0% and 100%
+    // make sure we have stops at 0% and 100%
     const stops = [...gradientStops];
     if (stops[0]?.position > 0) {
       stops.unshift({
@@ -66839,13 +66913,13 @@ function normalizeDataByYear(data) {
   let referenceYear = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2000;
   if (!data || data.length === 0) return data;
   return data.map(d => {
-    // If no timestamp, return the data point unchanged
+    // return unchanged if no timestamp
     if (!d.timestamp) {
       return d;
     }
     const date = new Date(d.timestamp);
 
-    // Check if the date is valid
+    // validate date
     if (isNaN(date.getTime())) {
       console.warn('Invalid timestamp found in data:', d.timestamp);
       return d;

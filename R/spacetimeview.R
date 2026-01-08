@@ -670,7 +670,13 @@ spacetimeview <- function(
     )
     column_to_plot = NaN
   } else if (column_to_plot == 'value') {
-    column_to_plot = plottable_columns[1]
+    # If selectable_columns is provided, use the first selectable column
+    # Otherwise, use the first plottable column
+    if (!is.null(selectable_columns) && length(selectable_columns) > 0) {
+      column_to_plot = selectable_columns[1]
+    } else {
+      column_to_plot = plottable_columns[1]
+    }
     warning(
       paste0(
         'column_to_plot was not specified. ',
@@ -808,15 +814,15 @@ spacetimeview <- function(
     factor_icons_uri <- list()
     for (col_name in names(factor_icons)) {
       col_icons <- factor_icons[[col_name]]
-      
+
       # Handle two formats:
-      # 1. Simple format: factor_icons = list("column_name" = "icon_path") 
+      # 1. Simple format: factor_icons = list("column_name" = "icon_path")
       # 2. Complex format: factor_icons = list("column_name" = list("level1" = "path1", "level2" = "path2"))
-      
+
       if (is.character(col_icons) && length(col_icons) == 1) {
         # Simple format: column name directly maps to icon path
         # This is for column selection dropdowns where we want one icon per column
-        full_path <- file.path(getwd(), col_icons) 
+        full_path <- file.path(getwd(), col_icons)
         data_uri <- image_to_data_uri(full_path)
         if (!is.null(data_uri)) {
           factor_icons_uri[[col_name]] <- data_uri
@@ -830,7 +836,7 @@ spacetimeview <- function(
             icon_path <- col_icons[[level_name]]
             if (is.character(icon_path) && length(icon_path) == 1) {
               # construct full path relative to working directory
-              full_path <- file.path(getwd(), icon_path) 
+              full_path <- file.path(getwd(), icon_path)
               data_uri <- image_to_data_uri(full_path)
               if (!is.null(data_uri)) {
                 # use the original factor level name as the key
@@ -839,7 +845,7 @@ spacetimeview <- function(
                 } else {
                    warning(paste("Level '", level_name, "' for column '", col_name, "' in factor_icons not found in factor_levels. Skipping icon."), call. = FALSE)
                 }
-              } 
+              }
             } else {
                warning(paste("Invalid icon path provided for level '", level_name, "' in column '", col_name, "'. Skipping icon."), call. = FALSE)
             }
@@ -859,6 +865,35 @@ spacetimeview <- function(
     } else {
        factor_icons <- NULL # set back to NULL if no valid icons were processed
     }
+  }
+
+  # process social_links to convert image paths to data URIs for custom images
+  if (!is.null(social_links) && length(social_links) > 0) {
+    print("processing social links...")
+    social_links_processed <- list()
+    for (link_name in names(social_links)) {
+      link_value <- social_links[[link_name]]
+
+      # Check if it's a list with url and image properties (custom image format)
+      if (is.list(link_value) && !is.null(link_value$url) && !is.null(link_value$image)) {
+        # Convert image path to data URI
+        full_path <- file.path(getwd(), link_value$image)
+        data_uri <- image_to_data_uri(full_path)
+        if (!is.null(data_uri)) {
+          # Replace the file path with data URI
+          social_links_processed[[link_name]] <- list(
+            url = link_value$url,
+            image = data_uri
+          )
+        } else {
+          warning(paste("Failed to convert social link image for '", link_name, "'. Skipping this social link."), call. = FALSE)
+        }
+      } else {
+        # Standard format (just a URL string), pass through as-is
+        social_links_processed[[link_name]] <- link_value
+      }
+    }
+    social_links <- social_links_processed
   }
   
   component <- reactR::component(

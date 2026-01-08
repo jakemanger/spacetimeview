@@ -110,9 +110,11 @@ export default function SpaceTimeViewer({
   tabTitles = [],
   activeTab = 0,
   onTabChange = () => { },
-  tabIndex = 0,  // Index of this tab (for shared state namespacing)
-  sharedLoadedData = null,  // Shared loaded data state from parent
-  setSharedLoadedData = null,  // Setter for shared loaded data
+  loadingTab = null,  // index of tab currently loading
+  onDataLoaded = () => { },  // callback when data finishes loading
+  tabIndex = 0,  // index of this tab (for shared state namespacing)
+  sharedLoadedData = null,  // shared loaded data state from parent
+  setSharedLoadedData = null,  // setter for shared loaded data
   observable = null,
   countryCodes = null,
   legendOrder = null,
@@ -788,20 +790,35 @@ export default function SpaceTimeViewer({
       });
   }, [columnsToPlotValues, dataFiles, dataDir, loadedData]);
 
+  // call onDataLoaded when data finishes loading OR when component mounts with inline data
+  useEffect(() => {
+    if (!isLoadingData && transformedData.length > 0) {
+      onDataLoaded();
+    }
+  }, [isLoadingData, transformedData]);
+
+  // Also call onDataLoaded immediately if we have inline data (not lazy-loaded)
+  useEffect(() => {
+    if (!dataUrl && !dataFiles && transformedData.length > 0) {
+      // Data is inline (embedded in HTML), mark as loaded immediately
+      onDataLoaded();
+    }
+  }, []);
+
   // parse and log polygon data if available
   useEffect(() => {
     if (polygons) {
       console.log('Polygon data provided to SpaceTimeViewer component:');
       try {
-        // Log the raw data first
+        // log raw data first
         console.log('Raw polygon data type:', typeof polygons);
         console.log('Raw polygon data length:', polygons.length);
 
-        // Then try to parse it if it's a string
+        // then try to parse if it's a string
         const parsedPolygons = typeof polygons === 'string' ? JSON.parse(polygons) : polygons;
         console.log('Parsed polygon data:', parsedPolygons);
 
-        // Check if it has the expected GeoJSON structure
+        // check if it has expected GeoJSON structure
         if (parsedPolygons.type && parsedPolygons.features) {
           console.log('GeoJSON type:', parsedPolygons.type);
           console.log('Number of features:', parsedPolygons.features.length);
@@ -1004,7 +1021,7 @@ export default function SpaceTimeViewer({
     countryCodes,
     legendOrder,
     INITIAL_VIEW_STATE,
-    isLoadingData,
+    // Note: isLoadingData removed from dependencies to allow map to load in parallel with data
   ]);
 
   const handleSnackbarClose = () => {
@@ -1104,6 +1121,7 @@ export default function SpaceTimeViewer({
           onTabClick={onTabChange}
           aboutText={aboutText}
           isMobile={isMobile}
+          loadingTab={loadingTab}
         />
       )}
       <ControlsMenu
@@ -1151,8 +1169,8 @@ export default function SpaceTimeViewer({
         </div>
       )}
 
-      {/* Loading indicator for lazy-loaded data */}
-      {isLoadingData && (
+      {/* Loading indicator for lazy-loaded data - only show for active tab and when actually loading external data */}
+      {isLoadingData && activeTab === tabIndex && (dataUrl || dataFiles) && (
         <div style={{
           position: 'absolute',
           top: '50%',
