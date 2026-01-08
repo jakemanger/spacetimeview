@@ -545,9 +545,11 @@ export default function RangeInput({
             },
           },
           '& .MuiSlider-valueLabel': {
-            background: 'none',
-            color: '#f5f1d8',
+            background: 'white',
+            color: 'black',
             whiteSpace: 'nowrap',
+            padding: '4px 8px',
+            borderRadius: '4px',
           },
           transition: 'none',
           '& .MuiSlider-thumb, & .MuiSlider-track, & .MuiSlider-rail': {
