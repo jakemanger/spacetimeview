@@ -1,20 +1,27 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import GitHubIcon from '@mui/icons-material/GitHub';
 
 // Font family constant for consistent usage
 const fontFamily = "'DM Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 
-const AboutModal = ({ 
-  open, 
-  onClose, 
-  aboutText, 
+const AboutModal = ({
+  open,
+  onClose,
+  aboutText,
   themeColors = {
     elevation2: '#181C20',
     highlight2: '#8C92A4',
     highlight3: '#FEFEFE',
     accent2: '#007BFF'
-  }
+  },
+  socialLinks = {},
+  isMobile = false
 }) => {
   if (!aboutText) return null;
 
@@ -123,6 +130,75 @@ const AboutModal = ({
         }}
       >
         <div dangerouslySetInnerHTML={{ __html: aboutText }} />
+
+        {/* Social Media Links - Only shown on mobile */}
+        {isMobile && Object.keys(socialLinks).length > 0 && (
+          <div style={{
+            marginTop: '32px',
+            paddingTop: '24px',
+            borderTop: `1px solid ${themeColors.highlight1 || 'rgba(255, 255, 255, 0.1)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}>
+            {Object.entries(socialLinks).map(([key, value]) => {
+              // Handle standard icon-based social links (string URLs)
+              if (typeof value === 'string') {
+                const iconMap = {
+                  facebook: <FacebookIcon />,
+                  twitter: <TwitterIcon />,
+                  linkedin: <LinkedInIcon />,
+                  instagram: <InstagramIcon />,
+                  github: <GitHubIcon />
+                };
+
+                const icon = iconMap[key.toLowerCase()];
+                if (icon) {
+                  return (
+                    <IconButton
+                      key={key}
+                      sx={{ color: themeColors.highlight2 }}
+                      href={value}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {icon}
+                    </IconButton>
+                  );
+                }
+              }
+
+              // Handle custom image-based social links (object with url and image)
+              if (typeof value === 'object' && value.url && value.image) {
+                return (
+                  <IconButton
+                    key={key}
+                    sx={{
+                      color: themeColors.highlight2,
+                      padding: '8px'
+                    }}
+                    href={value.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      src={value.image}
+                      alt={key}
+                      style={{
+                        height: '24px',
+                        width: 'auto',
+                        display: 'block'
+                      }}
+                    />
+                  </IconButton>
+                );
+              }
+
+              return null;
+            })}
+          </div>
+        )}
       </DialogContent>
       <DialogActions
         sx={{

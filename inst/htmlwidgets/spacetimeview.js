@@ -63984,9 +63984,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/DialogTitle/DialogTitle.js");
 /* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/IconButton/IconButton.js");
 /* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/DialogContent/DialogContent.js");
-/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/DialogActions/DialogActions.js");
-/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/Button/Button.js");
+/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/DialogActions/DialogActions.js");
+/* harmony import */ var _mui_material__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @mui/material */ "./node_modules/@mui/material/Button/Button.js");
 /* harmony import */ var _mui_icons_material_Close__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @mui/icons-material/Close */ "./node_modules/@mui/icons-material/Close.js");
+/* harmony import */ var _mui_icons_material_Facebook__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @mui/icons-material/Facebook */ "./node_modules/@mui/icons-material/Facebook.js");
+/* harmony import */ var _mui_icons_material_Twitter__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @mui/icons-material/Twitter */ "./node_modules/@mui/icons-material/Twitter.js");
+/* harmony import */ var _mui_icons_material_LinkedIn__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @mui/icons-material/LinkedIn */ "./node_modules/@mui/icons-material/LinkedIn.js");
+/* harmony import */ var _mui_icons_material_Instagram__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @mui/icons-material/Instagram */ "./node_modules/@mui/icons-material/Instagram.js");
+/* harmony import */ var _mui_icons_material_GitHub__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @mui/icons-material/GitHub */ "./node_modules/@mui/icons-material/GitHub.js");
+
+
+
+
+
 
 
 
@@ -64003,7 +64013,9 @@ const AboutModal = _ref => {
       highlight2: '#8C92A4',
       highlight3: '#FEFEFE',
       accent2: '#007BFF'
-    }
+    },
+    socialLinks = {},
+    isMobile = false
   } = _ref;
   if (!aboutText) return null;
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_1__["default"], {
@@ -64105,12 +64117,69 @@ const AboutModal = _ref => {
     dangerouslySetInnerHTML: {
       __html: aboutText
     }
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_6__["default"], {
+  }), isMobile && Object.keys(socialLinks).length > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      marginTop: '32px',
+      paddingTop: '24px',
+      borderTop: `1px solid ${themeColors.highlight1 || 'rgba(255, 255, 255, 0.1)'}`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px'
+    }
+  }, Object.entries(socialLinks).map(_ref2 => {
+    let [key, value] = _ref2;
+    // Handle standard icon-based social links (string URLs)
+    if (typeof value === 'string') {
+      const iconMap = {
+        facebook: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Facebook__WEBPACK_IMPORTED_MODULE_6__["default"], null),
+        twitter: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Twitter__WEBPACK_IMPORTED_MODULE_7__["default"], null),
+        linkedin: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_LinkedIn__WEBPACK_IMPORTED_MODULE_8__["default"], null),
+        instagram: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_Instagram__WEBPACK_IMPORTED_MODULE_9__["default"], null),
+        github: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_icons_material_GitHub__WEBPACK_IMPORTED_MODULE_10__["default"], null)
+      };
+      const icon = iconMap[key.toLowerCase()];
+      if (icon) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_3__["default"], {
+          key: key,
+          sx: {
+            color: themeColors.highlight2
+          },
+          href: value,
+          target: "_blank",
+          rel: "noopener noreferrer"
+        }, icon);
+      }
+    }
+
+    // Handle custom image-based social links (object with url and image)
+    if (typeof value === 'object' && value.url && value.image) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        key: key,
+        sx: {
+          color: themeColors.highlight2,
+          padding: '8px'
+        },
+        href: value.url,
+        target: "_blank",
+        rel: "noopener noreferrer"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
+        src: value.image,
+        alt: key,
+        style: {
+          height: '24px',
+          width: 'auto',
+          display: 'block'
+        }
+      }));
+    }
+    return null;
+  }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_11__["default"], {
     sx: {
       backgroundColor: themeColors.elevation2,
       padding: '16px 24px'
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_7__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_mui_material__WEBPACK_IMPORTED_MODULE_12__["default"], {
     onClick: onClose,
     sx: {
       color: themeColors.accent2,
@@ -65618,7 +65687,7 @@ const Header = _ref => {
         color: themeColors.accent2
       }
     }));
-  }))), Object.entries(socialLinks).map(_ref2 => {
+  }))), !isMobile && Object.entries(socialLinks).map(_ref2 => {
     let [key, value] = _ref2;
     // Handle standard icon-based social links (string URLs)
     if (typeof value === 'string') {
@@ -65669,7 +65738,9 @@ const Header = _ref => {
     open: aboutModalOpen,
     onClose: () => setAboutModalOpen(false),
     aboutText: aboutText,
-    themeColors: themeColors
+    themeColors: themeColors,
+    socialLinks: socialLinks,
+    isMobile: isMobile
   }));
 };
 /* harmony default export */ __webpack_exports__["default"] = (Header);

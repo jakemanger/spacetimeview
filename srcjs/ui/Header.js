@@ -230,8 +230,8 @@ const Header = ({
           </div>
         )}
 
-        {/* Social Media Icons */}
-        {Object.entries(socialLinks).map(([key, value]) => {
+        {/* Social Media Icons - Hidden on mobile, shown in About modal instead */}
+        {!isMobile && Object.entries(socialLinks).map(([key, value]) => {
           // Handle standard icon-based social links (string URLs)
           if (typeof value === 'string') {
             const iconMap = {
@@ -294,6 +294,8 @@ const Header = ({
         onClose={() => setAboutModalOpen(false)}
         aboutText={aboutText}
         themeColors={themeColors}
+        socialLinks={socialLinks}
+        isMobile={isMobile}
       />
     </header>
   );
