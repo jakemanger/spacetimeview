@@ -566,8 +566,9 @@ spacetimeview <- function(
       stop(paste0('The `', time_column_name, '` time column was not a POSIXct, POSIXlt, or Date object.'))
     }
     
-    # then convert to timestamp format needed by js
-    data$timestamp <- format(data[[time_column_name]], "%Y/%m/%d %H:%M:%OS2")
+    # convert to Unix milliseconds (much more compact than string format in JSON)
+    # JavaScript Date constructor accepts milliseconds since Unix epoch
+    data$timestamp <- as.numeric(data[[time_column_name]]) * 1000
     # remove the original time column
     if (time_column_name != 'timestamp') {
       data <- data[, !(names(data) %in% time_column_name)]
