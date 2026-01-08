@@ -9,14 +9,14 @@
 
 ## Citation
 
-Manger J, Berson J (2025). *spacetimeview: Create Interactive Space Time
+Manger J, Berson J (2026). *spacetimeview: Create Interactive Space Time
 Data Visualisations in One Line of Code*. R package version 0.0.0.9000,
 <https://jakemanger.github.io/spacetimeview/>.
 
     @Manual{,
       title = {spacetimeview: Create Interactive Space Time Data Visualisations in One Line of Code},
       author = {Jake Manger and Jacob Berson},
-      year = {2025},
+      year = {2026},
       note = {R package version 0.0.0.9000},
       url = {https://jakemanger.github.io/spacetimeview/},
     }
