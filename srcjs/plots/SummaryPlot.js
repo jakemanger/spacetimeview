@@ -45,6 +45,29 @@ const MS_PER_DAY = 8.64e7;
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const dataFilter = new DataFilterExtension({ filterSize: 1, fp64: false });
 
+function formatLegendDate(timestamp, viewMode) {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const options = viewMode === 'seasonal'
+    ? { month: 'short', day: 'numeric' }
+    : { year: 'numeric', month: 'short', day: 'numeric' };
+
+  return date.toLocaleDateString(undefined, options);
+}
+
+function formatLegendDateRange(range, viewMode) {
+  if (!Array.isArray(range) || !Number.isFinite(range[0]) || !Number.isFinite(range[1])) {
+    return null;
+  }
+
+  const startLabel = formatLegendDate(range[0], viewMode);
+  const endLabel = formatLegendDate(range[1], viewMode);
+
+  if (!startLabel || !endLabel) return null;
+  return startLabel === endLabel ? startLabel : `${startLabel} - ${endLabel}`;
+}
+
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
   intensity: 1.0,
@@ -111,6 +134,8 @@ export default function SummaryPlot({
   legendOrder = null,
   legendLabels = null,
   legendDirectionText = null,
+  legendTimeRangeText = false,
+  legendMetricLabel = null,
   mapHeight = '100%',
   hasHeader = true,
   initialTimeMode = 'historical',
@@ -654,6 +679,25 @@ export default function SummaryPlot({
 
   const relevantFactorLevels = (factorLevels && factorLevels[legendTitle]) || null;
 
+  const legendSubtitle = useMemo(() => {
+    if (!legendTimeRangeText) return null;
+
+    const rangeLabel = formatLegendDateRange(filter, viewMode);
+    if (legendMetricLabel && legendMetricLabel.includes('{range}')) {
+      if (rangeLabel) {
+        return legendMetricLabel.replace(/\{range\}/g, rangeLabel);
+      }
+      return legendMetricLabel
+        .replace(/\s*,?\s*between\s*\{range\}/gi, '')
+        .replace(/\{range\}/g, '')
+        .trim();
+    }
+
+    return [legendMetricLabel, rangeLabel ? `Selected: ${rangeLabel}` : null]
+      .filter(Boolean)
+      .join('\n');
+  }, [filter, legendMetricLabel, legendTimeRangeText, viewMode]);
+
   // use normalized data when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
   const displayTimeRange = viewMode === 'seasonal' ? normalizedTimeRange : timeRange;
@@ -835,6 +879,7 @@ export default function SummaryPlot({
         legendOrder={legendOrder}
         legendLabels={legendLabels}
         legendDirectionText={legendDirectionText}
+        legendSubtitle={legendSubtitle}
         style={{
           position: 'fixed',
           top: '20px',

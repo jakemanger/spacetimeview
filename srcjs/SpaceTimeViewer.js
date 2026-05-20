@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import SummaryPlot from './plots/SummaryPlot';
 import { useControls, Leva } from 'leva';
 import './SpaceTimeViewer.css';
@@ -51,6 +51,8 @@ export default function SpaceTimeViewer({
   data = [],
   dataFiles = null,  // Object mapping column names to file paths (for split_by_column=TRUE)
   dataUrl = null,    // Single file path for all data (for split_by_column=FALSE)
+  initialDataUrl = null, // Small file containing the initial/default column for fast first render
+  dataColumns = null, // Column names available in the full data file
   dataDir = 'data',  // Directory where data files are stored
   initialStyle = 'Summary',
   initialColumnToPlot = 'value',
@@ -120,6 +122,8 @@ export default function SpaceTimeViewer({
   legendOrder = null,
   legendLabels = null,
   legendDirectionText = null,
+  legendTimeRangeText = false,
+  legendMetricLabel = null,
   menuText = null,
   aboutText = null,
   initialLongitude = null,
@@ -132,6 +136,9 @@ export default function SpaceTimeViewer({
   const [localLoadedData, setLocalLoadedData] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [loadingColumn, setLoadingColumn] = useState(null);
+  const [initialDataLoadFinished, setInitialDataLoadFinished] = useState(false);
+  const initialDataFetchStarted = useRef(false);
+  const fullDataFetchStarted = useRef(false);
 
   // Determine which state to use and how to namespace keys
   const usingSharedState = sharedLoadedData !== null && setSharedLoadedData !== null;
@@ -175,6 +182,12 @@ export default function SpaceTimeViewer({
       return loadedData['__all__'];
     }
 
+    // If a small initial-column payload is available, use it until the full tab data arrives
+    if (initialDataUrl && loadedData['__initial__']) {
+      console.log(`transformedData: using initial data with ${loadedData['__initial__'].length} rows`);
+      return loadedData['__initial__'];
+    }
+
     // If we have dataFiles, use the loaded data for the selected column
     if (dataFiles && Object.keys(loadedData).length > 0 && columnsToPlotValues.length > 0) {
       // Get the first selected column (for now we only support one column at a time with lazy loading)
@@ -195,7 +208,7 @@ export default function SpaceTimeViewer({
     console.log('transformedData: using inline data');
     const convertedData = HTMLWidgets.dataframeToD3(data);
     return convertedData;
-  }, [data, dataFiles, dataUrl, loadedData, columnsToPlotValues]);
+  }, [data, dataFiles, dataUrl, initialDataUrl, loadedData, columnsToPlotValues]);
 
   let [levaTheme, setLevaTheme] = useState({
     colors: {
@@ -233,6 +246,16 @@ export default function SpaceTimeViewer({
       key => key !== 'lng' && key !== 'lat' && key !== 'timestamp'
     );
   }, [transformedData]);
+
+  const configuredColumnNames = useMemo(() => {
+    if (!dataColumns) return [];
+    if (Array.isArray(dataColumns)) return dataColumns;
+    return Object.values(dataColumns);
+  }, [dataColumns]);
+
+  const columnNamesForControls = useMemo(() => {
+    return configuredColumnNames.length > 0 ? configuredColumnNames : columnNames;
+  }, [configuredColumnNames, columnNames]);
 
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   let factorAggregateOptions = ['MODE'];
@@ -377,7 +400,7 @@ export default function SpaceTimeViewer({
     },
     filterColumn: {
       value: initialFilterColumn,
-      options: columnNames.concat(null),
+      options: columnNamesForControls.concat(null),
       label: controlNames['filter_column'] || 'Filter Column',
       hint: 'Choose a column to filter the data by.',
       render: () => visibleControls.includes('filter_column'),
@@ -436,6 +459,7 @@ export default function SpaceTimeViewer({
       initialColorScheme,
       initialColorScaleType,
       initialNumDecimals,
+      columnNamesForControls,
       factorLevels,
       controlNames,
       initialFilterColumn,
@@ -488,6 +512,7 @@ export default function SpaceTimeViewer({
     initialColorScheme,
     initialColorScaleType,
     initialNumDecimals,
+    columnNamesForControls,
     factorLevels,
     visibleControls,
     controlNames,
@@ -676,12 +701,12 @@ export default function SpaceTimeViewer({
       if (selectableColumns && selectableColumns.length > 0) {
         availableColumns = selectableColumns.filter(col => availableColumns.includes(col));
       }
-    } else if (columnNames.length > 0) {
-      // Use columnNames from inline data
-      availableColumns = columnNames;
+    } else if (columnNamesForControls.length > 0) {
+      // Use configured full-data columns when available, otherwise columns from the loaded data
+      availableColumns = columnNamesForControls;
       if (selectableColumns && selectableColumns.length > 0) {
-        // preserve the order from selectableColumns instead of columnNames
-        availableColumns = selectableColumns.filter(col => columnNames.includes(col));
+        // preserve the order from selectableColumns instead of columnNamesForControls
+        availableColumns = selectableColumns.filter(col => columnNamesForControls.includes(col));
       }
     }
 
@@ -705,7 +730,46 @@ export default function SpaceTimeViewer({
       setColumnsToPlotOptions([]);
       setColumnsToPlotValues([]);
     }
-  }, [columnNames, initialColumnToPlot, selectableColumns, dataFiles]);
+  }, [columnNamesForControls, initialColumnToPlot, selectableColumns, dataFiles]);
+
+  // Load a small initial-column payload first so a tab can render before its full data arrives
+  useEffect(() => {
+    if (!initialDataUrl) {
+      return;
+    }
+
+    if (loadedData['__initial__'] || loadedData['__all__'] || initialDataFetchStarted.current) {
+      return;
+    }
+
+    const filepath = dataDir ? `${dataDir}/${initialDataUrl}` : initialDataUrl;
+    console.log(`Loading initial data from initialDataUrl: ${filepath}`);
+    initialDataFetchStarted.current = true;
+    setIsLoadingData(true);
+    setLoadingColumn('data');
+
+    fetch(filepath, { cache: 'force-cache' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${filepath}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(jsonData => {
+        const d3Data = HTMLWidgets.dataframeToD3(jsonData);
+        console.log(`Loaded initial data from initialDataUrl:`, d3Data.length, 'rows');
+        updateLoadedData('__initial__', d3Data);
+        setInitialDataLoadFinished(true);
+        setIsLoadingData(false);
+        setLoadingColumn(null);
+      })
+      .catch(error => {
+        console.error(`Error loading data from initialDataUrl:`, error);
+        setInitialDataLoadFinished(true);
+        setIsLoadingData(false);
+        setLoadingColumn(null);
+      });
+  }, [initialDataUrl, dataDir, loadedData]);
 
   // Load data from dataUrl (for split_by_column=FALSE)
   useEffect(() => {
@@ -713,15 +777,24 @@ export default function SpaceTimeViewer({
       return; // No dataUrl to load
     }
 
-    // Check if this specific data is already loaded
-    if (loadedData['__all__']) {
-      console.log('Data already loaded from cache');
+    if (loadedData['__all__'] || fullDataFetchStarted.current) {
+      console.log('Full data already loaded or loading from cache');
       return;
     }
 
+    if (initialDataUrl && !initialDataLoadFinished) {
+      return; // Wait for the initial-column payload before hydrating the full tab data
+    }
+
+    const isBackgroundLoad = Boolean(initialDataUrl && loadedData['__initial__']);
     const filepath = dataDir ? `${dataDir}/${dataUrl}` : dataUrl;
-    console.log(`Loading data from dataUrl: ${filepath}`);
-    setIsLoadingData(true);
+    console.log(`${isBackgroundLoad ? 'Background loading' : 'Loading'} full data from dataUrl: ${filepath}`);
+    fullDataFetchStarted.current = true;
+
+    if (!isBackgroundLoad) {
+      setIsLoadingData(true);
+      setLoadingColumn('data');
+    }
 
     fetch(filepath, { cache: 'force-cache' })
       .then(response => {
@@ -736,13 +809,19 @@ export default function SpaceTimeViewer({
         console.log(`Loaded data from dataUrl:`, d3Data.length, 'rows');
         // Store it with a special key since there's no specific column
         updateLoadedData('__all__', d3Data);
-        setIsLoadingData(false);
+        if (!isBackgroundLoad) {
+          setIsLoadingData(false);
+          setLoadingColumn(null);
+        }
       })
       .catch(error => {
         console.error(`Error loading data from dataUrl:`, error);
-        setIsLoadingData(false);
+        if (!isBackgroundLoad) {
+          setIsLoadingData(false);
+          setLoadingColumn(null);
+        }
       });
-  }, [dataUrl, dataDir]);
+  }, [dataUrl, initialDataUrl, dataDir, loadedData, initialDataLoadFinished]);
 
   // Fetch data when columnsToPlotValues changes and dataFiles is provided
   useEffect(() => {
@@ -897,6 +976,14 @@ export default function SpaceTimeViewer({
     return dat;
   }, [transformedData, columnsToPlotValues, columnNames, filterColumn, filterColumnValues]);
 
+  const isWaitingForDeferredColumn = useMemo(() => {
+    if (!dataUrl || !initialDataUrl || loadedData['__all__'] || transformedData.length === 0 || columnsToPlotValues.length === 0) {
+      return false;
+    }
+
+    return columnsToPlotValues.some(col => !Object.prototype.hasOwnProperty.call(transformedData[0], col));
+  }, [dataUrl, initialDataUrl, loadedData, transformedData, columnsToPlotValues]);
+
   const hasHeader = headerLogo !== '' || headerTitle !== '' || headerWebsiteLink !== '' || Object.keys(socialLinks).length > 0;
 
   const plot = useMemo(() => {
@@ -911,7 +998,7 @@ export default function SpaceTimeViewer({
     let dataToRender = filteredData;
     let isUsingDummyData = false;
 
-    if (isLoadingData || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
+    if (isLoadingData || isWaitingForDeferredColumn || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
       // Create a single invisible point at the initial view location to render an empty map
       // NO timestamp - this is spatial-only data
       const dummyLat = initialLatitude !== null ? initialLatitude : -25;
@@ -931,7 +1018,7 @@ export default function SpaceTimeViewer({
       isUsingDummyData = true;
 
       // Log error if not loading but data is invalid
-      if (!isLoadingData && filteredData && filteredData.length > 0) {
+      if (!isLoadingData && !isWaitingForDeferredColumn && filteredData && filteredData.length > 0) {
         let columnsInData = filteredData?.map(d => Object.keys(d)) || [];
         console.error(
           'Unsupported columns: ',
@@ -985,6 +1072,8 @@ export default function SpaceTimeViewer({
         legendOrder={legendOrder}
         legendLabels={legendLabels}
         legendDirectionText={legendDirectionText}
+        legendTimeRangeText={legendTimeRangeText}
+        legendMetricLabel={legendMetricLabel}
         style={style} // Pass the style prop
         radiusScale={style === 'Scatter' ? radiusScale : undefined} // Pass scatter-specific props
         radiusMinPixels={style === 'Scatter' ? radiusMinPixels : undefined}
@@ -1021,7 +1110,8 @@ export default function SpaceTimeViewer({
     countryCodes,
     legendOrder,
     INITIAL_VIEW_STATE,
-    // Note: isLoadingData removed from dependencies to allow map to load in parallel with data
+    isLoadingData,
+    isWaitingForDeferredColumn,
   ]);
 
   const handleSnackbarClose = () => {
@@ -1170,7 +1260,7 @@ export default function SpaceTimeViewer({
       )}
 
       {/* Loading indicator for lazy-loaded data - only show for active tab and when actually loading external data */}
-      {isLoadingData && activeTab === tabIndex && (dataUrl || dataFiles) && (
+      {(isLoadingData || isWaitingForDeferredColumn) && activeTab === tabIndex && (dataUrl || dataFiles) && (
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -1196,7 +1286,7 @@ export default function SpaceTimeViewer({
             borderRadius: '50%',
             animation: 'spin 1s linear infinite'
           }} />
-          Loading {loadingColumn || 'data'}...
+          Loading {loadingColumn || (isWaitingForDeferredColumn ? 'full data' : 'data')}...
           <style>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }

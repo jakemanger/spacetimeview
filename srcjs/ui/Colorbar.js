@@ -24,6 +24,17 @@ function formatTitleForDisplay(title, newLineEveryWord) {
   return capitalizedTitle;
 }
 
+function formatLegendValue(value, decimals) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 export default function Colorbar({
   colorRange,
   colorDomain,
@@ -46,6 +57,7 @@ export default function Colorbar({
   legendOrder = null, // Array of indices to customize legend item order
   legendLabels = null, // Custom labels for legend items
   legendDirectionText = null, // Text to show with direction arrow
+  legendSubtitle = null,
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -85,11 +97,11 @@ export default function Colorbar({
     }
     // Handle numeric domain
     else if (colorDomain.length === 2) {
-      const [min, max] = colorDomain;
-      if (typeof min === 'number' && typeof max === 'number') {
-        const step = (max - min) / colorDomainLength;
-        sampledDomain = Array.from({ length: colorDomainLength + 1 }, (_, i) =>
-          (min + i * step).toFixed(numDecimals)
+        const [min, max] = colorDomain;
+        if (typeof min === 'number' && typeof max === 'number') {
+          const step = (max - min) / colorDomainLength;
+          sampledDomain = Array.from({ length: colorDomainLength + 1 }, (_, i) =>
+          formatLegendValue(min + i * step, numDecimals)
         ).reverse();
       }
     }
@@ -99,7 +111,7 @@ export default function Colorbar({
       sampledDomain = Array.from({ length: colorDomainLength + 1 }, (_, i) => {
         const index = Math.round(i * step);
         const value = colorDomain[index];
-        return typeof value === 'number' ? value.toFixed(numDecimals) : String(value);
+        return typeof value === 'number' ? formatLegendValue(value, numDecimals) : String(value);
       }).reverse();
     }
   }
@@ -343,18 +355,34 @@ export default function Colorbar({
           marginBottom: '10px',
         }}
       >
-        <h4
-          style={{
-            margin: '0',
-            color: highlight2,
-            fontSize: isCollapsed ? '0.875rem' : '1rem',
-            position: isCollapsed ? 'static' : 'sticky',
-            top: '0',
-            backgroundColor: elevation2,
-          }}
-        >
-          {formatTitleForDisplay(title, isSmallScreen && isCollapsed)}
-        </h4>
+        <div>
+          <h4
+            style={{
+              margin: '0',
+              color: highlight2,
+              fontSize: isCollapsed ? '0.875rem' : '1rem',
+              position: isCollapsed ? 'static' : 'sticky',
+              top: '0',
+              backgroundColor: elevation2,
+            }}
+          >
+            {formatTitleForDisplay(title, isSmallScreen && isCollapsed)}
+          </h4>
+          {!isCollapsed && legendSubtitle && (
+            <div
+              style={{
+                color: highlight2,
+                fontSize: '11px',
+                lineHeight: 1.25,
+                marginTop: '3px',
+                opacity: 0.85,
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {legendSubtitle}
+            </div>
+          )}
+          </div>
         {isSmallScreen && (
           <span
             style={{

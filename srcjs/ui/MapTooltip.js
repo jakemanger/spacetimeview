@@ -103,7 +103,32 @@ export function getTooltipData(object, allData, hasTime, filter) {
     console.log('Processing aggregated object with', points.length, 'points');
 
     // extract source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
-    let sourceData = points.map(point => point.source || point);
+    // Some Deck.gl wrappers omit non-visual fields from source, so merge back the original row by index when available.
+    let sourceData = points.map(point => {
+      const indexedData = Number.isInteger(point.index) && allData[point.index] ? allData[point.index] : {};
+      const source = point.source || point;
+      let mergedData = {
+        ...indexedData,
+        ...source
+      };
+
+      if (mergedData.grid_id === undefined && allData.length > 0) {
+        const matchedData = allData.find(d =>
+          d.timestamp === source.timestamp &&
+          Number(d.lat) === Number(source.lat) &&
+          Number(d.lng) === Number(source.lng)
+        );
+
+        if (matchedData) {
+          mergedData = {
+            ...matchedData,
+            ...source
+          };
+        }
+      }
+
+      return mergedData;
+    });
     console.log('Extracted source data:', sourceData);
     console.log('Source data length:', sourceData.length);
 

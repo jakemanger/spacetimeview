@@ -6,6 +6,7 @@
 #' @param tab_titles Character vector of tab titles. If not provided, default titles will be used.
 #' @param split_data Logical. If TRUE, splits data into separate JSON files for lazy loading. Default is TRUE.
 #' @param split_by_column Logical. If TRUE and split_data is TRUE, creates separate JSON files for each plottable column (EXPERIMENTAL). Default is FALSE.
+#' @param split_initial_column Logical. If TRUE and split_data is TRUE, creates a small JSON file for the initial column so tabs can render before the full tab data loads. Default is TRUE.
 #' @param data_dir Character. Directory name for data files relative to HTML output. Default is "data".
 #' @param width Width of the widget
 #' @param height Height of the widget
@@ -18,6 +19,7 @@ spacetimetabs <- function(
   tab_titles = NULL,
   split_data = TRUE,
   split_by_column = FALSE,  # Default to FALSE - split by tab only (column splitting is experimental)
+  split_initial_column = TRUE,
   data_dir = "data",
   width = '100vw',
   height = '100vh',
@@ -75,6 +77,51 @@ spacetimetabs <- function(
 
       message(paste("  Column names:", paste(names(original_data), collapse=", ")))
       message(paste("  First column length:", length(original_data[[1]])))
+
+      data_columns <- setdiff(names(original_data), c('lat', 'lng', 'timestamp'))
+      config$dataColumns <- data_columns
+
+      get_initial_column <- function() {
+        initial_col <- config$initialColumnToPlot
+        if (!is.null(initial_col) && length(initial_col) > 0 && !is.na(initial_col) && initial_col %in% data_columns) {
+          return(initial_col)
+        }
+
+        selectable_cols <- config$selectableColumns
+        if (!is.null(selectable_cols) && length(selectable_cols) > 0) {
+          selectable_cols <- selectable_cols[selectable_cols %in% data_columns]
+          if (length(selectable_cols) > 0) {
+            return(selectable_cols[1])
+          }
+        }
+
+        if (length(data_columns) > 0) {
+          return(data_columns[1])
+        }
+
+        NULL
+      }
+
+      get_columns_for_initial_data <- function(initial_col) {
+        required_cols <- c('lat', 'lng')
+        if ('timestamp' %in% names(original_data)) {
+          required_cols <- c(required_cols, 'timestamp')
+        }
+
+        initial_cols <- character(0)
+        if (!is.null(initial_col) && initial_col %in% names(original_data)) {
+          escaped_col <- gsub("([.|()\\^{}+$*?])", "\\\\\\1", initial_col)
+          col_pattern <- paste0("^", escaped_col, "(_.*)?$")
+          initial_cols <- grep(col_pattern, names(original_data), value = TRUE)
+        }
+
+        filter_col <- config$initialFilterColumn
+        if (!is.null(filter_col) && length(filter_col) > 0 && !is.na(filter_col) && filter_col %in% names(original_data)) {
+          initial_cols <- unique(c(initial_cols, filter_col))
+        }
+
+        unique(c(required_cols, initial_cols))
+      }
 
       # create data directory if needed
       if (!dir.exists(data_dir)) {
@@ -135,6 +182,27 @@ spacetimetabs <- function(
         # split by tab only: one file per tab
         filename <- paste0("tab_", i-1, "_data.json")
         filepath <- file.path(data_dir, filename)
+
+        if (split_initial_column) {
+          initial_col <- get_initial_column()
+          initial_cols <- get_columns_for_initial_data(initial_col)
+
+          if (length(initial_cols) > 0) {
+            initial_filename <- paste0("tab_", i-1, "_initial.json")
+            initial_filepath <- file.path(data_dir, initial_filename)
+            initial_data <- original_data[initial_cols]
+
+            initial_json_string <- jsonlite::toJSON(
+              initial_data,
+              dataframe = "columns",
+              auto_unbox = TRUE,
+              digits = config$jsonDigits %||% 3,
+              pretty = FALSE
+            )
+            writeLines(initial_json_string, initial_filepath)
+            config$initialDataUrl <- initial_filename
+          }
+        }
 
         # write to json in column-oriented format
         json_string <- jsonlite::toJSON(

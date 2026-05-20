@@ -61980,6 +61980,10 @@ function SpaceTimeViewer(_ref) {
     // Object mapping column names to file paths (for split_by_column=TRUE)
     dataUrl = null,
     // Single file path for all data (for split_by_column=FALSE)
+    initialDataUrl = null,
+    // Small file containing the initial/default column for fast first render
+    dataColumns = null,
+    // Column names available in the full data file
     dataDir = 'data',
     // Directory where data files are stored
     initialStyle = 'Summary',
@@ -62045,6 +62049,8 @@ function SpaceTimeViewer(_ref) {
     legendOrder = null,
     legendLabels = null,
     legendDirectionText = null,
+    legendTimeRangeText = false,
+    legendMetricLabel = null,
     menuText = null,
     aboutText = null,
     initialLongitude = null,
@@ -62057,6 +62063,9 @@ function SpaceTimeViewer(_ref) {
   const [localLoadedData, setLocalLoadedData] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({});
   const [isLoadingData, setIsLoadingData] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   const [loadingColumn, setLoadingColumn] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+  const [initialDataLoadFinished, setInitialDataLoadFinished] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
+  const initialDataFetchStarted = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
+  const fullDataFetchStarted = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
 
   // Determine which state to use and how to namespace keys
   const usingSharedState = sharedLoadedData !== null && setSharedLoadedData !== null;
@@ -62096,6 +62105,12 @@ function SpaceTimeViewer(_ref) {
       return loadedData['__all__'];
     }
 
+    // If a small initial-column payload is available, use it until the full tab data arrives
+    if (initialDataUrl && loadedData['__initial__']) {
+      console.log(`transformedData: using initial data with ${loadedData['__initial__'].length} rows`);
+      return loadedData['__initial__'];
+    }
+
     // If we have dataFiles, use the loaded data for the selected column
     if (dataFiles && Object.keys(loadedData).length > 0 && columnsToPlotValues.length > 0) {
       // Get the first selected column (for now we only support one column at a time with lazy loading)
@@ -62115,7 +62130,7 @@ function SpaceTimeViewer(_ref) {
     console.log('transformedData: using inline data');
     const convertedData = HTMLWidgets.dataframeToD3(data);
     return convertedData;
-  }, [data, dataFiles, dataUrl, loadedData, columnsToPlotValues]);
+  }, [data, dataFiles, dataUrl, initialDataUrl, loadedData, columnsToPlotValues]);
   let [levaTheme, setLevaTheme] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
     colors: {
       elevation1: '#F1F3F5',
@@ -62138,6 +62153,14 @@ function SpaceTimeViewer(_ref) {
     if (transformedData.length === 0) return [];
     return Object.keys(transformedData[0]).filter(key => key !== 'lng' && key !== 'lat' && key !== 'timestamp');
   }, [transformedData]);
+  const configuredColumnNames = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!dataColumns) return [];
+    if (Array.isArray(dataColumns)) return dataColumns;
+    return Object.values(dataColumns);
+  }, [dataColumns]);
+  const columnNamesForControls = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    return configuredColumnNames.length > 0 ? configuredColumnNames : columnNames;
+  }, [configuredColumnNames, columnNames]);
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   let factorAggregateOptions = ['MODE'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
@@ -62280,7 +62303,7 @@ function SpaceTimeViewer(_ref) {
     },
     filterColumn: {
       value: initialFilterColumn,
-      options: columnNames.concat(null),
+      options: columnNamesForControls.concat(null),
       label: controlNames['filter_column'] || 'Filter Column',
       hint: 'Choose a column to filter the data by.',
       render: () => visibleControls.includes('filter_column')
@@ -62313,7 +62336,7 @@ function SpaceTimeViewer(_ref) {
     radiusMinPixels,
     filterColumn,
     enableClickedTooltips: clickedTooltipsEnabled
-  }, set] = (0,leva__WEBPACK_IMPORTED_MODULE_2__.useControls)(() => controlsConfig, [data, initialStyle, initialColumnToPlot, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, factorLevels, controlNames, initialFilterColumn, draggableMenu, factorIcons, enableClickedTooltips]);
+  }, set] = (0,leva__WEBPACK_IMPORTED_MODULE_2__.useControls)(() => controlsConfig, [data, initialStyle, initialColumnToPlot, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, columnNamesForControls, factorLevels, controlNames, initialFilterColumn, draggableMenu, factorIcons, enableClickedTooltips]);
 
   // update controls when input props change (e.g. shiny controlling the ui)
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
@@ -62338,7 +62361,7 @@ function SpaceTimeViewer(_ref) {
       filterColumn: initialFilterColumn,
       enableClickedTooltips: enableClickedTooltips
     });
-  }, [data, initialStyle, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, factorLevels, visibleControls, controlNames, initialFilterColumn, defaultFilterValue, draggableMenu, factorIcons, enableClickedTooltips]);
+  }, [data, initialStyle, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, columnNamesForControls, factorLevels, visibleControls, controlNames, initialFilterColumn, defaultFilterValue, draggableMenu, factorIcons, enableClickedTooltips]);
 
   // calculate selected filter display info
   const selectedFilterDisplayInfo = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
@@ -62500,12 +62523,12 @@ function SpaceTimeViewer(_ref) {
       if (selectableColumns && selectableColumns.length > 0) {
         availableColumns = selectableColumns.filter(col => availableColumns.includes(col));
       }
-    } else if (columnNames.length > 0) {
-      // Use columnNames from inline data
-      availableColumns = columnNames;
+    } else if (columnNamesForControls.length > 0) {
+      // Use configured full-data columns when available, otherwise columns from the loaded data
+      availableColumns = columnNamesForControls;
       if (selectableColumns && selectableColumns.length > 0) {
-        // preserve the order from selectableColumns instead of columnNames
-        availableColumns = selectableColumns.filter(col => columnNames.includes(col));
+        // preserve the order from selectableColumns instead of columnNamesForControls
+        availableColumns = selectableColumns.filter(col => columnNamesForControls.includes(col));
       }
     }
     if (availableColumns.length > 0) {
@@ -62528,22 +62551,63 @@ function SpaceTimeViewer(_ref) {
       setColumnsToPlotOptions([]);
       setColumnsToPlotValues([]);
     }
-  }, [columnNames, initialColumnToPlot, selectableColumns, dataFiles]);
+  }, [columnNamesForControls, initialColumnToPlot, selectableColumns, dataFiles]);
+
+  // Load a small initial-column payload first so a tab can render before its full data arrives
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    if (!initialDataUrl) {
+      return;
+    }
+    if (loadedData['__initial__'] || loadedData['__all__'] || initialDataFetchStarted.current) {
+      return;
+    }
+    const filepath = dataDir ? `${dataDir}/${initialDataUrl}` : initialDataUrl;
+    console.log(`Loading initial data from initialDataUrl: ${filepath}`);
+    initialDataFetchStarted.current = true;
+    setIsLoadingData(true);
+    setLoadingColumn('data');
+    fetch(filepath, {
+      cache: 'force-cache'
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${filepath}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(jsonData => {
+      const d3Data = HTMLWidgets.dataframeToD3(jsonData);
+      console.log(`Loaded initial data from initialDataUrl:`, d3Data.length, 'rows');
+      updateLoadedData('__initial__', d3Data);
+      setInitialDataLoadFinished(true);
+      setIsLoadingData(false);
+      setLoadingColumn(null);
+    }).catch(error => {
+      console.error(`Error loading data from initialDataUrl:`, error);
+      setInitialDataLoadFinished(true);
+      setIsLoadingData(false);
+      setLoadingColumn(null);
+    });
+  }, [initialDataUrl, dataDir, loadedData]);
 
   // Load data from dataUrl (for split_by_column=FALSE)
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (!dataUrl) {
       return; // No dataUrl to load
     }
-
-    // Check if this specific data is already loaded
-    if (loadedData['__all__']) {
-      console.log('Data already loaded from cache');
+    if (loadedData['__all__'] || fullDataFetchStarted.current) {
+      console.log('Full data already loaded or loading from cache');
       return;
     }
+    if (initialDataUrl && !initialDataLoadFinished) {
+      return; // Wait for the initial-column payload before hydrating the full tab data
+    }
+    const isBackgroundLoad = Boolean(initialDataUrl && loadedData['__initial__']);
     const filepath = dataDir ? `${dataDir}/${dataUrl}` : dataUrl;
-    console.log(`Loading data from dataUrl: ${filepath}`);
-    setIsLoadingData(true);
+    console.log(`${isBackgroundLoad ? 'Background loading' : 'Loading'} full data from dataUrl: ${filepath}`);
+    fullDataFetchStarted.current = true;
+    if (!isBackgroundLoad) {
+      setIsLoadingData(true);
+      setLoadingColumn('data');
+    }
     fetch(filepath, {
       cache: 'force-cache'
     }).then(response => {
@@ -62557,12 +62621,18 @@ function SpaceTimeViewer(_ref) {
       console.log(`Loaded data from dataUrl:`, d3Data.length, 'rows');
       // Store it with a special key since there's no specific column
       updateLoadedData('__all__', d3Data);
-      setIsLoadingData(false);
+      if (!isBackgroundLoad) {
+        setIsLoadingData(false);
+        setLoadingColumn(null);
+      }
     }).catch(error => {
       console.error(`Error loading data from dataUrl:`, error);
-      setIsLoadingData(false);
+      if (!isBackgroundLoad) {
+        setIsLoadingData(false);
+        setLoadingColumn(null);
+      }
     });
-  }, [dataUrl, dataDir]);
+  }, [dataUrl, initialDataUrl, dataDir, loadedData, initialDataLoadFinished]);
 
   // Fetch data when columnsToPlotValues changes and dataFiles is provided
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
@@ -62700,6 +62770,12 @@ function SpaceTimeViewer(_ref) {
     dat = dat.filter(d => d.value !== undefined && d.value !== null);
     return dat;
   }, [transformedData, columnsToPlotValues, columnNames, filterColumn, filterColumnValues]);
+  const isWaitingForDeferredColumn = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!dataUrl || !initialDataUrl || loadedData['__all__'] || transformedData.length === 0 || columnsToPlotValues.length === 0) {
+      return false;
+    }
+    return columnsToPlotValues.some(col => !Object.prototype.hasOwnProperty.call(transformedData[0], col));
+  }, [dataUrl, initialDataUrl, loadedData, transformedData, columnsToPlotValues]);
   const hasHeader = headerLogo !== '' || headerTitle !== '' || headerWebsiteLink !== '' || Object.keys(socialLinks).length > 0;
   const plot = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
     console.log('replotting plot');
@@ -62711,7 +62787,7 @@ function SpaceTimeViewer(_ref) {
     // Determine what data to use - if loading or no data, use a single dummy point to show empty map
     let dataToRender = filteredData;
     let isUsingDummyData = false;
-    if (isLoadingData || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
+    if (isLoadingData || isWaitingForDeferredColumn || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
       // Create a single invisible point at the initial view location to render an empty map
       // NO timestamp - this is spatial-only data
       const dummyLat = initialLatitude !== null ? initialLatitude : -25;
@@ -62730,7 +62806,7 @@ function SpaceTimeViewer(_ref) {
       isUsingDummyData = true;
 
       // Log error if not loading but data is invalid
-      if (!isLoadingData && filteredData && filteredData.length > 0) {
+      if (!isLoadingData && !isWaitingForDeferredColumn && filteredData && filteredData.length > 0) {
         let columnsInData = filteredData?.map(d => Object.keys(d)) || [];
         console.error('Unsupported columns: ', columnsInData, 'Columns should include: "lng", "lat", an optional timestamp and columns to plot.');
       }
@@ -62778,6 +62854,8 @@ function SpaceTimeViewer(_ref) {
       legendOrder: legendOrder,
       legendLabels: legendLabels,
       legendDirectionText: legendDirectionText,
+      legendTimeRangeText: legendTimeRangeText,
+      legendMetricLabel: legendMetricLabel,
       style: style // Pass the style prop
       ,
       radiusScale: style === 'Scatter' ? radiusScale : undefined // Pass scatter-specific props
@@ -62787,9 +62865,7 @@ function SpaceTimeViewer(_ref) {
       hasHeader: hasHeader,
       initialTimeMode: initialTimeMode
     });
-  }, [style, aggregateToUse, colorRange, colorScaleType, repeatedPointsAggregate, preserveDomains, timeRange, summaryRadius, summaryCoverage, animationSpeed, summaryHeight, theme, radiusScale, radiusMinPixels, summaryStyle, projection, filterColumnValues, filteredData, polygons, factorIcons, filterColumn, clickedTooltipsEnabled, observable, legendTitle, countryCodes, legendOrder, INITIAL_VIEW_STATE
-  // Note: isLoadingData removed from dependencies to allow map to load in parallel with data
-  ]);
+  }, [style, aggregateToUse, colorRange, colorScaleType, repeatedPointsAggregate, preserveDomains, timeRange, summaryRadius, summaryCoverage, animationSpeed, summaryHeight, theme, radiusScale, radiusMinPixels, summaryStyle, projection, filterColumnValues, filteredData, polygons, factorIcons, filterColumn, clickedTooltipsEnabled, observable, legendTitle, countryCodes, legendOrder, INITIAL_VIEW_STATE, isLoadingData, isWaitingForDeferredColumn]);
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
@@ -62940,7 +63016,7 @@ function SpaceTimeViewer(_ref) {
       fontWeight: 'bold',
       flexShrink: 0
     }
-  }, "Total: ", selectedFilterDisplayInfo.totalSelectedCount)), isLoadingData && activeTab === tabIndex && (dataUrl || dataFiles) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }, "Total: ", selectedFilterDisplayInfo.totalSelectedCount)), (isLoadingData || isWaitingForDeferredColumn) && activeTab === tabIndex && (dataUrl || dataFiles) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       position: 'absolute',
       top: '50%',
@@ -62967,7 +63043,7 @@ function SpaceTimeViewer(_ref) {
       borderRadius: '50%',
       animation: 'spin 1s linear infinite'
     }
-  }), "Loading ", loadingColumn || 'data', "...", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, `
+  }), "Loading ", loadingColumn || (isWaitingForDeferredColumn ? 'full data' : 'data'), "...", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, `
             @keyframes spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
@@ -63226,6 +63302,28 @@ const dataFilter = new _deck_gl_extensions__WEBPACK_IMPORTED_MODULE_15__["defaul
   filterSize: 1,
   fp64: false
 });
+function formatLegendDate(timestamp, viewMode) {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return null;
+  const options = viewMode === 'seasonal' ? {
+    month: 'short',
+    day: 'numeric'
+  } : {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  };
+  return date.toLocaleDateString(undefined, options);
+}
+function formatLegendDateRange(range, viewMode) {
+  if (!Array.isArray(range) || !Number.isFinite(range[0]) || !Number.isFinite(range[1])) {
+    return null;
+  }
+  const startLabel = formatLegendDate(range[0], viewMode);
+  const endLabel = formatLegendDate(range[1], viewMode);
+  if (!startLabel || !endLabel) return null;
+  return startLabel === endLabel ? startLabel : `${startLabel} - ${endLabel}`;
+}
 const ambientLight = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_16__.AmbientLight({
   color: [255, 255, 255],
   intensity: 1.0
@@ -63285,6 +63383,8 @@ function SummaryPlot(_ref) {
     legendOrder = null,
     legendLabels = null,
     legendDirectionText = null,
+    legendTimeRangeText = false,
+    legendMetricLabel = null,
     mapHeight = '100%',
     hasHeader = true,
     initialTimeMode = 'historical'
@@ -63793,6 +63893,17 @@ function SummaryPlot(_ref) {
     layers.unshift(tileLayer);
   }
   const relevantFactorLevels = factorLevels && factorLevels[legendTitle] || null;
+  const legendSubtitle = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (!legendTimeRangeText) return null;
+    const rangeLabel = formatLegendDateRange(filter, viewMode);
+    if (legendMetricLabel && legendMetricLabel.includes('{range}')) {
+      if (rangeLabel) {
+        return legendMetricLabel.replace(/\{range\}/g, rangeLabel);
+      }
+      return legendMetricLabel.replace(/\s*,?\s*between\s*\{range\}/gi, '').replace(/\{range\}/g, '').trim();
+    }
+    return [legendMetricLabel, rangeLabel ? `Selected: ${rangeLabel}` : null].filter(Boolean).join('\n');
+  }, [filter, legendMetricLabel, legendTimeRangeText, viewMode]);
 
   // use normalized data when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
@@ -63959,6 +64070,7 @@ function SummaryPlot(_ref) {
     legendOrder: legendOrder,
     legendLabels: legendLabels,
     legendDirectionText: legendDirectionText,
+    legendSubtitle: legendSubtitle,
     style: {
       position: 'fixed',
       top: '20px',
@@ -64226,6 +64338,15 @@ function formatTitleForDisplay(title, newLineEveryWord) {
   }
   return capitalizedTitle;
 }
+function formatLegendValue(value, decimals) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return String(value);
+  }
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
 function Colorbar(_ref) {
   let {
     colorRange,
@@ -64250,7 +64371,9 @@ function Colorbar(_ref) {
     // Array of indices to customize legend item order
     legendLabels = null,
     // Custom labels for legend items
-    legendDirectionText = null // Text to show with direction arrow
+    legendDirectionText = null,
+    // Text to show with direction arrow
+    legendSubtitle = null
   } = _ref;
   const [isCollapsed, setIsCollapsed] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
 
@@ -64299,7 +64422,7 @@ function Colorbar(_ref) {
         const step = (max - min) / colorDomainLength;
         sampledDomain = Array.from({
           length: colorDomainLength + 1
-        }, (_, i) => (min + i * step).toFixed(numDecimals)).reverse();
+        }, (_, i) => formatLegendValue(min + i * step, numDecimals)).reverse();
       }
     }
     // Handle multi-value domain
@@ -64310,7 +64433,7 @@ function Colorbar(_ref) {
       }, (_, i) => {
         const index = Math.round(i * step);
         const value = colorDomain[index];
-        return typeof value === 'number' ? value.toFixed(numDecimals) : String(value);
+        return typeof value === 'number' ? formatLegendValue(value, numDecimals) : String(value);
       }).reverse();
     }
   }
@@ -64523,7 +64646,7 @@ function Colorbar(_ref) {
       justifyContent: 'space-between',
       marginBottom: '10px'
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h4", {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h4", {
     style: {
       margin: '0',
       color: highlight2,
@@ -64532,7 +64655,16 @@ function Colorbar(_ref) {
       top: '0',
       backgroundColor: elevation2
     }
-  }, formatTitleForDisplay(title, isSmallScreen && isCollapsed)), isSmallScreen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+  }, formatTitleForDisplay(title, isSmallScreen && isCollapsed)), !isCollapsed && legendSubtitle && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      color: highlight2,
+      fontSize: '11px',
+      lineHeight: 1.25,
+      marginTop: '3px',
+      opacity: 0.85,
+      whiteSpace: 'pre-line'
+    }
+  }, legendSubtitle)), isSmallScreen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
     style: {
       color: highlight2,
       fontSize: '12px',
@@ -65856,7 +65988,25 @@ function getTooltipData(object, allData, hasTime, filter) {
     console.log('Processing aggregated object with', points.length, 'points');
 
     // extract source data from each point (hexagon points have structure: {source: {...}, screenCoord: [...], index: ...})
-    let sourceData = points.map(point => point.source || point);
+    // Some Deck.gl wrappers omit non-visual fields from source, so merge back the original row by index when available.
+    let sourceData = points.map(point => {
+      const indexedData = Number.isInteger(point.index) && allData[point.index] ? allData[point.index] : {};
+      const source = point.source || point;
+      let mergedData = {
+        ...indexedData,
+        ...source
+      };
+      if (mergedData.grid_id === undefined && allData.length > 0) {
+        const matchedData = allData.find(d => d.timestamp === source.timestamp && Number(d.lat) === Number(source.lat) && Number(d.lng) === Number(source.lng));
+        if (matchedData) {
+          mergedData = {
+            ...matchedData,
+            ...source
+          };
+        }
+      }
+      return mergedData;
+    });
     console.log('Extracted source data:', sourceData);
     console.log('Source data length:', sourceData.length);
 
@@ -66054,7 +66204,7 @@ function ObservablePlotTooltip(_ref) {
       // create function context and execute observable code
       const columnName = options.columnName || null;
       console.log('16.5. Column name being passed to Observable:', columnName);
-      const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', `
+      const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', 'filter', `
         console.log('INSIDE OBSERVABLE FUNCTION:');
         console.log('- Plot object:', Plot);
         console.log('- Data received:', data);
@@ -66062,6 +66212,7 @@ function ObservablePlotTooltip(_ref) {
         console.log('- First item:', data[0]);
         console.log('- Factor icons received:', factorIcons);
         console.log('- Column name received:', columnName);
+        console.log('- Filter received:', filter);
 
         // Show what factor icons are available - corrected logging
         if (factorIcons && typeof factorIcons === 'object') {
@@ -66087,7 +66238,7 @@ function ObservablePlotTooltip(_ref) {
         return result;
       `);
       console.log('17. Executing Observable function with columnName:', columnName);
-      const chart = plotFunction(_observablehq_plot__WEBPACK_IMPORTED_MODULE_1__, data, factorIcons, columnName);
+      const chart = plotFunction(_observablehq_plot__WEBPACK_IMPORTED_MODULE_1__, data, factorIcons, columnName, options.filter);
       console.log('18. Chart result:', chart);
       console.log('19. Chart type:', typeof chart);
       console.log('20. Chart is DOM element:', chart instanceof Element);

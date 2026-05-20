@@ -99,7 +99,7 @@ export default function ObservablePlotTooltip({ object, options }) {
       const columnName = options.columnName || null;
       console.log('16.5. Column name being passed to Observable:', columnName);
 
-      const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', `
+      const plotFunction = new Function('Plot', 'data', 'factorIcons', 'columnName', 'filter', `
         console.log('INSIDE OBSERVABLE FUNCTION:');
         console.log('- Plot object:', Plot);
         console.log('- Data received:', data);
@@ -107,6 +107,7 @@ export default function ObservablePlotTooltip({ object, options }) {
         console.log('- First item:', data[0]);
         console.log('- Factor icons received:', factorIcons);
         console.log('- Column name received:', columnName);
+        console.log('- Filter received:', filter);
 
         // Show what factor icons are available - corrected logging
         if (factorIcons && typeof factorIcons === 'object') {
@@ -133,7 +134,7 @@ export default function ObservablePlotTooltip({ object, options }) {
       `);
 
       console.log('17. Executing Observable function with columnName:', columnName);
-      const chart = plotFunction(Plot, data, factorIcons, columnName);
+      const chart = plotFunction(Plot, data, factorIcons, columnName, options.filter);
       
       console.log('18. Chart result:', chart);
       console.log('19. Chart type:', typeof chart);
