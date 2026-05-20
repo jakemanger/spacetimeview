@@ -15,6 +15,7 @@ You can install the development version of spacetimeview from
 [GitHub](https://github.com/) with:
 
 ``` r
+
 # after cloning with `git clone git@github.com:jakemanger/spacetimeview.git`
 devtools::load_all()
 #> ℹ Loading spacetimeview
@@ -28,6 +29,7 @@ devtools::load_all()
 Load your data with GPS coordinates and datetimes:
 
 ``` r
+
 library(spacetimeview)
 d <- read.csv('https://raw.githubusercontent.com/uber-web/kepler.gl-data/master/earthquakes/data.csv')
 d <- d[,c('Latitude', 'Longitude', 'DateTime', 'Magnitude')]
@@ -37,6 +39,7 @@ Now, in one line of code, generate an interactive plot over space and
 time
 
 ``` r
+
 spacetimeview(d, summary_radius = 10000, summary_height = 100)
 ```
 
@@ -46,6 +49,7 @@ Note, this interactive plot is also a website, that you can save as a
 html file
 
 ``` r
+
 htmlwidgets::saveWidget(spacetimeview(d), "my_plot.html")
 #> Auto-detected time column: `DateTime`
 #> Warning in spacetimeview(d): column_to_plot was not specified. Defaulting to
@@ -60,6 +64,7 @@ and simply deploy to any website host, even free static site hosts like
 Github Pages
 
 ``` r
+
 # automate GitHub Pages setup to deploy html files in the `docs` folder
 usethis::use_github_pages(branch='main', path='/docs')
 #> ✔ Setting active project to "/Users/jakemanger/projects/spacetimeview".

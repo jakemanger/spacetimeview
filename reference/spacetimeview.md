@@ -240,7 +240,7 @@ data <- data.frame(
 plot <- spacetimeview(data)
 #> Auto-detected time column: `time`
 #> Warning: column_to_plot was not specified. Defaulting to `value`
-#> [1] "Automatically determined summary radius: 911708.032419824"
+#> [1] "Automatically determined summary radius: 908381.737136417"
 #> Error in data %>% dplyr::mutate(dplyr::across(where(is.numeric) & !where(is.integer),     ~round(.x, json_digits))): could not find function "%>%"
 
 # Save the plot as an HTML file
@@ -260,7 +260,7 @@ plot2 <- spacetimeview(
 )
 #> Auto-detected time column: `time`
 #> Warning: column_to_plot was not specified. Defaulting to `value`
-#> [1] "Automatically determined summary radius: 819278.089964038"
+#> [1] "Automatically determined summary radius: 811328.473099907"
 #> Error in data %>% dplyr::mutate(dplyr::across(where(is.numeric) & !where(is.integer),     ~round(.x, json_digits))): could not find function "%>%"
 
 # Save the plot as an HTML file
