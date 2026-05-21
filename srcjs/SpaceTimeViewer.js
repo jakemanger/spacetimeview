@@ -743,7 +743,7 @@ export default function SpaceTimeViewer({
     }
 
     const filepath = dataDir ? `${dataDir}/${initialDataUrl}` : initialDataUrl;
-    console.log(`Loading initial data from initialDataUrl: ${filepath}`);
+    console.log(`Loading data from initialDataUrl: ${filepath}`);
     initialDataFetchStarted.current = true;
     setIsLoadingData(true);
     setLoadingColumn('data');
@@ -757,7 +757,7 @@ export default function SpaceTimeViewer({
       })
       .then(jsonData => {
         const d3Data = HTMLWidgets.dataframeToD3(jsonData);
-        console.log(`Loaded initial data from initialDataUrl:`, d3Data.length, 'rows');
+        console.log(`Loaded data from initialDataUrl:`, d3Data.length, 'rows');
         updateLoadedData('__initial__', d3Data);
         setInitialDataLoadFinished(true);
         setIsLoadingData(false);
