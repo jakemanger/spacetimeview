@@ -73,6 +73,51 @@ const ambientLight = new AmbientLight({
   intensity: 1.0,
 });
 
+function getFiniteExtent(values) {
+  let min = Infinity;
+  let max = -Infinity;
+
+  for (const rawValue of values) {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) continue;
+
+    min = Math.min(min, value);
+    max = Math.max(max, value);
+  }
+
+  return Number.isFinite(min) && Number.isFinite(max) ? [min, max] : null;
+}
+
+function getQuantileBreaks(values, binCount) {
+  const finiteValues = [];
+
+  for (const rawValue of values) {
+    const value = Number(rawValue);
+    if (Number.isFinite(value)) {
+      finiteValues.push(value);
+    }
+  }
+
+  if (!finiteValues.length) return null;
+
+  const sortedValues = finiteValues.sort((a, b) => a - b);
+  const lastIndex = sortedValues.length - 1;
+  const breaks = [];
+
+  for (let i = 0; i <= binCount; i += 1) {
+    const position = lastIndex * (i / binCount);
+    const lowerIndex = Math.floor(position);
+    const upperIndex = Math.ceil(position);
+    const weight = position - lowerIndex;
+    const lowerValue = sortedValues[lowerIndex];
+    const upperValue = sortedValues[upperIndex];
+
+    breaks.push(lowerValue + (upperValue - lowerValue) * weight);
+  }
+
+  return breaks;
+}
+
 export default function SummaryPlot({
   data = [],
   mapStyle = MAP_STYLE,
@@ -361,28 +406,20 @@ export default function SummaryPlot({
     }
 
     const values = [];
-    let min = Infinity;
-    let max = -Infinity;
 
     for (const point of normalizedData) {
       const value = Number(point.value);
       if (!Number.isFinite(value)) continue;
 
-      if (colorScaleType === 'quantile') {
-        values.push(value);
-      }
-      min = Math.min(min, value);
-      max = Math.max(max, value);
+      values.push(value);
     }
-
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
 
     if (colorScaleType === 'quantile') {
-      return values.sort((a, b) => a - b);
+      return getQuantileBreaks(values, colorRange.length || 6);
     }
 
-    return [min, max];
-  }, [normalizedData, style, colorScaleType]);
+    return getFiniteExtent(values);
+  }, [normalizedData, style, colorScaleType, colorRange]);
 
   // update colorbar domain when initial domain changes
   useEffect(() => {
@@ -404,6 +441,7 @@ export default function SummaryPlot({
     console.log('resetting domains due to data, filterColumnValues, or aggregation change');
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
+    setColorbarDomain(null);
 
     domainInitializedRef.current = false;
     domainRef.current = null;
@@ -433,6 +471,7 @@ export default function SummaryPlot({
     if (spanChanged && (!factorLevels || !factorLevels[legendTitle])) {
       setInitialColorDomain(null);
       setInitialElevationDomain(null);
+      setColorbarDomain(null);
       domainRef.current = null;
     }
 
@@ -511,48 +550,77 @@ export default function SummaryPlot({
     if (factorLevels && factorLevels[legendTitle]) {
       const factorLevelsDomain = [0, factorLevels[legendTitle].length - 1];
       setInitialColorDomain(factorLevelsDomain);
+      setColorbarDomain(factorLevelsDomain);
       return;
     }
 
-    console.log('onSetColorDomain called:', {
-      colorDomain,
-      preserveDomains,
-      'domainRef.current': domainRef.current,
-      initialized: domainInitializedRef.current
-    });
+    const displayDomain = colorScaleType === 'quantile'
+      ? getQuantileBreaks(colorDomain, colorRange.length || 6)
+      : getFiniteExtent(colorDomain);
+
+    if (!displayDomain) return;
+
+    if (colorScaleType === 'quantile') {
+      if (preserveDomains && domainRef.current !== null) {
+        const mergedDomain = [
+          Math.min(displayDomain[0], domainRef.current[0]),
+          ...displayDomain.slice(1, -1),
+          Math.max(displayDomain[displayDomain.length - 1], domainRef.current[domainRef.current.length - 1])
+        ];
+
+        domainRef.current = mergedDomain;
+        setColorbarDomain(mergedDomain);
+      } else if (!domainInitializedRef.current) {
+        domainRef.current = displayDomain;
+        setColorbarDomain(displayDomain);
+      }
+
+      setInitialColorDomain(null);
+      domainInitializedRef.current = true;
+      return;
+    }
 
     // If preserveDomains, always try to expand (don't skip on subsequent calls)
     if (preserveDomains) {
       if (domainRef.current !== null) {
         const newDomain = [
-          Math.min(colorDomain[0], domainRef.current[0]),
-          Math.max(colorDomain[1], domainRef.current[1])
+          Math.min(displayDomain[0], domainRef.current[0]),
+          Math.max(displayDomain[1], domainRef.current[1])
         ];
         // Only update if the domain actually changed
         if (newDomain[0] !== domainRef.current[0] || newDomain[1] !== domainRef.current[1]) {
-          console.log('Expanding domain from', domainRef.current, 'to', newDomain);
           domainRef.current = newDomain;
           setInitialColorDomain(newDomain);
+          setColorbarDomain(newDomain);
         }
       } else {
         // First time setting domain
-        console.log('Setting initial domain to:', colorDomain);
-        domainRef.current = colorDomain;
-        setInitialColorDomain(colorDomain);
+        domainRef.current = displayDomain;
+        setInitialColorDomain(displayDomain);
+        setColorbarDomain(displayDomain);
       }
       domainInitializedRef.current = true;
     } else {
       // Without preserveDomains, only set once per render
       if (domainInitializedRef.current) {
-        console.log('Domain already initialized, skipping');
         return;
       }
-      console.log('Setting fresh domain to:', colorDomain);
-      domainRef.current = colorDomain;
-      setInitialColorDomain(colorDomain);
+      domainRef.current = displayDomain;
+      setInitialColorDomain(displayDomain);
+      setColorbarDomain(displayDomain);
       domainInitializedRef.current = true;
     }
   }
+
+  const onSetElevationDomain = (elevationDomain) => {
+    const displayDomain = getFiniteExtent(elevationDomain);
+    if (!displayDomain) return;
+
+    setInitialElevationDomain(displayDomain);
+  };
+
+  const deckColorDomain = colorScaleType === 'quantile' ? undefined : (initialColorDomain || undefined);
+  const deckElevationDomain = initialElevationDomain || undefined;
 
   let updateTriggers = {
     getColorValue: [filter, data, legendTitle, colorAggregation, radius, coverage],
@@ -646,9 +714,9 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain,
-        onSetElevationDomain: onSetColorDomain,
-        colorDomain: initialColorDomain || undefined,
-        elevationDomain: initialElevationDomain || undefined,
+        onSetElevationDomain,
+        colorDomain: deckColorDomain,
+        elevationDomain: deckElevationDomain,
         updateTriggers: updateTriggers,
         colorScaleType
       })
@@ -673,9 +741,9 @@ export default function SummaryPlot({
           specularColor: [51, 51, 51],
         },
         onSetColorDomain,
-        onSetElevationDomain: onSetColorDomain,
-        colorDomain: initialColorDomain || undefined,
-        elevationDomain: initialElevationDomain || undefined,
+        onSetElevationDomain,
+        colorDomain: deckColorDomain,
+        elevationDomain: deckElevationDomain,
         updateTriggers: updateTriggers,
         colorScaleType
       }))
@@ -903,7 +971,7 @@ export default function SummaryPlot({
       )}
       <Colorbar
         colorRange={colorRange}
-        colorDomain={style === 'Scatter' ? [minValue, maxValue] : (initialColorDomain || fallbackColorDomain)}
+        colorDomain={style === 'Scatter' ? [minValue, maxValue] : (colorbarDomain || initialColorDomain || fallbackColorDomain)}
         title={legendTitle}
         numDecimals={numDecimals}
         themeColors={themeColors}
