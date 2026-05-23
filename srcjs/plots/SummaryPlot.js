@@ -355,12 +355,39 @@ export default function SummaryPlot({
     return null;
   }, [minValue, maxValue, colorRange, style]);
 
+  const fallbackColorDomain = useMemo(() => {
+    if (style !== 'Summary' || !normalizedData || normalizedData.length === 0) {
+      return null;
+    }
+
+    const values = [];
+    let min = Infinity;
+    let max = -Infinity;
+
+    for (const point of normalizedData) {
+      const value = Number(point.value);
+      if (!Number.isFinite(value)) continue;
+
+      if (colorScaleType === 'quantile') {
+        values.push(value);
+      }
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+
+    if (colorScaleType === 'quantile') {
+      return values.sort((a, b) => a - b);
+    }
+
+    return [min, max];
+  }, [normalizedData, style, colorScaleType]);
+
   // update colorbar domain when initial domain changes
   useEffect(() => {
-    if (initialColorDomain !== null) {
-      setColorbarDomain(initialColorDomain);
-    }
-  }, [initialColorDomain]);
+    setColorbarDomain(initialColorDomain);
+  }, [initialColorDomain, legendTitle]);
 
   // track domain initialization
   const domainInitializedRef = useRef(false);
@@ -380,7 +407,7 @@ export default function SummaryPlot({
 
     domainInitializedRef.current = false;
     domainRef.current = null;
-  }, [data, filterColumnValues, legendTitle, colorAggregation, elevationAggregation, style]);
+  }, [data.length, filterColumnValues, legendTitle, colorAggregation, elevationAggregation, style]);
 
   const directionalLight1 = new DirectionalLight({
     color: [255, 255, 255],
@@ -473,6 +500,7 @@ export default function SummaryPlot({
     console.log('legendTitle changed from', previousLegendTitleRef.current, 'to', legendTitle, '- resetting refs and forcing layer recreation');
     domainRef.current = null;
     domainInitializedRef.current = false;
+    setColorbarDomain(null);
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
     previousLegendTitleRef.current = legendTitle;
@@ -619,8 +647,8 @@ export default function SummaryPlot({
         },
         onSetColorDomain,
         onSetElevationDomain: onSetColorDomain,
-        colorDomain: initialColorDomain,
-        elevationDomain: initialElevationDomain,
+        colorDomain: initialColorDomain || undefined,
+        elevationDomain: initialElevationDomain || undefined,
         updateTriggers: updateTriggers,
         colorScaleType
       })
@@ -646,8 +674,8 @@ export default function SummaryPlot({
         },
         onSetColorDomain,
         onSetElevationDomain: onSetColorDomain,
-        colorDomain: initialColorDomain,
-        elevationDomain: initialElevationDomain,
+        colorDomain: initialColorDomain || undefined,
+        elevationDomain: initialElevationDomain || undefined,
         updateTriggers: updateTriggers,
         colorScaleType
       }))
@@ -875,7 +903,7 @@ export default function SummaryPlot({
       )}
       <Colorbar
         colorRange={colorRange}
-        colorDomain={style === 'Scatter' ? [minValue, maxValue] : colorbarDomain}
+        colorDomain={style === 'Scatter' ? [minValue, maxValue] : (initialColorDomain || fallbackColorDomain)}
         title={legendTitle}
         numDecimals={numDecimals}
         themeColors={themeColors}

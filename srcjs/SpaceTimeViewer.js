@@ -268,7 +268,15 @@ export default function SpaceTimeViewer({
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   let factorAggregateOptions = ['MODE'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
-  if (!transformedData.length || !transformedData[0].hasOwnProperty(initialColumnToPlot)) {
+  const initialColumnIsConfigured = columnNamesForControls.includes(initialColumnToPlot);
+  const initialColumnIsLoaded = transformedData.length > 0 &&
+    Object.prototype.hasOwnProperty.call(transformedData[0], initialColumnToPlot);
+  const waitingForConfiguredColumn = (dataUrl || dataFiles || initialDataUrl) && initialColumnIsConfigured;
+
+  if (
+    (!transformedData.length && !waitingForConfiguredColumn) ||
+    (transformedData.length > 0 && !initialColumnIsLoaded && !initialColumnIsConfigured)
+  ) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
   }
@@ -1013,7 +1021,11 @@ export default function SpaceTimeViewer({
     let dataToRender = filteredData;
     let isUsingDummyData = false;
 
-    if (isLoadingData || isWaitingForDeferredColumn || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
+    const hasRenderableData = filteredData &&
+      filteredData.length > 0 &&
+      filteredData.some(d => d.lng && d.lat);
+
+    if (isWaitingForDeferredColumn || !hasRenderableData) {
       // Create a single invisible point at the initial view location to render an empty map
       // NO timestamp - this is spatial-only data
       const dummyLat = initialLatitude !== null ? initialLatitude : -25;

@@ -62172,7 +62172,10 @@ function SpaceTimeViewer(_ref) {
   let aggregateOptions = ['SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
   let factorAggregateOptions = ['MODE'];
   let repeatedPointsAggregateOptions = ['None', 'SUM', 'MEAN', 'COUNT', 'MIN', 'MAX', 'MODE'];
-  if (!transformedData.length || !transformedData[0].hasOwnProperty(initialColumnToPlot)) {
+  const initialColumnIsConfigured = columnNamesForControls.includes(initialColumnToPlot);
+  const initialColumnIsLoaded = transformedData.length > 0 && Object.prototype.hasOwnProperty.call(transformedData[0], initialColumnToPlot);
+  const waitingForConfiguredColumn = (dataUrl || dataFiles || initialDataUrl) && initialColumnIsConfigured;
+  if (!transformedData.length && !waitingForConfiguredColumn || transformedData.length > 0 && !initialColumnIsLoaded && !initialColumnIsConfigured) {
     aggregateOptions = ['COUNT'];
     initialAggregate = 'COUNT';
   }
@@ -62797,7 +62800,8 @@ function SpaceTimeViewer(_ref) {
     // Determine what data to use - if loading or no data, use a single dummy point to show empty map
     let dataToRender = filteredData;
     let isUsingDummyData = false;
-    if (isLoadingData || isWaitingForDeferredColumn || !filteredData || filteredData.length === 0 || !filteredData.some(d => d.lng && d.lat)) {
+    const hasRenderableData = filteredData && filteredData.length > 0 && filteredData.some(d => d.lng && d.lat);
+    if (isWaitingForDeferredColumn || !hasRenderableData) {
       // Create a single invisible point at the initial view location to render an empty map
       // NO timestamp - this is spatial-only data
       const dummyLat = initialLatitude !== null ? initialLatitude : -25;
@@ -63597,13 +63601,33 @@ function SummaryPlot(_ref) {
     }
     return null;
   }, [minValue, maxValue, colorRange, style]);
+  const fallbackColorDomain = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+    if (style !== 'Summary' || !normalizedData || normalizedData.length === 0) {
+      return null;
+    }
+    const values = [];
+    let min = Infinity;
+    let max = -Infinity;
+    for (const point of normalizedData) {
+      const value = Number(point.value);
+      if (!Number.isFinite(value)) continue;
+      if (colorScaleType === 'quantile') {
+        values.push(value);
+      }
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    if (colorScaleType === 'quantile') {
+      return values.sort((a, b) => a - b);
+    }
+    return [min, max];
+  }, [normalizedData, style, colorScaleType]);
 
   // update colorbar domain when initial domain changes
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    if (initialColorDomain !== null) {
-      setColorbarDomain(initialColorDomain);
-    }
-  }, [initialColorDomain]);
+    setColorbarDomain(initialColorDomain);
+  }, [initialColorDomain, legendTitle]);
 
   // track domain initialization
   const domainInitializedRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
@@ -63620,7 +63644,7 @@ function SummaryPlot(_ref) {
     setInitialElevationDomain(null);
     domainInitializedRef.current = false;
     domainRef.current = null;
-  }, [data, filterColumnValues, legendTitle, colorAggregation, elevationAggregation, style]);
+  }, [data.length, filterColumnValues, legendTitle, colorAggregation, elevationAggregation, style]);
   const directionalLight1 = new _deck_gl_core__WEBPACK_IMPORTED_MODULE_17__.DirectionalLight({
     color: [255, 255, 255],
     intensity: 0.4,
@@ -63708,6 +63732,7 @@ function SummaryPlot(_ref) {
     console.log('legendTitle changed from', previousLegendTitleRef.current, 'to', legendTitle, '- resetting refs and forcing layer recreation');
     domainRef.current = null;
     domainInitializedRef.current = false;
+    setColorbarDomain(null);
     setInitialColorDomain(null);
     setInitialElevationDomain(null);
     previousLegendTitleRef.current = legendTitle;
@@ -63845,8 +63870,8 @@ function SummaryPlot(_ref) {
     },
     onSetColorDomain,
     onSetElevationDomain: onSetColorDomain,
-    colorDomain: initialColorDomain,
-    elevationDomain: initialElevationDomain,
+    colorDomain: initialColorDomain || undefined,
+    elevationDomain: initialElevationDomain || undefined,
     updateTriggers: updateTriggers,
     colorScaleType
   }) : new _deck_gl_aggregation_layers__WEBPACK_IMPORTED_MODULE_21__["default"]({
@@ -63871,8 +63896,8 @@ function SummaryPlot(_ref) {
     },
     onSetColorDomain,
     onSetElevationDomain: onSetColorDomain,
-    colorDomain: initialColorDomain,
-    elevationDomain: initialElevationDomain,
+    colorDomain: initialColorDomain || undefined,
+    elevationDomain: initialElevationDomain || undefined,
     updateTriggers: updateTriggers,
     colorScaleType
   }))].filter(Boolean); // filter out any nulls from the layers array
@@ -64072,7 +64097,7 @@ function SummaryPlot(_ref) {
     }
   }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ui_Colorbar__WEBPACK_IMPORTED_MODULE_3__["default"], {
     colorRange: colorRange,
-    colorDomain: style === 'Scatter' ? [minValue, maxValue] : colorbarDomain,
+    colorDomain: style === 'Scatter' ? [minValue, maxValue] : initialColorDomain || fallbackColorDomain,
     title: legendTitle,
     numDecimals: numDecimals,
     themeColors: themeColors,
