@@ -61973,6 +61973,13 @@ function getNested(obj) {
   }
   return args.reduce((obj, level) => obj && obj[level], obj);
 }
+function resolveColumnSetting(setting, columnName) {
+  let fallback = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  if (setting && typeof setting === 'object' && !Array.isArray(setting)) {
+    return setting[columnName] ?? fallback ?? Object.values(setting)[0];
+  }
+  return setting ?? fallback;
+}
 function SpaceTimeViewer(_ref) {
   let {
     data = [],
@@ -62025,6 +62032,7 @@ function SpaceTimeViewer(_ref) {
     },
     initialFilterColumn = null,
     defaultFilterValue = null,
+    filterSelectMultiple = true,
     selectableColumns = null,
     draggableMenu = false,
     polygons = null,
@@ -62174,6 +62182,7 @@ function SpaceTimeViewer(_ref) {
     console.error(`Invalid initial aggregate: ${initialAggregate}. Defaulting to ${aggregateOptions[0]}`);
     initialAggregate = aggregateOptions[0];
   }
+  const initialColorSchemeForControl = resolveColumnSetting(initialColorScheme, initialColumnToPlot, 'YlOrRd');
   const controlsConfig = {
     style: {
       value: initialStyle,
@@ -62190,7 +62199,7 @@ function SpaceTimeViewer(_ref) {
       render: () => visibleControls.includes('projection')
     },
     colorScheme: {
-      value: initialColorScheme,
+      value: initialColorSchemeForControl,
       options: Object.keys(colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"]).filter(scheme => colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][scheme]['6']),
       label: controlNames['color_scheme'] || 'Color Scheme',
       hint: 'Select a color scheme to represent data visually.',
@@ -62343,7 +62352,7 @@ function SpaceTimeViewer(_ref) {
     set({
       style: initialStyle,
       projection: initialProjection,
-      colorScheme: initialColorScheme,
+      colorScheme: initialColorSchemeForControl,
       theme: initialTheme,
       summaryStyle: initialSummaryStyle,
       summaryRadius: initialSummaryRadius,
@@ -62361,7 +62370,7 @@ function SpaceTimeViewer(_ref) {
       filterColumn: initialFilterColumn,
       enableClickedTooltips: enableClickedTooltips
     });
-  }, [data, initialStyle, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorScheme, initialColorScaleType, initialNumDecimals, columnNamesForControls, factorLevels, visibleControls, controlNames, initialFilterColumn, defaultFilterValue, draggableMenu, factorIcons, enableClickedTooltips]);
+  }, [data, initialStyle, initialAggregate, initialRepeatedPointsAggregate, initialStickyRange, initialSummaryRadius, initialSummaryCoverage, initialAnimationSpeed, initialTheme, initialRadiusScale, initialRadiusMinPixels, initialSummaryStyle, initialProjection, initialSummaryHeight, initialColorSchemeForControl, initialColorScaleType, initialNumDecimals, columnNamesForControls, factorLevels, visibleControls, controlNames, initialFilterColumn, defaultFilterValue, draggableMenu, factorIcons, enableClickedTooltips]);
 
   // calculate selected filter display info
   const selectedFilterDisplayInfo = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
@@ -62396,6 +62405,7 @@ function SpaceTimeViewer(_ref) {
   const effectiveColumnToPlot = columnsToPlotValues.length > 0 ? columnsToPlotValues.length === 1 ? columnsToPlotValues[0] : 'Combined' : columnNames.length > 0 ? columnNames[0] : 'value';
   const legendTitle = columnsToPlotValues.length > 1 ? `${columnsToPlotValues.join(' + ')}` : effectiveColumnToPlot;
   let aggregateToUse = factorLevels && factorLevels[effectiveColumnToPlot] ? factorAggregate : aggregate;
+  const effectiveColorScheme = resolveColumnSetting(initialColorScheme, effectiveColumnToPlot, colorScheme);
   if (factorLevels && factorLevels[effectiveColumnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
     aggregateToUse = factorAggregateOptions[0];
   }
@@ -62439,10 +62449,10 @@ function SpaceTimeViewer(_ref) {
         }
       }
       setColorRange(colorRange);
-    } else if (colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][colorScheme] && colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][colorScheme]['6']) {
+    } else if (colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][effectiveColorScheme] && colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][effectiveColorScheme]['6']) {
       // Fall back to colorbrewer interpolation
       // Convert baseColorRange from arrays to "rgb(r, g, b)" strings for interpolation
-      let baseColorRange = colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][colorScheme]['6'].map(hexToRgb).map(rgbArray => `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`);
+      let baseColorRange = colorbrewer__WEBPACK_IMPORTED_MODULE_4__["default"][effectiveColorScheme]['6'].map(hexToRgb).map(rgbArray => `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`);
       const numClasses = factorLevels && factorLevels[effectiveColumnToPlot] ? factorLevels[effectiveColumnToPlot].length : baseColorRange.length;
 
       // Generate interpolated colors between the start and end of baseColorRange
@@ -62454,10 +62464,10 @@ function SpaceTimeViewer(_ref) {
       }
       setColorRange(interpolatedColorRange);
     } else {
-      console.error(`Color scheme ${colorScheme} does not have 6 classes`);
+      console.error(`Color scheme ${effectiveColorScheme} does not have 6 classes`);
       setColorRange([]);
     }
-  }, [colorScheme, factorLevels, effectiveColumnToPlot, factorColors]);
+  }, [effectiveColorScheme, factorLevels, effectiveColumnToPlot, factorColors]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     const newLevaThemeColors = theme === 'dark' ? {
       elevation1: '#292d39',
@@ -62972,6 +62982,7 @@ function SpaceTimeViewer(_ref) {
     filterOptions: filterOptions,
     filterColumnValues: filterColumnValues,
     setFilterColumnValues: setFilterColumnValues,
+    filterSelectMultiple: filterSelectMultiple,
     columnsToPlotOptions: columnsToPlotOptions,
     columnsToPlotValues: columnsToPlotValues,
     setColumnsToPlotValues: setColumnsToPlotValues,
@@ -63894,16 +63905,17 @@ function SummaryPlot(_ref) {
   }
   const relevantFactorLevels = factorLevels && factorLevels[legendTitle] || null;
   const legendSubtitle = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
-    if (!legendTimeRangeText) return null;
-    const rangeLabel = formatLegendDateRange(filter, viewMode);
-    if (legendMetricLabel && legendMetricLabel.includes('{range}')) {
+    const metricLabel = legendMetricLabel && typeof legendMetricLabel === 'object' && !Array.isArray(legendMetricLabel) ? legendMetricLabel[legendTitle] : legendMetricLabel;
+    if (!legendTimeRangeText && !metricLabel) return null;
+    const rangeLabel = legendTimeRangeText ? formatLegendDateRange(filter, viewMode) : null;
+    if (metricLabel && metricLabel.includes('{range}')) {
       if (rangeLabel) {
-        return legendMetricLabel.replace(/\{range\}/g, rangeLabel);
+        return metricLabel.replace(/\{range\}/g, rangeLabel);
       }
-      return legendMetricLabel.replace(/\s*,?\s*between\s*\{range\}/gi, '').replace(/\{range\}/g, '').trim();
+      return metricLabel.replace(/\s*,?\s*between\s*\{range\}/gi, '').replace(/\{range\}/g, '').trim();
     }
-    return [legendMetricLabel, rangeLabel ? `Selected: ${rangeLabel}` : null].filter(Boolean).join('\n');
-  }, [filter, legendMetricLabel, legendTimeRangeText, viewMode]);
+    return [metricLabel, rangeLabel ? `Selected: ${rangeLabel}` : null].filter(Boolean).join('\n');
+  }, [filter, legendMetricLabel, legendTimeRangeText, viewMode, legendTitle]);
 
   // use normalized data when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
@@ -64754,6 +64766,7 @@ function ControlsMenu(_ref) {
     filterOptions,
     filterColumnValues,
     setFilterColumnValues,
+    filterSelectMultiple = true,
     columnsToPlotOptions,
     columnsToPlotValues,
     setColumnsToPlotValues,
@@ -64780,6 +64793,15 @@ function ControlsMenu(_ref) {
   const [startY, setStartY] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
   const [currentTranslateY, setCurrentTranslateY] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0); // Start shown
 
+  const selectedFilterOptions = filterOptions.filter(option => filterColumnValues.includes(option.value));
+  const selectedFilterValue = filterSelectMultiple ? selectedFilterOptions : selectedFilterOptions[0] || null;
+  const handleFilterChange = selectedOptions => {
+    if (filterSelectMultiple) {
+      setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : []);
+    } else {
+      setFilterColumnValues(selectedOptions ? [selectedOptions.value] : []);
+    }
+  };
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     if (dockPosition === 'floating' && controlsRef.current) {
       const {
@@ -65118,10 +65140,10 @@ function ControlsMenu(_ref) {
     }
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_select__WEBPACK_IMPORTED_MODULE_5__["default"], {
     components: (0,react_select_animated__WEBPACK_IMPORTED_MODULE_2__["default"])(),
-    isMulti: true,
+    isMulti: filterSelectMultiple,
     options: filterOptions,
-    value: filterOptions.filter(option => filterColumnValues.includes(option.value)),
-    onChange: selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : []),
+    value: selectedFilterValue,
+    onChange: handleFilterChange,
     placeholder: `Filter ${filterColumn}...`,
     styles: selectStyles,
     formatOptionLabel: formatOptionLabel(factorIcons, filterColumn),
@@ -65258,10 +65280,10 @@ function ControlsMenu(_ref) {
     }
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_select__WEBPACK_IMPORTED_MODULE_5__["default"], {
     components: (0,react_select_animated__WEBPACK_IMPORTED_MODULE_2__["default"])(),
-    isMulti: true,
+    isMulti: filterSelectMultiple,
     options: filterOptions,
-    value: filterOptions.filter(option => filterColumnValues.includes(option.value)),
-    onChange: selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : []),
+    value: selectedFilterValue,
+    onChange: handleFilterChange,
     placeholder: `Filter ${filterColumn}...`,
     styles: selectStyles,
     formatOptionLabel: formatOptionLabel(factorIcons, filterColumn),

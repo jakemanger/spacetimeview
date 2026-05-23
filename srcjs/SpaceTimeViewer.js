@@ -47,6 +47,13 @@ function getNested(obj, ...args) {
   return args.reduce((obj, level) => obj && obj[level], obj);
 }
 
+function resolveColumnSetting(setting, columnName, fallback = null) {
+  if (setting && typeof setting === 'object' && !Array.isArray(setting)) {
+    return setting[columnName] ?? fallback ?? Object.values(setting)[0];
+  }
+  return setting ?? fallback;
+}
+
 export default function SpaceTimeViewer({
   data = [],
   dataFiles = null,  // Object mapping column names to file paths (for split_by_column=TRUE)
@@ -104,6 +111,7 @@ export default function SpaceTimeViewer({
   },
   initialFilterColumn = null,
   defaultFilterValue = null,
+  filterSelectMultiple = true,
   selectableColumns = null,
   draggableMenu = false,
   polygons = null,
@@ -271,6 +279,12 @@ export default function SpaceTimeViewer({
     initialAggregate = aggregateOptions[0];
   }
 
+  const initialColorSchemeForControl = resolveColumnSetting(
+    initialColorScheme,
+    initialColumnToPlot,
+    'YlOrRd'
+  );
+
   const controlsConfig = {
     style: {
       value: initialStyle,
@@ -287,7 +301,7 @@ export default function SpaceTimeViewer({
       render: () => visibleControls.includes('projection')
     },
     colorScheme: {
-      value: initialColorScheme,
+      value: initialColorSchemeForControl,
       options: Object.keys(colorbrewer).filter(scheme => colorbrewer[scheme]['6']),
       label: controlNames['color_scheme'] || 'Color Scheme',
       hint: 'Select a color scheme to represent data visually.',
@@ -475,7 +489,7 @@ export default function SpaceTimeViewer({
       {
         style: initialStyle,
         projection: initialProjection,
-        colorScheme: initialColorScheme,
+        colorScheme: initialColorSchemeForControl,
         theme: initialTheme,
         summaryStyle: initialSummaryStyle,
         summaryRadius: initialSummaryRadius,
@@ -509,7 +523,7 @@ export default function SpaceTimeViewer({
     initialSummaryStyle,
     initialProjection,
     initialSummaryHeight,
-    initialColorScheme,
+    initialColorSchemeForControl,
     initialColorScaleType,
     initialNumDecimals,
     columnNamesForControls,
@@ -558,6 +572,7 @@ export default function SpaceTimeViewer({
     `${columnsToPlotValues.join(' + ')}` : effectiveColumnToPlot;
 
   let aggregateToUse = factorLevels && factorLevels[effectiveColumnToPlot] ? factorAggregate : aggregate;
+  const effectiveColorScheme = resolveColumnSetting(initialColorScheme, effectiveColumnToPlot, colorScheme);
 
   if (factorLevels && factorLevels[effectiveColumnToPlot] && !factorAggregateOptions.includes(aggregateToUse)) {
     aggregateToUse = factorAggregateOptions[0]
@@ -607,10 +622,10 @@ export default function SpaceTimeViewer({
       }
 
       setColorRange(colorRange);
-    } else if (colorbrewer[colorScheme] && colorbrewer[colorScheme]['6']) {
+    } else if (colorbrewer[effectiveColorScheme] && colorbrewer[effectiveColorScheme]['6']) {
       // Fall back to colorbrewer interpolation
       // Convert baseColorRange from arrays to "rgb(r, g, b)" strings for interpolation
-      let baseColorRange = colorbrewer[colorScheme]['6']
+      let baseColorRange = colorbrewer[effectiveColorScheme]['6']
         .map(hexToRgb)
         .map(rgbArray => `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`);
 
@@ -626,10 +641,10 @@ export default function SpaceTimeViewer({
 
       setColorRange(interpolatedColorRange);
     } else {
-      console.error(`Color scheme ${colorScheme} does not have 6 classes`);
+      console.error(`Color scheme ${effectiveColorScheme} does not have 6 classes`);
       setColorRange([]);
     }
-  }, [colorScheme, factorLevels, effectiveColumnToPlot, factorColors]);
+  }, [effectiveColorScheme, factorLevels, effectiveColumnToPlot, factorColors]);
 
   useEffect(() => {
     const newLevaThemeColors = theme === 'dark' ? {
@@ -1221,6 +1236,7 @@ export default function SpaceTimeViewer({
         filterOptions={filterOptions}
         filterColumnValues={filterColumnValues}
         setFilterColumnValues={setFilterColumnValues}
+        filterSelectMultiple={filterSelectMultiple}
         columnsToPlotOptions={columnsToPlotOptions}
         columnsToPlotValues={columnsToPlotValues}
         setColumnsToPlotValues={setColumnsToPlotValues}

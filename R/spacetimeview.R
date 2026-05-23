@@ -79,6 +79,8 @@
 #' @param default_filter_value Character or numeric vector. Optional. Default 
 #'   values to apply as filters when the visualization loads. Should correspond 
 #'   to factor level names or numeric values in the filter column.
+#' @param filter_select_multiple Logical. Whether the filter dropdown allows
+#'   multiple values to be selected at once. Defaults to TRUE.
 #' @param polygons sf or list object. Optional. Polygons to display on the map,
 #'   such as state or country boundaries. Can be an sf object with POLYGON or
 #'   MULTIPOLYGON geometry or a list with GeoJSON structure.
@@ -298,6 +300,7 @@ spacetimeview <- function(
     ),
     filter_column = NULL,
     default_filter_value = NULL,
+    filter_select_multiple = TRUE,
     lat_name = 'auto',
     lng_name = 'auto',
     time_column_name = 'auto',
@@ -930,6 +933,7 @@ spacetimeview <- function(
       controlNames = control_names,
       initialFilterColumn = filter_column,
       defaultFilterValue = default_filter_value,
+      filterSelectMultiple = filter_select_multiple,
       selectableColumns = selectable_columns,
       polygons = polygon_data,
       observable = observable,

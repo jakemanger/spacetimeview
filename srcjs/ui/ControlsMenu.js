@@ -12,6 +12,7 @@ export default function ControlsMenu({
   filterOptions,
   filterColumnValues,
   setFilterColumnValues,
+  filterSelectMultiple = true,
   columnsToPlotOptions,
   columnsToPlotValues,
   setColumnsToPlotValues,
@@ -29,6 +30,18 @@ export default function ControlsMenu({
   const [collapsed, setCollapsed] = useState(false); // Start expanded by default
   const [startY, setStartY] = useState(null);
   const [currentTranslateY, setCurrentTranslateY] = useState(0); // Start shown
+
+  const selectedFilterOptions = filterOptions.filter(option => filterColumnValues.includes(option.value));
+  const selectedFilterValue = filterSelectMultiple
+    ? selectedFilterOptions
+    : (selectedFilterOptions[0] || null);
+  const handleFilterChange = selectedOptions => {
+    if (filterSelectMultiple) {
+      setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : []);
+    } else {
+      setFilterColumnValues(selectedOptions ? [selectedOptions.value] : []);
+    }
+  };
 
   useEffect(() => {
     if (dockPosition === 'floating' && controlsRef.current) {
@@ -316,10 +329,10 @@ export default function ControlsMenu({
               <div style={{ marginTop: '2px', paddingLeft: '10px', paddingRight: '10px' }}>
                 <Select
                   components={makeAnimated()}
-                  isMulti
+                  isMulti={filterSelectMultiple}
                   options={filterOptions}
-                  value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
-                  onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
+                  value={selectedFilterValue}
+                  onChange={handleFilterChange}
                   placeholder={`Filter ${filterColumn}...`}
                   styles={selectStyles}
                   formatOptionLabel={formatOptionLabel(factorIcons, filterColumn)}
@@ -463,10 +476,10 @@ export default function ControlsMenu({
             }}>
               <Select
                 components={makeAnimated()}
-                isMulti
+                isMulti={filterSelectMultiple}
                 options={filterOptions}
-                value={filterOptions.filter(option => filterColumnValues.includes(option.value))}
-                onChange={selectedOptions => setFilterColumnValues(selectedOptions ? selectedOptions.map(option => option.value) : [])}
+                value={selectedFilterValue}
+                onChange={handleFilterChange}
                 placeholder={`Filter ${filterColumn}...`}
                 styles={selectStyles}
                 formatOptionLabel={formatOptionLabel(factorIcons, filterColumn)}

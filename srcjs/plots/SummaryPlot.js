@@ -680,23 +680,29 @@ export default function SummaryPlot({
   const relevantFactorLevels = (factorLevels && factorLevels[legendTitle]) || null;
 
   const legendSubtitle = useMemo(() => {
-    if (!legendTimeRangeText) return null;
+    const metricLabel = legendMetricLabel &&
+      typeof legendMetricLabel === 'object' &&
+      !Array.isArray(legendMetricLabel)
+      ? legendMetricLabel[legendTitle]
+      : legendMetricLabel;
 
-    const rangeLabel = formatLegendDateRange(filter, viewMode);
-    if (legendMetricLabel && legendMetricLabel.includes('{range}')) {
+    if (!legendTimeRangeText && !metricLabel) return null;
+
+    const rangeLabel = legendTimeRangeText ? formatLegendDateRange(filter, viewMode) : null;
+    if (metricLabel && metricLabel.includes('{range}')) {
       if (rangeLabel) {
-        return legendMetricLabel.replace(/\{range\}/g, rangeLabel);
+        return metricLabel.replace(/\{range\}/g, rangeLabel);
       }
-      return legendMetricLabel
+      return metricLabel
         .replace(/\s*,?\s*between\s*\{range\}/gi, '')
         .replace(/\{range\}/g, '')
         .trim();
     }
 
-    return [legendMetricLabel, rangeLabel ? `Selected: ${rangeLabel}` : null]
+    return [metricLabel, rangeLabel ? `Selected: ${rangeLabel}` : null]
       .filter(Boolean)
       .join('\n');
-  }, [filter, legendMetricLabel, legendTimeRangeText, viewMode]);
+  }, [filter, legendMetricLabel, legendTimeRangeText, viewMode, legendTitle]);
 
   // use normalized data when in seasonal view
   const displayData = viewMode === 'seasonal' ? normalizedData : data;
