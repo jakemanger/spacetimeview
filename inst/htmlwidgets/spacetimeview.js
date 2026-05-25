@@ -61965,6 +61965,7 @@ function getTimeRange(data) {
     return range;
   }, [Infinity, -Infinity]);
 }
+const EMPTY_TIME_RANGE = [NaN, NaN];
 
 // Function to safely get nested properties
 function getNested(obj) {
@@ -62797,27 +62798,11 @@ function SpaceTimeViewer(_ref) {
       MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
     }
 
-    // Determine what data to use - if loading or no data, use a single dummy point to show empty map
+    // If the tab is still loading, keep the map blank instead of drawing a fake $0 cell.
     let dataToRender = filteredData;
-    let isUsingDummyData = false;
-    const hasRenderableData = filteredData && filteredData.length > 0 && filteredData.some(d => d.lng && d.lat);
+    const hasRenderableData = filteredData && filteredData.length > 0 && filteredData.some(d => Number.isFinite(Number(d.lng)) && Number.isFinite(Number(d.lat)));
     if (isWaitingForDeferredColumn || !hasRenderableData) {
-      // Create a single invisible point at the initial view location to render an empty map
-      // NO timestamp - this is spatial-only data
-      const dummyLat = initialLatitude !== null ? initialLatitude : -25;
-      const dummyLng = initialLongitude !== null ? initialLongitude : 133;
-      const dummyPoint = {
-        lat: dummyLat,
-        lng: dummyLng,
-        value: 0
-      };
-
-      // Add the column being plotted if it's known
-      if (effectiveColumnToPlot && effectiveColumnToPlot !== 'value') {
-        dummyPoint[effectiveColumnToPlot] = 0;
-      }
-      dataToRender = [dummyPoint];
-      isUsingDummyData = true;
+      dataToRender = [];
 
       // Log error if not loading but data is invalid
       if (!isLoadingData && !isWaitingForDeferredColumn && filteredData && filteredData.length > 0) {
@@ -62825,13 +62810,8 @@ function SpaceTimeViewer(_ref) {
         console.error('Unsupported columns: ', columnsInData, 'Columns should include: "lng", "lat", an optional timestamp and columns to plot.');
       }
     }
-
-    // Sort data only if not using dummy data (to avoid unnecessary computation)
-    const sortedData = isUsingDummyData ? dataToRender : dataToRender.sort((a, b) => style === 'Scatter' ? a.value - b.value : new Date(a.timestamp) - new Date(b.timestamp));
-
-    // Use a valid timeRange for dummy data
-    const now = new Date().getTime();
-    const effectiveTimeRange = isUsingDummyData ? [now, now] : timeRange;
+    const sortedData = [...dataToRender].sort((a, b) => style === 'Scatter' ? a.value - b.value : new Date(a.timestamp) - new Date(b.timestamp));
+    const effectiveTimeRange = hasRenderableData && timeRange ? timeRange : EMPTY_TIME_RANGE;
 
     // Always use SummaryPlot, but pass the style prop to determine behavior
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_plots_SummaryPlot__WEBPACK_IMPORTED_MODULE_1__["default"], {
@@ -63031,7 +63011,7 @@ function SpaceTimeViewer(_ref) {
       fontWeight: 'bold',
       flexShrink: 0
     }
-  }, "Total: ", selectedFilterDisplayInfo.totalSelectedCount)), (isLoadingData || isWaitingForDeferredColumn) && activeTab === tabIndex && (dataUrl || dataFiles) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }, "Total: ", selectedFilterDisplayInfo.totalSelectedCount)), (isLoadingData || isWaitingForDeferredColumn) && activeTab === tabIndex && (dataUrl || dataFiles || initialDataUrl) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       position: 'absolute',
       top: '50%',
